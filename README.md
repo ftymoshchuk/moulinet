@@ -129,6 +129,11 @@ CI runs the same on every pull request, with the runner's Chrome and the
 browser tests required. Its `ci-passed` job succeeds only when every other job
 does, and is the one check `main` requires.
 
+Dependabot opens a pull request when an action the workflows use has a new
+release, and CI checks it like any other change. The two Pages actions only
+run when a merge publishes, so if a bump breaks them, that publish fails and
+the site stays as it was.
+
 Project layout:
 - `site/index.html` and `site/css/styles.css`: the page
 - `site/js/app.js`: the controls, and drawing each frame
@@ -140,20 +145,19 @@ Project layout:
 - `tests/`
 
 ## Publishing
-Every push to `main` publishes `site/` to GitHub Pages, through
-`.github/workflows/pages.yml`, which runs the tests once more first. Setting
-that up is a one-off for an admin of the repository:
+Changes reach `main` only through pull requests, and a pull request merges
+only when `ci-passed` is green and the branch is up to date with `main`. Each
+merge publishes `site/` to <https://ftymoshchuk.github.io/moulinet/> through
+`.github/workflows/pages.yml`, which runs the tests once more first. To
+publish `main` again without a change, run the **Pages** workflow from the
+Actions tab.
 
-1. Make the repository public, if it is not already. On GitHub Free, Pages
-   needs that.
-2. Run `scripts/protect-repo.sh` with the GitHub CLI signed in as a repository
-   admin. It sets Pages to publish from GitHub Actions and links the site from
-   the repository, and applies the branch ruleset and the security settings a
-   public repository should have. For Pages alone, set Settings > Pages >
-   Build and deployment > Source to **GitHub Actions** instead.
-3. Publish: push to `main`, or run the **Pages** workflow from the Actions tab.
-
-The site is then at <https://ftymoshchuk.github.io/moulinet/>.
+`scripts/protect-repo.sh` set this up, and running it again puts back any
+setting that has drifted. It needs the GitHub CLI signed in as a repository
+admin, and the repository public, since on GitHub Free rulesets and Pages
+need that. It applies the branch ruleset, sets Pages to publish from GitHub
+Actions, makes the site the repository's website, and turns on the security
+settings a public repository should have.
 
 ## Contributing
 Issues and pull requests are welcome. Run `npm test` before opening a pull
