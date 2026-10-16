@@ -1,0 +1,43 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      # Nothing to install: the tests use Node's own runner. The browser tests
+      # drive the page in the runner's Google Chrome, and REQUIRE_BROWSER makes
+      # a missing browser fail them rather than skip them.
+      - name: Test
+        run: npm test
+        env:
+          REQUIRE_BROWSER: "1"
+
+  # The aggregate gate: the one check the branch ruleset requires on main, so
+  # adding a job does not mean editing the ruleset.
+  ci-passed:
+    if: always()
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every job succeeded
+        run: |
+          echo '${{ toJSON(needs) }}'
+          [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" = "false" ]

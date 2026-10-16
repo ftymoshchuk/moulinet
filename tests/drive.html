@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Driving Sabre Motion Lab</title>
+  </head>
+  <body>
+    <!--
+      tests/browser.test.js serves this page beside the site. It loads the site
+      in a frame, works every control the way a person would, and writes what
+      it saw into #results for the test to check.
+    -->
+    <iframe id="page" src="/" width="1280" height="900" title="Sabre Motion Lab"></iframe>
+    <pre id="results"></pre>
+    <script type="module">
+      const results = { errors: [], seen: {} };
+      const frame = document.getElementById("page");
+
+      frame.addEventListener("load", () => {
+        const win = frame.contentWindow;
+        win.addEventListener("error", (event) => results.errors.push(event.message));
+        try {
+          drive(win, frame.contentDocument, results.seen);
+        } catch (error) {
+          results.errors.push(`${error.name}: ${error.message}`);
+        }
+        document.getElementById("results").textContent = JSON.stringify(results);
+      });
+
+      function drive(win, doc, seen) {
+        const $ = (selector) => doc.querySelector(selector);
+        const $$ = (selector) => [...doc.querySelectorAll(selector)];
+        const button = (name) => $$("button").find((b) => b.textContent.trim() === name || b.getAttribute("aria-label") === name);
+        const input = (el, value) => {
+          el.value = String(value);
+          el.dispatchEvent(new win.Event("input", { bubbles: true }));
+        };
+        const stepLine = (index) => $("#phrase-text").value.split("\n").filter((line) => line.startsWith("    {"))[index];
+        let badPaths = 0;
+        const checkPaths = () => {
+          badPaths += $$("#stage path").filter((path) => /NaN|Infinity|undefined/.test(path.getAttribute("d") ?? "")).length;
+        };
+
+        // Every phrase, each of its steps, and its whole timeline.
+        seen.phrases = $$(".preset-button").map((preset) => {
+          preset.click();
+          checkPaths();
+          const summary = {
+            name: preset.textContent,
+            pressed: preset.getAttribute("aria-pressed"),
+            count: $("#step-count").textContent,
+            solo: $("#stage-panel").classList.contains("is-solo"),
+            canEditB: !$("#fencer-b").disabled,
+            camera: $("#camera").value,
+            status: $("#phrase-status").textContent,
+            time: $("#timecode").textContent,
+          };
+          for (const step of $$(".step-button")) {
+            step.click();
+            checkPaths();
+          }
+          const timeline = $("#timeline");
+          for (let t = 0; t <= Number(timeline.max); t += 25) {
+            input(timeline, t);
+            checkPaths();
+          }
+          summary.scrubbedTo = $("#step-count").textContent;
+          return summary;
+        });
+
+        // Stepping pauses on a step.
+        button("Advance, lunge, head cut").click();
+        button("Next step").click();
+        button("Next step").click();
+        button("Next step").click();
+        button("Previous step").click();
+        seen.stepped = {
+          count: $("#step-count").textContent,
+          label: $("#step-label").textContent,
+          play: $("#play-button").getAttribute("aria-label"),
+          announced: $("#announcer").textContent,
+        };
+
+        // Fencer B on that step: a pose from the library, two sliders, a reset.
+        button("Edit fencer B").click();
+        $$(".pose-button").find((b) => b.textContent.endsWith("parry3")).click();
+        seen.posed = {
+          line: stepLine(2),
+          pressed: $$(".pose-button[aria-pressed=true]").map((b) => b.textContent),
+          editing: $("#edit-title").textContent,
+        };
+        input($("#joint-blade"), 100);
+        input($("#joint-x"), 200);
+        seen.adjusted = { line: stepLine(2), said: $("#joint-blade").getAttribute("aria-valuetext") };
+        button("Reset this step's adjustments").click();
+        seen.reset = stepLine(2);
+        checkPaths();
+
+        // The view: toggles, camera, speed, play and pause.
+        const toggles = ["Motion ghosts", "Blade path", "Ink texture", "Loop"];
+        for (const name of toggles) button(name).click();
+        seen.toggledOff = {
+          pressed: $$("[data-toggle]").map((b) => b.getAttribute("aria-pressed")),
+          ghostsHidden: $("#ghosts").classList.contains("hidden"),
+          trailsHidden: $("#trails").classList.contains("hidden"),
+          inkFilter: $("#ink").getAttribute("filter"),
+        };
+        for (const name of toggles) button(name).click();
+        seen.inkFilter = $("#ink").getAttribute("filter");
+        const floor = $("#floor").getAttribute("d");
+        input($("#camera"), -40);
+        seen.camera = { shown: $("#camera-value").textContent, floorTurned: $("#floor").getAttribute("d") !== floor };
+        checkPaths();
+        button("¼×").click();
+        seen.speed = $$("[data-speed]").map((b) => b.getAttribute("aria-pressed"));
+        button("Play").click();
+        seen.playing = $("#play-button").getAttribute("aria-label");
+        button("Pause").click();
+        seen.paused = $("#play-button").getAttribute("aria-label");
+
+        // Phrase text: broken, then with a pose the library lacks, then solo.
+        const text = $("#phrase-text");
+        input(text, '{"steps": [');
+        seen.broken = {
+          status: $("#phrase-status").textContent,
+          isError: $("#phrase-status").classList.contains("phrase-status--error"),
+          kept: text.value,
+          count: $("#step-count").textContent,
+        };
+        input(text, '{"camera": 90, "steps": [{"label": "Feint", "hold": 200, "A": {"pose": "flunge", "x": 20}}, {"label": "<b>Cut</b>", "ms": 300, "A": {"pose": "riposte"}}]}');
+        seen.unknown = {
+          status: $("#phrase-status").textContent,
+          isWarning: $("#phrase-status").classList.contains("phrase-status--warn"),
+          count: $("#step-count").textContent,
+          camera: $("#camera").value,
+          labels: $$(".step-button").map((b) => b.textContent),
+          markup: $$("#steps b").length,
+        };
+        input(text, '{"solo": true, "steps": [{"label": "Alone", "A": {"pose": "extend"}}]}');
+        button("Edit fencer B").click();
+        seen.solo = {
+          solo: $("#stage-panel").classList.contains("is-solo"),
+          canEditB: !$("#fencer-b").disabled,
+          editing: $("#edit-title").textContent,
+          status: $("#phrase-status").textContent,
+        };
+        checkPaths();
+        seen.badPaths = badPaths;
+      }
+    </script>
+  </body>
+</html>
