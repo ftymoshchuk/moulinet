@@ -1,0 +1,59 @@
+# Publish site/ to GitHub Pages, at https://ftymoshchuk.github.io/moulinet/.
+#
+# The site is the folder as it stands, with no build step: this checks it and
+# hands it to Pages. A push to main publishes, and so does "Run workflow" on
+# the Actions tab. Pages must be set to deploy from GitHub Actions (Settings >
+# Pages > Source), which scripts/protect-repo.sh does.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Read-only by default. Only the deploy job widens this, to what publishing needs.
+permissions:
+  contents: read
+
+# One publish at a time. One in progress is never cancelled, so the site is
+# never left half-deployed; a newer push publishes after it.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    # A fork has its own Pages site, set up or not; it must not publish this one.
+    if: github.repository == 'ftymoshchuk/moulinet'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      # main only takes changes that passed CI, but the files about to be
+      # published are tested once more, as they are.
+      - name: Test
+        run: npm test
+        env:
+          REQUIRE_BROWSER: "1"
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site/
+
+  deploy:
+    needs: upload
+    runs-on: ubuntu-latest
+    permissions:
+      # The OIDC token Pages checks the deployment with, and the deployment itself.
+      id-token: write
+      pages: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
