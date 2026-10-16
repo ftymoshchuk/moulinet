@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'" />
+    <title>Sabre Motion Lab</title>
+    <meta name="description" content="Poses are numbers, phrases are keyframes. Pick a sabre phrase, slow it down, reshape any moment." />
+    <meta property="og:title" content="Sabre Motion Lab" />
+    <meta property="og:description" content="Poses are numbers, phrases are keyframes. Pick a sabre phrase, slow it down, reshape any moment." />
+    <meta name="theme-color" content="#101214" />
+    <link rel="preload" href="fonts/big-shoulders-display-latin-variable.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="fonts/ibm-plex-sans-condensed-latin-400.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/styles.css" />
+    <script type="module" src="js/app.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to the stage</a>
+
+    <div class="page">
+      <header class="masthead">
+        <div class="masthead__title">
+          <h1>Sabre Motion Lab</h1>
+          <p class="masthead__tagline">Poses are numbers, phrases are keyframes. Pick a phrase, slow it down, reshape any moment.</p>
+        </div>
+        <div id="presets" class="presets" role="group" aria-label="Phrases"></div>
+      </header>
+
+      <noscript>
+        <p class="noscript">Sabre Motion Lab draws and plays its phrases with JavaScript. Turn it on to use the page.</p>
+      </noscript>
+
+      <main id="main" class="workspace">
+        <div class="workspace__main">
+          <section id="stage-panel" class="panel panel--stage" aria-label="Stage">
+            <div class="stage__head">
+              <div class="stage__step">
+                <span id="step-count" class="mono stage__count"></span>
+                <h2 id="step-label" class="stage__label"></h2>
+              </div>
+              <div class="stage__meta">
+                <span class="legend"><span class="legend__dot legend__dot--a" aria-hidden="true"></span>A</span>
+                <span id="legend-b" class="legend fencer-b"><span class="legend__dot legend__dot--b" aria-hidden="true"></span>B</span>
+                <span id="timecode" class="mono stage__time"></span>
+              </div>
+            </div>
+
+            <svg id="stage" class="stage__view" viewBox="-80 -236 420 254" role="img" aria-label="Pen-and-ink side view of the fencing phrase, animated">
+              <defs>
+                <filter id="ink-texture" x="-10%" y="-10%" width="120%" height="120%">
+                  <feTurbulence type="fractalNoise" baseFrequency="0.08" numOctaves="2" seed="3" result="noise" />
+                  <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.2" xChannelSelector="R" yChannelSelector="G" />
+                </filter>
+              </defs>
+              <path id="floor" class="floor" />
+              <g id="ghosts" class="ghosts">
+                <g id="ghosts-b" class="fencer-b"></g>
+                <g id="ghosts-a"></g>
+              </g>
+              <g id="ink" class="ink">
+                <path id="ground-a" class="ground" />
+                <path id="ground-b" class="ground fencer-b" />
+                <g id="body-a" class="fencer fencer--a"></g>
+                <g id="body-b" class="fencer fencer--b fencer-b"></g>
+                <g id="blade-a" class="fencer fencer--a"></g>
+                <g id="blade-b" class="fencer fencer--b fencer-b"></g>
+              </g>
+              <g id="trails" class="trails">
+                <path id="trail-full-b" class="trail trail--b trail--full fencer-b" />
+                <path id="trail-full-a" class="trail trail--a trail--full" />
+                <path id="trail-done-b" class="trail trail--b fencer-b" />
+                <path id="trail-done-a" class="trail trail--a" />
+              </g>
+            </svg>
+
+            <div class="transport">
+              <div class="transport__buttons">
+                <button id="prev-button" class="icon-button" type="button" aria-label="Previous step">
+                  <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" focusable="false" class="icon icon--outline"><path d="M18 6 L10 12 L18 18 Z" /><path d="M6 6 L6 18" /></svg>
+                </button>
+                <button id="play-button" class="play-button" type="button" aria-label="Pause">
+                  <svg id="pause-icon" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" focusable="false" class="icon icon--pause"><path d="M8 5 L8 19" /><path d="M16 5 L16 19" /></svg>
+                  <svg id="play-icon" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" focusable="false" class="icon icon--play hidden"><path d="M8 5 L19 12 L8 19 Z" /></svg>
+                </button>
+                <button id="next-button" class="icon-button" type="button" aria-label="Next step">
+                  <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" focusable="false" class="icon icon--outline"><path d="M6 6 L14 12 L6 18 Z" /><path d="M18 6 L18 18" /></svg>
+                </button>
+              </div>
+
+              <div class="speed" role="group" aria-labelledby="speed-label">
+                <span id="speed-label" class="control-label">Speed</span>
+                <div class="speed__options">
+                  <button class="speed-button" type="button" data-speed="0.25" aria-pressed="false">¼×</button>
+                  <button class="speed-button" type="button" data-speed="0.5" aria-pressed="true">½×</button>
+                  <button class="speed-button" type="button" data-speed="1" aria-pressed="false">1×</button>
+                </div>
+              </div>
+
+              <div class="toggles">
+                <button class="toggle" type="button" data-toggle="ghosts" aria-pressed="true"><span class="toggle__dot" aria-hidden="true"></span>Motion ghosts</button>
+                <button class="toggle" type="button" data-toggle="trail" aria-pressed="true"><span class="toggle__dot" aria-hidden="true"></span>Blade path</button>
+                <button class="toggle" type="button" data-toggle="ink" aria-pressed="true"><span class="toggle__dot" aria-hidden="true"></span>Ink texture</button>
+                <button class="toggle" type="button" data-toggle="loop" aria-pressed="true"><span class="toggle__dot" aria-hidden="true"></span>Loop</button>
+              </div>
+
+              <div class="camera">
+                <label class="control-label" for="camera">Camera</label>
+                <input id="camera" type="range" min="-60" max="60" step="1" value="0" />
+                <span id="camera-value" class="mono camera__value"></span>
+              </div>
+            </div>
+
+            <input id="timeline" class="timeline" type="range" aria-label="Timeline" min="0" max="1" step="1" value="0" />
+
+            <div id="steps" class="steps" role="group" aria-label="Steps"></div>
+            <p id="announcer" class="visually-hidden" role="status"></p>
+          </section>
+
+          <section class="panel panel--phrase" aria-labelledby="phrase-title">
+            <div class="panel__head">
+              <h3 id="phrase-title" class="panel__title">Phrase data</h3>
+              <span id="phrase-status" class="phrase-status" role="status"></span>
+            </div>
+            <p id="phrase-help" class="panel__intro">The whole animation is this text: a label per step, timing in milliseconds, a pose name for each fencer, and any joint adjustments. Edit it here, or paste in a phrase.</p>
+            <textarea id="phrase-text" class="phrase-text" aria-labelledby="phrase-title" aria-describedby="phrase-help phrase-status" wrap="off" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+          </section>
+        </div>
+
+        <aside class="workspace__side" aria-label="Adjust">
+          <section class="panel panel--adjust" aria-labelledby="adjust-title">
+            <div class="adjust__head">
+              <div class="adjust__heading">
+                <h3 id="adjust-title" class="panel__title">Adjust this moment</h3>
+                <span id="edit-title" class="adjust__target"></span>
+              </div>
+              <div class="fencer-pick">
+                <button id="fencer-a" class="fencer-button" type="button" data-fencer="A" aria-label="Edit fencer A" aria-pressed="true">A</button>
+                <button id="fencer-b" class="fencer-button" type="button" data-fencer="B" aria-label="Edit fencer B" aria-pressed="false">B</button>
+              </div>
+            </div>
+            <div id="joints" class="joints"></div>
+            <button id="reset-step" class="outline-button" type="button">Reset this step's adjustments</button>
+          </section>
+
+          <section class="panel panel--poses" aria-labelledby="poses-title">
+            <h3 id="poses-title" class="panel__title">Pose library</h3>
+            <p class="panel__intro">Tap a pose to put it on the current step for the fencer you are editing.</p>
+            <div id="poses" class="poses"></div>
+          </section>
+        </aside>
+      </main>
+
+      <footer class="site-footer">
+        <p>Sabre Motion Lab is open source: <a href="https://github.com/ftymoshchuk/moulinet">read the code on GitHub</a>.</p>
+      </footer>
+    </div>
+  </body>
+</html>

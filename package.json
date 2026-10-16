@@ -1,0 +1,20 @@
+{
+  "name": "moulinet",
+  "private": true,
+  "description": "Sabre Motion Lab: sabre phrases drawn in pen and ink, to slow down, step through and reshape in the browser.",
+  "homepage": "https://ftymoshchuk.github.io/moulinet/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ftymoshchuk/moulinet.git"
+  },
+  "bugs": "https://github.com/ftymoshchuk/moulinet/issues",
+  "license": "Apache-2.0 AND OFL-1.1",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node scripts/serve.js",
+    "test": "node --test"
+  }
+}

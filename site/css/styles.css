@@ -1,0 +1,901 @@
+/*
+ * Sabre Motion Lab: a dark workbench around a sheet of paper.
+ *
+ * The controls sit on near-black panels with one amber accent; the stage is a
+ * warm paper card where the fencers are drawn in ink. Condensed type keeps the
+ * many labels short: Big Shoulders Display for headings, IBM Plex Sans
+ * Condensed for text and IBM Plex Mono for numbers, all bundled with the page.
+ */
+
+@font-face {
+  font-family: "Big Shoulders Display";
+  src: url("../fonts/big-shoulders-display-latin-variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Sans Condensed";
+  src: url("../fonts/ibm-plex-sans-condensed-latin-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Sans Condensed";
+  src: url("../fonts/ibm-plex-sans-condensed-latin-500.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Sans Condensed";
+  src: url("../fonts/ibm-plex-sans-condensed-latin-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("../fonts/ibm-plex-mono-latin-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ---------- Tokens ---------- */
+
+:root {
+  --bg: #101214;
+  --panel: #16191c;
+  --panel-line: #262b30;
+  --selected: #262b30;
+  --line: #343a40;
+  --line-quiet: #2c3136;
+  --line-hover: #59616a;
+  --field: #0f1113;
+  --field-line: #2c3238;
+  --text: #ece8df;
+  --text-soft: #d5d1c8;
+  --text-field: #dcd8cf;
+  --text-quiet: #b4bbc2;
+  --muted: #9ba3ab;
+  --dot-off: #4a5158;
+  --accent: #f2b33d;
+  --accent-hover: #ffd27a;
+  --accent-ink: #1a1408;
+  --ok: #8fd19e;
+  --warn: #f2b33d;
+  --error: #ff8a7a;
+
+  /* The stage: paper, ink and two fencers' whites. */
+  --paper: #e9e6df;
+  --floor: #cbc5b9;
+  --ghost: #a39c8f;
+  --ink: #1d1b18;
+  --hair-grey: #7e776c;
+  --fencer-a: #f6f3ec;
+  --fencer-b: #ddd5c6;
+  --trail-a: #9a3a27;
+  --trail-b: #2f4f7f;
+
+  --font-display: "Big Shoulders Display", "Arial Narrow", sans-serif;
+  --font-body: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+}
+
+/* ---------- Base ---------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+a {
+  color: var(--accent);
+  text-underline-offset: 0.2em;
+}
+
+a:hover {
+  color: var(--accent-hover);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+input[type="range"] {
+  accent-color: var(--accent);
+  margin: 0;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+[hidden],
+.hidden {
+  display: none !important;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.skip-link {
+  position: absolute;
+  left: 16px;
+  top: -100px;
+  z-index: 10;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  top: 16px;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* ---------- Page ---------- */
+
+.page {
+  box-sizing: content-box;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 28px 24px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.masthead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 24px;
+}
+
+.masthead__title {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.masthead h1 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 46px;
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.masthead__tagline {
+  font-size: 16px;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.noscript {
+  color: var(--warn);
+  font-size: 16px;
+}
+
+.workspace {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+/* Side by side when there is room for both, otherwise stacked; the stage
+   column takes nearly all the width the side column does not need. */
+.workspace__main {
+  flex: 999 1 640px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.workspace__side {
+  flex: 1 1 340px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.site-footer {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* ---------- Panels ---------- */
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-line);
+  border-radius: 16px;
+  padding: 18px 20px 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel--stage {
+  gap: 14px;
+}
+
+.panel--phrase {
+  gap: 10px;
+}
+
+.panel--adjust {
+  gap: 16px;
+}
+
+.panel--poses {
+  gap: 12px;
+}
+
+.panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px 16px;
+}
+
+.panel__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.panel__intro {
+  font-size: 15px;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+.control-label {
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ---------- Buttons ---------- */
+
+/* Phrase presets, speeds and the fencer picker: amber when chosen. */
+.preset-button,
+.speed-button,
+.fencer-button {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+}
+
+.preset-button[aria-pressed="true"],
+.speed-button[aria-pressed="true"],
+.fencer-button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.preset-button {
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.speed-button {
+  min-width: 50px;
+  height: 44px;
+  padding: 0 8px;
+  border-radius: 10px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+.fencer-button {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.fencer-button:disabled {
+  opacity: 0.35;
+}
+
+/* Toggles, steps and poses: outlined in amber when on. */
+.toggle,
+.step-button,
+.pose-button {
+  border: 1px solid var(--line-quiet);
+  background: transparent;
+  color: var(--text);
+  border-radius: 10px;
+  font-size: 14px;
+  text-align: left;
+}
+
+.toggle {
+  border-color: var(--line);
+}
+
+.toggle[aria-pressed="true"],
+.step-button[aria-pressed="true"],
+.pose-button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--selected);
+}
+
+.icon-button,
+.outline-button {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+}
+
+.preset-button:not([aria-pressed="true"]):hover,
+.speed-button:not([aria-pressed="true"]):hover,
+.fencer-button:not([aria-pressed="true"]):enabled:hover,
+.toggle:not([aria-pressed="true"]):hover,
+.step-button:not([aria-pressed="true"]):hover,
+.pose-button:not([aria-pressed="true"]):hover,
+.icon-button:hover,
+.outline-button:hover {
+  border-color: var(--line-hover);
+}
+
+.icon-button {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.play-button {
+  width: 60px;
+  height: 44px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.play-button:hover {
+  background: var(--accent-hover);
+}
+
+.icon {
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.icon--outline {
+  fill: none;
+  stroke-width: 2;
+}
+
+.icon--pause {
+  fill: none;
+  stroke-width: 2.6;
+}
+
+.icon--play {
+  fill: currentColor;
+  stroke-width: 1.5;
+}
+
+.outline-button {
+  align-self: flex-start;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+/* ---------- Stage ---------- */
+
+.stage__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 20px;
+}
+
+.stage__step {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+}
+
+.stage__count,
+.stage__time {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.stage__count {
+  color: var(--muted);
+}
+
+.stage__label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 1.05;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.stage__meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend__dot {
+  box-sizing: content-box;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid var(--text);
+}
+
+.legend__dot--a {
+  background: var(--fencer-a);
+}
+
+.legend__dot--b {
+  background: var(--fencer-b);
+}
+
+.stage__view {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--paper);
+  border-radius: 10px;
+}
+
+/* A phrase for one fencer hides everything of fencer B. */
+.panel--stage.is-solo .fencer-b {
+  display: none;
+}
+
+.floor {
+  fill: none;
+  stroke: var(--floor);
+  stroke-width: 0.45;
+}
+
+.ghosts {
+  fill: none;
+  stroke: var(--ghost);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ghost {
+  stroke-width: 1.2;
+}
+
+.ghost--1 {
+  opacity: 0.8;
+}
+
+.ghost--2 {
+  opacity: 0.6;
+}
+
+.ghost--3 {
+  opacity: 0.4;
+}
+
+.ghost--4 {
+  opacity: 0.25;
+}
+
+.ghost-blade {
+  stroke-width: 0.8;
+}
+
+.ghost-blade--1 {
+  opacity: 0.85;
+}
+
+.ghost-blade--2 {
+  opacity: 0.65;
+}
+
+.ghost-blade--3 {
+  opacity: 0.45;
+}
+
+.ghost-blade--4 {
+  opacity: 0.3;
+}
+
+.ink {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ground {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 0.6;
+}
+
+.fencer--a {
+  --fencer: var(--fencer-a);
+  --hair: var(--ink);
+}
+
+.fencer--b {
+  --fencer: var(--fencer-b);
+  --hair: var(--hair-grey);
+}
+
+/* Each layer is drawn twice: outlined, then filled again over the inner half
+   of its own outline, so overlapping parts read as one silhouette. */
+.figure__outline {
+  fill: var(--fencer);
+  stroke: var(--ink);
+  stroke-width: 2.6;
+}
+
+.figure__outline--head {
+  stroke-width: 2.4;
+}
+
+.figure__fill {
+  fill: var(--fencer);
+  stroke: none;
+}
+
+.figure__hair {
+  fill: var(--hair);
+  stroke: none;
+}
+
+.figure__detail {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 0.6;
+}
+
+.blade__steel {
+  fill: var(--ink);
+  stroke: none;
+}
+
+.blade__guard {
+  fill: var(--fencer);
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+
+.blade__bow {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 0.9;
+}
+
+.trails {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.trail {
+  stroke-width: 1.3;
+  stroke-dasharray: 0.1 2.6;
+}
+
+.trail--full {
+  stroke-width: 1.1;
+  opacity: 0.35;
+}
+
+.trail--a {
+  stroke: var(--trail-a);
+}
+
+.trail--b {
+  stroke: var(--trail-b);
+}
+
+/* ---------- Transport ---------- */
+
+.transport {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+}
+
+.transport__buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.speed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.speed__options {
+  display: flex;
+  gap: 4px;
+}
+
+.toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.toggle {
+  height: 44px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toggle__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dot-off);
+}
+
+.toggle[aria-pressed="true"] .toggle__dot {
+  background: var(--accent);
+}
+
+.camera {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 220px;
+  min-width: 200px;
+}
+
+.camera input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.camera__value {
+  font-size: 13px;
+  min-width: 40px;
+  text-align: right;
+}
+
+.timeline {
+  width: 100%;
+}
+
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.step-button {
+  min-height: 44px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-quiet);
+}
+
+.step-button[aria-pressed="true"] {
+  color: var(--text);
+}
+
+.step-button__number {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---------- Phrase data ---------- */
+
+.phrase-status {
+  font-size: 14px;
+  color: var(--ok);
+}
+
+.phrase-status--warn {
+  color: var(--warn);
+}
+
+.phrase-status--error {
+  color: var(--error);
+}
+
+.phrase-text {
+  width: 100%;
+  height: 300px;
+  resize: vertical;
+  margin: 0;
+  padding: 14px;
+  background: var(--field);
+  color: var(--text-field);
+  border: 1px solid var(--field-line);
+  border-radius: 10px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  white-space: pre;
+  scrollbar-color: var(--line) var(--field);
+}
+
+/* ---------- Adjust this moment ---------- */
+
+.adjust__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.adjust__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.adjust__target {
+  font-size: 14px;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+.fencer-pick {
+  display: flex;
+  gap: 4px;
+}
+
+.joints {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.joint {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.joint__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.joint__row label {
+  color: var(--text-soft);
+}
+
+.joint__value {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.joint input {
+  width: 100%;
+}
+
+/* ---------- Pose library ---------- */
+
+.poses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pose-button {
+  min-height: 44px;
+  padding: 6px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+
+.pose-button__key {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--muted);
+}
