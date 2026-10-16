@@ -1,0 +1,9 @@
+# Version updates for the actions the workflows use. Each new release arrives
+# as a pull request, which CI checks like any other change. The site itself has
+# no dependencies, so there is nothing else to update.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
