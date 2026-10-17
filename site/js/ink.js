@@ -1,6 +1,6 @@
-// Pen-and-ink primitives, as SVG path data: smooth curves through points,
-// tapered brush strokes, and hatching. Everything takes and gives plain numbers,
-// so it can be run and checked without a page.
+// Pen-and-ink primitives, as SVG path data: smooth curves through points and
+// tapered brush strokes. Everything takes and gives plain numbers, so it can be
+// run and checked without a page.
 
 const RAD = Math.PI / 180;
 
@@ -189,24 +189,4 @@ export function brush(points, width, swell = 0.45) {
 /** A thin line through points, as a curve that is not closed. */
 export function line(points) {
   return curve(points, false);
-}
-
-/**
- * Short strokes side by side along the line from `a` to `b`, each leaving it
- * at `angle` degrees from the line's normal and `length` long, growing and
- * shrinking toward the ends of the band, like the hatching that shades a fold.
- */
-export function hatch(a, b, { count = 6, length = 5, angle = 35, width = 0.7, side = 1 } = {}) {
-  const along = unit(a, b);
-  const normal = mul(perp(along), side);
-  let d = "";
-  for (let i = 0; i < count; i++) {
-    const t = count === 1 ? 0.5 : i / (count - 1);
-    const start = lerp(a, b, t);
-    // Longest in the middle, short at the ends.
-    const l = length * (0.45 + 0.55 * Math.sin(t * Math.PI));
-    const dir = add(mul(normal, Math.cos(angle * RAD)), mul(along, Math.sin(angle * RAD)));
-    d += brush([start, add(start, mul(dir, l))], width, 0.3);
-  }
-  return d;
 }

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { along, chestHatch, groundStrokes, hemShadow, kneeFolds, sleeveFolds, sockWrinkles, thighFolds } from "../site/js/folds.js";
-import { area, blob, brush, curve, dist, hatch, lerp, line, perp, rotate, unit, wound } from "../site/js/ink.js";
+import { area, blob, brush, curve, dist, lerp, line, perp, rotate, unit, wound } from "../site/js/ink.js";
 import { boxOf, readPath } from "./path-data.js";
 
 // Path data is written to a tenth of a unit, so a point is that close to where it was given.
@@ -104,15 +104,6 @@ test("a brush stroke is wound the same way whichever way it runs, so strokes tha
   }
   assert.equal(ways.size, 1, "one way round");
   assert.ok(!ways.has(0), "and not a flat one");
-});
-
-test("hatching is a row of strokes, longest in the middle of the band", () => {
-  const strokes = readPath(hatch([0, 0], [10, 0], { count: 5, length: 6 }));
-  assert.equal(strokes.length, 5);
-  const lengths = strokes.map((s) => dist(s.points[0], s.points[4]));
-  assert.ok(lengths[2] > lengths[0] && lengths[2] > lengths[4]);
-  near(lengths[2], 6, 0.2, "the longest is the length asked for");
-  assert.equal(readPath(hatch([0, 0], [10, 0], { count: 1 })).length, 1);
 });
 
 test("the vector helpers", () => {
