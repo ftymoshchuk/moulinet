@@ -26,7 +26,7 @@ test("every phrase and every base posture draws clean paths at every moment, fro
         const { A, B } = poseAt(timeline, t);
         const drawn = [
           inkFigure(A, 1, camera, { backView: true }),
-          inkFigure(B, -1, camera, { bald: true }),
+          inkFigure(B, -1, camera, { older: true }),
           stickFigure(A, 1, camera),
           stickFigure(B, -1, camera),
         ];
