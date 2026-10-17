@@ -52,7 +52,7 @@ export function thighFolds(W, hip, knee, ref, seed = 1) {
     const a = f.at(t0, c + (r() - 0.5) * 2);
     const b = f.at(t1, c * (0.35 + r() * 0.3));
     const mid = f.at((t0 + t1) / 2, c * 0.75 + (r() - 0.5) * 4);
-    d += stroke(W, [a, mid, b], 0.55 + r() * 0.5, 0.3 + r() * 0.2);
+    d += stroke(W, [a, mid, b], 0.4 + r() * 0.4, 0.3 + r() * 0.2);
   });
   return d;
 }

@@ -34,12 +34,13 @@ lunge in flight, to the head and to the chest; parries 3 and 5; and the
 riposte.
 
 **Creator.** Make a scene of your own. Start from a blank one with **New
-scene**, or from any scene in the library with **Edit a copy**. Add and remove
-steps, name them, time them, give each fencer a pose and reshape it, then name
-the scene, say where it was noted, add a reference link and keep it with
-**Save to library**. A scene can be for one fencer or two. It asks before it
-replaces a scene with changes that are not saved, and before you leave the
-page with one.
+scene**, or from a scene in the library: a built-in one opens as a copy, with
+**Edit a copy in the Creator**, and one of your own opens as it is, with **Edit
+in the Creator**, where **Save changes** writes over it. Add and remove steps,
+name them, time them, give each fencer a pose and reshape it, then name the
+scene, say where it was noted, add a reference link and keep it with **Save to
+library**. A scene can be for one fencer or two. It asks before it replaces a
+scene with changes that are not saved, and before you leave the page with one.
 
 All three share the stage, and its **camera**, which turns the view up to 60°
 either way to see a blade come toward you or swing away. The library and the
@@ -61,6 +62,19 @@ In the Creator there is more:
 - **Phrase data:** the whole scene as text. Edit it in place or paste one in;
   it applies as you type, and says why when it can't. The fields above it and
   the text are the same thing, and follow each other.
+
+## The drawing
+The fencers are not pictures. Each is worked out from a pose, a few numbers for
+the joints, and drawn in the browser as pen and ink: a line round the body,
+and brush strokes that swell and end in points for the folds of the breeches,
+the wrinkles of a stocking, the shadow under the jersey and the marks on the
+floor. The look follows the line illustrations of old sabre training books, as
+a model to draw from; no scan or trace of any of them is in this repository.
+
+A young fencer wears knickerbockers and long stockings, an older one loose
+trousers gathered at the ankle. The strokes are placed by rule and never by
+chance, so a figure moves as one drawing and does not flicker, and a pose that
+is held is drawn once.
 
 ## Writing a phrase
 A scene is a phrase: JSON, with a few words about where it comes from. **Phrase
@@ -162,8 +176,9 @@ npm test
 There is nothing to install: the tests use Node's own test runner. They cover
 the timeline and its maths, the edits the Creator makes to a scene, the saved
 scenes and the check that a reference link is a web address, the base postures,
-the drawing (every phrase and posture at every moment from five camera angles,
-checked for broken path data), and the published files (only relative links to
+the drawing (the curves and brush strokes, the parts of a body, and every
+phrase and posture at every moment from five camera angles, checked for broken
+path data and for shapes that do not merge), and the published files (only relative links to
 files that exist, no outside requests, every element the scripts need). Seven
 more run in a real browser: headless Chrome or Chromium loads the page, then a
 driver page works every control of every mode, with hostile input among it, and
@@ -183,7 +198,11 @@ Project layout:
 - `site/index.html` and `site/css/styles.css`: the page
 - `site/js/app.js`: the modes, the controls, and drawing each frame
 - `site/js/phrase.js`: phrases as data: timeline, in-betweens, text, edits
-- `site/js/figure.js`: the pen-and-ink fencers, as SVG path data
+- `site/js/figure.js`: a pose's skeleton, the camera, and the fencer drawn from them
+- `site/js/body.js`: the parts of a fencer: trunk, arms, legs, head and sabre
+- `site/js/parts.js`: the head, hands and shoe drawn by hand, as points
+- `site/js/folds.js`: the ink work: cloth folds, hems, stockings, floor strokes
+- `site/js/ink.js`: pen and ink as SVG path data: curves and tapered brush strokes
 - `site/js/library.js`: the poses, the built-in scenes and the sliders
 - `site/js/bases.js`: the base postures, in words
 - `site/js/scenes.js`: reference links, and the scenes saved on this device
