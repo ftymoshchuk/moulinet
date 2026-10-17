@@ -373,15 +373,90 @@ test("in a browser, scenes are saved on this device, listed in the library with 
   assert.deepEqual(seen.editSaved, { asked: 1, name: "Lunge to the head", save: "Save changes", copyHidden: false, showing: ["creator"] });
   assert.deepEqual(seen.declined, { asked: 2, mode: ["library"], note: "Changed in the Creator", title: "Lunge to the head" });
   assert.deepEqual(seen.accepted, { asked: 3, mode: ["creator"], name: "Lunge to the head", note: "Arm first." });
-  assert.deepEqual(seen.overwrote, { count: 3, status: "Saved to the practice library on this device." });
+  // Three scenes, and the one with no steps, which the page cannot show and so keeps as it was.
+  assert.deepEqual(seen.overwrote, { count: 4, status: "Saved to the practice library on this device." });
   // Closing the page asks only while the scene has changes that are not saved.
   assert.deepEqual(seen.leaving, { saved: false, unsaved: true, backToSaved: false });
   assert.deepEqual(seen.cleanEdit, { asked: 0, mode: ["creator"] });
 
   assert.deepEqual(seen.deleteDeclined, { cards: 3, asked: 'Delete "<b>Evil</b>" from this device?' });
-  assert.deepEqual(seen.deleted, { cards: 2, stored: 2, title: "Advance, lunge, head cut", focus: "library" });
-  assert.deepEqual(seen.allDeleted, { cards: 0, stored: 0, emptyShown: true, builtIn: 4 });
+  assert.deepEqual(seen.deleted, { cards: 2, stored: 3, title: "Advance, lunge, head cut", focus: "library" });
+  assert.deepEqual(seen.allDeleted, { cards: 0, stored: 1, emptyShown: true, builtIn: 4 }, "all that is left is the entry it cannot show");
   assert.deepEqual(seen.elsewhere, { cards: 0, title: "Advance, lunge, head cut" }, "a scene deleted in another tab leaves this one's list");
   const replace = "The scene in the Creator has changes that are not saved. Replace it?";
   assert.deepEqual(seen.asked, [replace, replace, replace, replace, replace, 'Delete "<b>Evil</b>" from this device?', 'Delete "<b>Evil</b>" from this device?', 'Delete "Lunge to the head" from this device?', 'Delete "Lunge to the head" from this device?']);
+});
+
+test("in a browser, text that is not a phrase yet keeps the fields still, and what was typed is not lost", { skip, timeout: 120_000 }, async () => {
+  const { seen } = await drive();
+  // A new scene: every control that edits it is on, but for the move time of its first step and removing its only one.
+  assert.deepEqual(seen.fieldsOn, { total: 33, off: 2 });
+  assert.match(seen.onHold.status, /^Not applied: .+\. The fields are on hold until it is\.$/);
+  assert.deepEqual({ ...seen.onHold, status: "" }, {
+    total: 33,
+    off: 33,
+    status: "",
+    note: "On hold: the phrase data is not applied yet.",
+    noteIsWarning: true,
+    focus: "phrase-text",
+  }, "all of them are off, and the one that had the focus gave it to the text");
+  assert.deepEqual({ ...seen.keptOnHold, status: "" }, { text: '{"name": "Mine", "steps": [', name: "Kept name", count: "01 / 01", same: true, status: "" }, "a change that gets through anyway is dropped");
+  assert.match(seen.keptOnHold.status, /^Not applied: /);
+  assert.deepEqual(seen.holdSave, { status: "Fix the phrase data first: it is not applied yet.", saved: 0 });
+  assert.deepEqual(seen.resumed, { total: 33, off: 0, status: "Applied: 2 steps, 0.00 s", note: "", name: "Mine", steps: 2 }, "once it is a phrase they are on again, showing it");
+  assert.deepEqual(seen.resumedEdit, { name: '  "name": "Mine, renamed",', text: ["{", '  "name": "Mine, renamed",', '  "steps": ['] });
+});
+
+test("in a browser, text longer than a field allows is not saved, and longer text already saved is shown cut short", { skip, timeout: 120_000 }, async () => {
+  const { seen } = await drive();
+  const refused = (status, focus) => ({ status, isError: true, focus, added: 0 });
+  assert.deepEqual(seen.longName, refused("The name can be up to 100 characters, and this one has 101.", "meta-name"));
+  assert.deepEqual(seen.longEvent, refused("The event can be up to 160 characters, and this one has 161.", "meta-event"));
+  assert.deepEqual(seen.longNote, refused("The note can be up to 1000 characters, and this one has 1001.", "meta-note"));
+  assert.deepEqual(seen.longLink, refused("The reference link can be up to 2000 characters, and this one has 2010.", "meta-reference"));
+  assert.deepEqual(seen.longLabel, refused("The label of step 2 can be up to 100 characters, and this one has 101.", "step-name"));
+  // As long as each may be is saved.
+  assert.deepEqual({ status: seen.longest.status, isError: seen.longest.isError, added: seen.longest.added }, { status: "Saved to the practice library on this device.", isError: false, added: 1 });
+  // Thirty thousand characters of each, written into storage behind the page's back.
+  assert.deepEqual(seen.huge, { card: 100, cardEvent: 160, title: 100, titleEnd: "…", event: 160, note: 1000, stage: 100, stepButton: 102, other: "02Two" });
+});
+
+test("in a browser, scenes saved by a newer version of the page are left alone", { skip, timeout: 120_000 }, async () => {
+  const { seen } = await drive();
+  assert.deepEqual(seen.newer, {
+    cards: 0,
+    status: "The scenes on this device were saved by a newer version of this page, so this one leaves them alone. Reload the page to update it.",
+    isError: true,
+    untouched: true,
+  });
+});
+
+test("in a browser, two tabs never write over each other's scenes", { skip, timeout: 120_000 }, async () => {
+  const { seen } = await drive();
+  // Another tab changed the scene while this one had it open: this one's is kept beside it.
+  assert.deepEqual(seen.conflict, {
+    status: "The saved scene was changed in another tab, so this is saved as a new scene beside it, and theirs is kept.",
+    names: ["Shared, renamed", "Shared"],
+    notes: ["v1", "v2"],
+    save: "Save changes",
+  });
+  assert.deepEqual(seen.afterConflict, { notes: ["v3", "v2"], status: "Saved to the practice library on this device." }, "saved again, it changes its own copy and not theirs");
+  // Deleted there: a new scene from here on.
+  assert.deepEqual(seen.deletedElsewhere, {
+    save: "Save to library",
+    copyHidden: true,
+    status: "The saved scene was deleted in another tab, so saving now keeps this as a new scene.",
+  });
+  assert.deepEqual(seen.deletedThenSaved, { count: 1, status: "Saved to the practice library on this device.", save: "Save changes" });
+  assert.deepEqual(seen.deletedUnseen, { count: 1, status: "The saved scene was deleted in another tab, so this is saved as a new scene.", idChanged: true }, "even when this tab was not told");
+  // On stage in the library.
+  assert.deepEqual(seen.unchangedElsewhere, { count: "02 / 02", cards: 2 }, "a scene that did not change plays on");
+  assert.deepEqual(seen.changedElsewhere, { count: "01 / 03", title: "Live, changed", steps: 3, label: "One" }, "one that did is loaded again");
+});
+
+test("in a browser, the camera angle is a change that is not saved, and removing a step leaves the focus on the step", { skip, timeout: 120_000 }, async () => {
+  const { seen } = await drive();
+  assert.deepEqual(seen.cameraUnsaved, { opened: false, turned: true, declined: { asked: 1, name: "Camera" }, backAgain: false });
+  assert.deepEqual(seen.cameraSaved, { camera: 10, unsaved: false }, "the new angle is the one that is kept");
+  assert.deepEqual(seen.removeFocus, { count: "01 / 01", removeOff: true, focus: "step-name" });
 });

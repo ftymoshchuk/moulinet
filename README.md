@@ -23,7 +23,9 @@ plays; the four built in are an advance, lunge and head cut; a chest cut
 parried in 3 and riposted; a head attack parried in 5 and riposted to the head;
 and the moulinet, solo. The built-in scenes have no event or link, because
 there is no real bout behind them. Scenes you save in the Creator are listed
-below them, with whatever you noted, and a link opens in a new tab.
+below them, with whatever you noted, and a link opens in a new tab. They live
+in your browser's storage, so one saved or deleted in another tab of the page
+appears or goes here too.
 
 **Base postures.** One fencer, never a pair, in one posture at a time, with the
 posture described in words: what it is for, and the parts worth looking at.
@@ -40,7 +42,10 @@ in the Creator**, where **Save changes** writes over it. Add and remove steps,
 name them, time them, give each fencer a pose and reshape it, then name the
 scene, say where it was noted, add a reference link and keep it with **Save to
 library**. A scene can be for one fencer or two. It asks before it replaces a
-scene with changes that are not saved, and before you leave the page with one.
+scene with changes that are not saved, and before you leave the page with one;
+the camera angle counts, since a saved scene keeps it. If you save a scene that
+another tab changed or deleted after you opened it, yours is kept as a new scene
+beside theirs, and the Creator says so, so neither is lost.
 
 All three share the stage, and its **camera**, which turns the view up to 60°
 either way to see a blade come toward you or swing away. The library and the
@@ -61,7 +66,9 @@ In the Creator there is more:
 - **Poses:** eleven named poses to put on any step.
 - **Phrase data:** the whole scene as text. Edit it in place or paste one in;
   it applies as you type, and says why when it can't. The fields above it and
-  the text are the same thing, and follow each other.
+  the text are the same thing, and follow each other. While the text can't be
+  applied they wait, dimmed, so that nothing you typed is lost, and they take
+  it up again as soon as it applies.
 
 ## The drawing
 The fencers are not pictures. Each is worked out from a pose, a few numbers for
@@ -95,22 +102,28 @@ data** shows the one on stage, a step per line:
 }
 ```
 
-- `name`: the scene's title in the library.
-- `event`: where it was noted, in your own words: the competition and round, say.
-- `reference`: a link to where you can see it. Only `http` and `https`
-  addresses become links; anything else is shown as not a link.
-- `note`: whatever else is worth saying.
+- `name`: the scene's title in the library, up to 100 characters.
+- `event`: where it was noted, in your own words: the competition and round,
+  say. Up to 160 characters.
+- `reference`: a link to where you can see it, up to 2,000 characters. Only
+  `http` and `https` addresses become links; anything else is shown as not a
+  link.
+- `note`: whatever else is worth saying, up to 1,000 characters.
 - `camera`: the view in degrees from side on, -60 to 60. A pasted phrase with
   a new angle turns the view to it, and saving a scene keeps the angle it was
   seen from.
 - `solo`: `true` for one fencer. B leaves the stage, and every edit goes to A.
 - `steps`: the keyframes, in order, at least one.
 
+The fields hold typing to those lengths, and a scene is saved only within them:
+the Creator says which text is too long and takes you to it. Text that is longer
+anyway, pasted in or saved some other way, is shown cut short.
+
 Each step:
 
 | Key | What it does |
 |---|---|
-| `label` | The step's name on the stage and on its button. A step without one is called "Step" and its number. |
+| `label` | The step's name on the stage and on its button, up to 100 characters. A step without one is called "Step" and its number. |
 | `ms` | Milliseconds to move into this step from the one before. The first step is where the phrase starts, so its `ms` is ignored. |
 | `hold` | Milliseconds to stay on the step before the next move. |
 | `ease` | How the move runs: `"snap"` arrives fast and settles, `"linear"` keeps one speed; anything else eases in and out. |
@@ -175,15 +188,16 @@ npm test
 ```
 There is nothing to install: the tests use Node's own test runner. They cover
 the timeline and its maths, the edits the Creator makes to a scene, the saved
-scenes and the check that a reference link is a web address, the base postures,
-the drawing (the curves and brush strokes, the parts of a body, and every
-phrase and posture at every moment from five camera angles, checked for broken
-path data and for shapes that do not merge), and the published files (only relative links to
-files that exist, no outside requests, every element the scripts need). Seven
-more run in a real browser: headless Chrome or Chromium loads the page, then a
-driver page works every control of every mode, with hostile input among it, and
-checks the result. They need Chrome or Chromium on your `PATH`, or `CHROME_BIN`
-pointing at one, and are skipped without it.
+scenes (what they keep and what they leave alone) and the check that a
+reference link is a web address, the base postures, the drawing (the curves and
+brush strokes, the parts of a body, and every phrase and posture at every
+moment from five camera angles, checked for broken path data and for shapes
+that do not merge), and the published files (only relative links to files that
+exist, no outside requests, every element the scripts need). Twelve more run in
+a real browser: headless Chrome or Chromium loads the page, then a driver page
+works every control of every mode, with hostile input among it, and checks the
+result, down to two tabs saving the same scene. They need Chrome or Chromium on
+your `PATH`, or `CHROME_BIN` pointing at one, and are skipped without it.
 
 CI runs the same on every pull request, with the runner's Chrome and the
 browser tests required. Its `ci-passed` job succeeds only when every other job

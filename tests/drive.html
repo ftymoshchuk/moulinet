@@ -538,7 +538,176 @@
         keepScenes([]);
         seen.elsewhere = { cards: $$("#scenes-saved .scene-button").length, title: text("#scene-title") };
 
-        seen.asked = asked;
+        // What the Creator was asked, so far; the scenes below ask their own questions.
+        seen.asked = [...asked];
+        checkPaths();
+
+        // ---------- Text that is not a phrase yet ----------
+
+        // A pasted phrase with a mistake in it keeps the fields still, so a change
+        // to one cannot put the last good phrase over what was typed.
+        button("Creator").click();
+        answer = true;
+        button("New scene").click();
+        const editorSelector = "#meta-name, #meta-event, #meta-reference, #meta-note, #meta-solo, #step-name, #step-ms, #step-hold, #step-ease, #step-add, #step-remove, #reset-step, #joints input, .pose-button";
+        const editors = () => ({ total: $$(editorSelector).length, off: $$(editorSelector).filter((el) => el.disabled).map((el) => el.id || el.textContent.slice(0, 12)).length });
+        input($("#meta-name"), "Kept name");
+        seen.fieldsOn = editors();
+        $("#meta-name").focus();
+        input(phraseText, '{"name": "Mine", "steps": [');
+        seen.onHold = {
+          ...editors(),
+          status: text("#phrase-status"),
+          note: text("#save-status"),
+          noteIsWarning: $("#save-status").classList.contains("phrase-status--warn"),
+          // The control that had the focus handed it to the text, which is where the typing is.
+          focus: doc.activeElement?.id,
+        };
+        // A change that reaches the page anyway is dropped, and the text stays as typed.
+        const stepsBefore = text("#step-count");
+        input($("#meta-name"), "Typed while on hold");
+        input($("#joint-blade"), 100);
+        input($("#step-hold"), "999");
+        $("#step-add").click();
+        $$(".pose-button")[1].click();
+        seen.keptOnHold = { text: phraseText.value, name: $("#meta-name").value, count: text("#step-count"), same: text("#step-count") === stepsBefore, status: text("#phrase-status") };
+        // Saving says why it cannot, and stepping through the scene still works.
+        $("#scene-save").click();
+        seen.holdSave = { status: text("#save-status"), saved: savedScenes().length };
+        // Once the text is a phrase the fields are on again, showing it.
+        input(phraseText, '{"name": "Mine", "steps": [{"label": "A"}, {"label": "B"}]}');
+        $$(".step-button")[1].click();
+        seen.resumed = { ...editors(), status: text("#phrase-status"), note: text("#save-status"), name: $("#meta-name").value, steps: $$(".step-button").length };
+        input($("#meta-name"), "Mine, renamed");
+        seen.resumedEdit = { name: lines()[1], text: lines().slice(0, 3) };
+
+        // ---------- Text longer than a field allows ----------
+
+        const saveAndSay = (phrase) => {
+          input(phraseText, JSON.stringify(phrase));
+          const before = savedScenes().length;
+          $("#scene-save").click();
+          return { status: text("#save-status"), isError: $("#save-status").classList.contains("phrase-status--error"), focus: doc.activeElement?.id, added: savedScenes().length - before };
+        };
+        seen.longName = saveAndSay({ name: "x".repeat(101), steps: [{ label: "A" }] });
+        seen.longEvent = saveAndSay({ name: "ok", event: "e".repeat(161), steps: [{ label: "A" }] });
+        seen.longNote = saveAndSay({ name: "ok", note: "n".repeat(1001), steps: [{ label: "A" }] });
+        seen.longLink = saveAndSay({ name: "ok", reference: `https://example.com/${"a".repeat(1990)}`, steps: [{ label: "A" }] });
+        seen.longLabel = saveAndSay({ name: "ok", steps: [{ label: "A" }, { label: "L".repeat(101) }] });
+        seen.longest = saveAndSay({ name: "n".repeat(100), event: "e".repeat(160), note: "t".repeat(1000), steps: [{ label: "l".repeat(100) }] });
+
+        // A scene saved elsewhere with far more than that is shown cut short, so it cannot slow the page.
+        const huge = "W".repeat(30000);
+        keepScenes([...savedScenes(), { id: "huge", phrase: { name: huge, event: huge, note: huge, steps: [{ label: huge, hold: 500 }, { label: "Two", ms: 100, hold: 500 }] } }]);
+        button("Practice library").click();
+        const hugeCard = $$("#scenes-saved .scene-button").find((card) => card.textContent.includes("WWWW"));
+        hugeCard.click();
+        seen.huge = {
+          card: hugeCard.querySelector(".scene-button__title").textContent.length,
+          cardEvent: hugeCard.querySelector(".scene-button__event").textContent.length,
+          title: text("#scene-title").length,
+          titleEnd: text("#scene-title").slice(-1),
+          event: text("#scene-event").length,
+          note: text("#scene-note").length,
+          stage: text("#step-label").length,
+          stepButton: $$(".step-button")[0].textContent.length,
+          other: $$(".step-button")[1].textContent,
+        };
+        keepScenes([]);
+
+        // ---------- Scenes saved by a newer page ----------
+
+        win.localStorage.setItem(STORE, JSON.stringify({ version: 2, scenes: [{ id: "x", phrase: { name: "From the future", steps: [{ label: "x" }] } }] }));
+        const future = win.localStorage.getItem(STORE);
+        win.dispatchEvent(new win.StorageEvent("storage", { key: STORE }));
+        const futureCards = $$("#scenes-saved .scene-button").length;
+        button("Creator").click();
+        input(phraseText, JSON.stringify({ name: "Mine", steps: [{ label: "A" }] }));
+        $("#scene-save").click();
+        seen.newer = {
+          cards: futureCards,
+          status: text("#save-status"),
+          isError: $("#save-status").classList.contains("phrase-status--error"),
+          untouched: win.localStorage.getItem(STORE) === future,
+        };
+        keepScenes([]);
+
+        // ---------- The same scene in two tabs ----------
+
+        // Saving over a scene another tab changed would lose their work, so it is kept beside theirs.
+        saveAndSay({ name: "Shared", note: "v1", steps: [{ label: "A" }] });
+        keepScenes(savedScenes().map((scene) => ({ ...scene, phrase: { ...scene.phrase, note: "v2" } })));
+        input($("#meta-name"), "Shared, renamed");
+        $("#scene-save").click();
+        seen.conflict = {
+          status: text("#save-status"),
+          names: savedScenes().map((scene) => scene.phrase.name),
+          notes: savedScenes().map((scene) => scene.phrase.note),
+          save: text("#scene-save"),
+        };
+        input($("#meta-note"), "v3");
+        $("#scene-save").click();
+        seen.afterConflict = { notes: savedScenes().map((scene) => scene.phrase.note), status: text("#save-status") };
+
+        // One deleted in another tab is a new scene from here on, and saving says so.
+        keepScenes([]);
+        seen.deletedElsewhere = {
+          save: text("#scene-save"),
+          copyHidden: hidden("#scene-save-copy"),
+          status: text("#save-status"),
+        };
+        $("#scene-save").click();
+        seen.deletedThenSaved = { count: savedScenes().length, status: text("#save-status"), save: text("#scene-save") };
+        // Deleted behind this tab's back, without a word, saving still does not bring it back under its old id.
+        const [stale] = savedScenes();
+        win.localStorage.setItem(STORE, JSON.stringify({ version: 1, scenes: [] }));
+        input($("#meta-note"), "v4");
+        $("#scene-save").click();
+        seen.deletedUnseen = { count: savedScenes().length, status: text("#save-status"), idChanged: savedScenes()[0].id !== stale.id };
+        keepScenes([]);
+
+        // A scene on stage that another tab changed is loaded again; one it did not change plays on.
+        const two = [{ label: "One", hold: 300 }, { label: "Two", ms: 100, hold: 300 }];
+        keepScenes([{ id: "live", phrase: { name: "Live", steps: two } }]);
+        button("Practice library").click();
+        $$("#scenes-saved .scene-button")[0].click();
+        $$(".step-button")[1].click();
+        keepScenes([{ id: "live", phrase: { name: "Live", steps: two } }, { id: "other", phrase: { name: "Other", steps: [{ label: "x" }] } }]);
+        seen.unchangedElsewhere = { count: text("#step-count"), cards: $$("#scenes-saved .scene-button").length };
+        keepScenes([{ id: "live", phrase: { name: "Live, changed", steps: [...two, { label: "Three", ms: 100, hold: 300 }] } }]);
+        seen.changedElsewhere = { count: text("#step-count"), title: text("#scene-title"), steps: $$(".step-button").length, label: text("#step-label") };
+        keepScenes([]);
+
+        // ---------- The camera is part of a saved scene ----------
+
+        keepScenes([{ id: "cam", phrase: { name: "Camera", camera: 33, steps: [{ label: "x" }] } }]);
+        $$("#scenes-saved .scene-button")[0].click();
+        answer = true;
+        button("Edit in the Creator").click();
+        const opened = leaving();
+        input($("#camera"), -20);
+        const turned = leaving();
+        const askedBefore = asked.length;
+        answer = false;
+        button("New scene").click();
+        const declined = { asked: asked.length - askedBefore, name: $("#meta-name").value };
+        answer = true;
+        input($("#camera"), 33);
+        seen.cameraUnsaved = { opened, turned, declined, backAgain: leaving() };
+        // Moving it and saving makes the new angle the one that is kept.
+        input($("#camera"), 10);
+        $("#scene-save").click();
+        seen.cameraSaved = { camera: savedScenes()[0].phrase.camera, unsaved: leaving() };
+        keepScenes([]);
+
+        // ---------- Taking out steps ----------
+
+        button("New scene").click();
+        input(phraseText, JSON.stringify({ name: "Two steps", steps: [{ label: "A" }, { label: "B" }] }));
+        $$(".step-button")[1].click();
+        $("#step-remove").focus();
+        $("#step-remove").click();
+        seen.removeFocus = { count: text("#step-count"), removeOff: $("#step-remove").disabled, focus: doc.activeElement?.id };
         checkPaths();
         seen.badPaths = badPaths;
       }

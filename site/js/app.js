@@ -8,8 +8,10 @@ import { bladePaths, floorPath, inkFigure, stickFigure } from "./figure.js";
 import { JOINTS, POSE_NAMES, POSES, PRESETS } from "./library.js";
 import {
   TEXT_KEYS,
+  TEXT_LIMITS,
   buildTimeline,
   clearAdjustments,
+  clip,
   clone,
   editSpec,
   insertStep,
@@ -141,11 +143,12 @@ const state = {
   pin: null,
   phraseText: "",
   phraseError: "",
-  // The Creator's scene: the saved scene it came from, if any; its text as it
-  // was last saved or opened, which unsaved changes are measured from; and
-  // what saving it last said.
+  // The Creator's scene: the saved scene it came from, if any; its text and
+  // camera angle as they were last saved or opened, which unsaved changes are
+  // measured from; and what saving it last said.
   editing: null,
   baseline: "",
+  baselineCamera: 0,
   saveMessage: "",
   saveTone: "",
 };
@@ -204,8 +207,13 @@ function metaText(phrase, key) {
   return typeof value === "string" ? value : "";
 }
 
+// What a scene says under `key` as the page shows it: no more than the field allows.
+function sceneText(phrase, key) {
+  return clip(metaText(phrase, key).trim(), TEXT_LIMITS[key]);
+}
+
 function sceneName(phrase) {
-  return metaText(phrase, "name").trim() || "Untitled scene";
+  return sceneText(phrase, "name") || "Untitled scene";
 }
 
 function announce(text) {
@@ -299,9 +307,11 @@ function pickMode(mode) {
   announce(MODE_NAMES[mode]);
 }
 
-// The Creator's scene has changes that are not saved.
+// The Creator's scene has changes that are not saved: in its text, or in the
+// angle of the camera, which a saved scene keeps.
 function unsaved() {
-  return (state.mode === "creator" ? state.phraseText : parked.phraseText) !== state.baseline;
+  const view = state.mode === "creator" ? state : parked;
+  return view.phraseText !== state.baseline || view.camera !== state.baselineCamera;
 }
 
 // Whether the Creator's scene may be replaced: it may if it is saved, or if the person says so.
@@ -312,7 +322,7 @@ function confirmReplace() {
 // Puts a scene in the Creator, as a new one or as one saved earlier (`editing`).
 function openInCreator(phrase, editing) {
   parked = creatorView(phrase);
-  Object.assign(state, { editing, baseline: parked.phraseText, saveMessage: "", saveTone: "" });
+  Object.assign(state, { editing, baseline: parked.phraseText, baselineCamera: parked.camera, saveMessage: "", saveTone: "" });
   if (state.mode === "creator") showCreator();
   else pickMode("creator");
 }
@@ -343,8 +353,12 @@ function togglePlay() {
   update();
 }
 
-// Puts an edited phrase on stage, paused on step `index`.
+// Puts an edited phrase on stage, paused on step `index`. While the data is text
+// that is not a phrase yet the fields are on hold (see renderCreator), and a
+// change that reaches here anyway is dropped: it would put the last good phrase
+// over what is being typed.
 function applyEdit(phrase, index) {
+  if (state.phraseError) return update();
   usePhrase(phrase);
   const step = timeline.steps[index];
   Object.assign(state, {
@@ -389,6 +403,7 @@ function removeCurrentStep() {
 // name does not pause the scene or move it to another step.
 function editScene(phrase) {
   if (!phrase) return;
+  if (state.phraseError) return update();
   usePhrase(phrase);
   Object.assign(state, { phraseText: phraseToText(phrase), phraseError: "", saveMessage: "" });
   update();
@@ -422,6 +437,29 @@ function say(message, tone = "ok") {
   update();
 }
 
+// What a scene's texts are called when one is too long.
+const TEXT_NAMES = { name: "name", event: "event", reference: "reference link", note: "note" };
+
+// The first of the scene's texts, or a step's label, that is longer than it may be: the field to
+// take the cursor to (and the step to show, for a label), and what to say.
+function tooLong(phrase) {
+  for (const key of TEXT_KEYS) {
+    const length = metaText(phrase, key).length;
+    if (length > TEXT_LIMITS[key]) {
+      return { field: metaInputs[key], message: `The ${TEXT_NAMES[key]} can be up to ${TEXT_LIMITS[key]} characters, and this one has ${length}.` };
+    }
+  }
+  const at = phrase.steps.findIndex((step) => isPlainObject(step) && typeof step.label === "string" && step.label.length > TEXT_LIMITS.label);
+  if (at < 0) return null;
+  return { step: at, field: stepNameEl, message: `The label of step ${at + 1} can be up to ${TEXT_LIMITS.label} characters, and this one has ${phrase.steps[at].label.length}.` };
+}
+
+// What the page says when the saved scenes could not be changed.
+const STORE_ERRORS = {
+  storage: "This browser would not keep the scene, so it was not saved.",
+  newer: "The scenes on this device were saved by a newer version of this page, so this one leaves them alone. Reload the page to update it.",
+};
+
 // Keeps the Creator's scene in the practice library: as the scene it came from,
 // or, with `asCopy`, as a new one.
 function save(asCopy) {
@@ -436,18 +474,41 @@ function save(asCopy) {
     metaInputs.name.focus();
     return say("Give the scene a name first.", "error");
   }
+  const long = tooLong(phrase);
+  if (long) {
+    // A step's label is shown with its step.
+    if (long.step !== undefined) jumpTo(long.step);
+    long.field.focus();
+    return say(long.message, "error");
+  }
   if (phrase.reference && !referenceUrl(phrase.reference)) {
     metaInputs.reference.focus();
     return say("The reference link has to be a web address, starting with http:// or https://.", "error");
   }
   phrase.camera = state.camera;
-  const result = saveScene(getStorage(), phrase, asCopy ? null : state.editing);
-  if (!result) return say("This browser would not keep the scene, so it was not saved.", "error");
+
+  // The scene this one came from may have been changed, or deleted, in another
+  // tab since it was opened. Saving over it would lose that work, so this is
+  // kept as a new scene beside it.
+  let target = asCopy ? null : state.editing;
+  let news = "Saved to the practice library on this device.";
+  if (target !== null) {
+    const stored = readSaved(getStorage()).find((scene) => scene.id === target);
+    if (!stored) {
+      target = null;
+      news = "The saved scene was deleted in another tab, so this is saved as a new scene.";
+    } else if (phraseToText(stored.phrase) !== state.baseline) {
+      target = null;
+      news = "The saved scene was changed in another tab, so this is saved as a new scene beside it, and theirs is kept.";
+    }
+  }
+  const result = saveScene(getStorage(), phrase, target);
+  if (result.error) return say(STORE_ERRORS[result.error], "error");
   setSaved(result.scenes);
   usePhrase(phrase);
   const text = phraseToText(phrase);
-  Object.assign(state, { editing: result.id, baseline: text, phraseText: text });
-  return say("Saved to the practice library on this device.");
+  Object.assign(state, { editing: result.id, baseline: text, baselineCamera: state.camera, phraseText: text });
+  return say(news);
 }
 
 function editSelectedScene() {
@@ -458,9 +519,9 @@ function editSelectedScene() {
 function deleteSelectedScene() {
   const scene = scenes.find((candidate) => candidate.key === state.scene);
   if (!scene || scene.builtin || !window.confirm(`Delete "${sceneName(scene.phrase)}" from this device?`)) return;
-  const left = deleteScene(getStorage(), scene.id);
-  if (!left) return announce("This browser would not keep the change, so the scene was not deleted.");
-  setSaved(left);
+  const result = deleteScene(getStorage(), scene.id);
+  if (result.error) return announce(result.error === "newer" ? STORE_ERRORS.newer : "This browser would not keep the change, so the scene was not deleted.");
+  setSaved(result.scenes);
   // The Creator's copy of it is no longer the saved scene.
   if (state.editing === scene.id) state.editing = null;
   showScene(PRESETS[0].id);
@@ -599,6 +660,19 @@ const poseButtons = Object.keys(POSES).map((key) => {
   return { key, button };
 });
 
+// Every control that edits the phrase, which wait while the data has an error.
+const editors = [
+  ...Object.values(metaInputs),
+  metaSoloEl,
+  stepNameEl,
+  stepHoldEl,
+  stepEaseEl,
+  stepAddButton,
+  resetStepButton,
+  ...jointControls.map(({ input }) => input),
+  ...poseButtons.map(({ button }) => button),
+];
+
 // The base postures, grouped by what they are for. The buttons are numbered in
 // the order the postures are learned, which is the order of the steps.
 const baseButtons = [];
@@ -627,7 +701,7 @@ function renderSceneList() {
     const button = element("button", "scene-button");
     button.type = "button";
     button.append(element("span", "scene-button__title", sceneName(scene.phrase)), element("span", "scene-button__meta", sceneSummary(scene.phrase)));
-    const event = metaText(scene.phrase, "event").trim();
+    const event = sceneText(scene.phrase, "event");
     if (event) button.append(element("span", "scene-button__event", event));
     button.addEventListener("click", () => showScene(scene.key));
     return { key: scene.key, builtin: scene.builtin, button };
@@ -729,11 +803,21 @@ window.addEventListener("beforeunload", (event) => {
   event.returnValue = "";
 });
 
-// Scenes saved in another tab appear here, and one deleted there leaves.
+// Scenes saved in another tab appear here, and one deleted there leaves. A scene
+// on stage that was changed there is loaded again, and the Creator's scene, if it
+// was deleted there, is a new scene from here on.
 window.addEventListener("storage", (event) => {
   if (event.key !== null && event.key !== STORAGE_KEY) return;
   setSaved(readSaved(getStorage()));
-  if (state.mode === "library" && !scenes.some((scene) => scene.key === state.scene)) showScene(PRESETS[0].id);
+  if (state.editing !== null && !saved.some((scene) => scene.id === state.editing)) {
+    state.editing = null;
+    state.saveMessage = "The saved scene was deleted in another tab, so saving now keeps this as a new scene.";
+    state.saveTone = "";
+  }
+  const scene = scenes.find((candidate) => candidate.key === state.scene);
+  if (state.mode !== "library") update();
+  else if (!scene) showScene(PRESETS[0].id);
+  else if (phraseToText(scene.phrase) !== state.phraseText) showScene(scene.key);
   else update();
 });
 
@@ -755,6 +839,14 @@ function setPressed(el, pressed) {
 function setValue(input, value) {
   const text = String(value);
   if (input.value !== text) input.value = text;
+}
+
+// Turns a control off or on. One that has the focus when it goes off hands the
+// focus to `fallback` first, or a person on the keyboard is left on nothing.
+function setDisabled(el, disabled, fallback) {
+  if (el.disabled === disabled) return;
+  if (disabled && document.activeElement === el) fallback.focus();
+  el.disabled = disabled;
 }
 
 function twoDigits(n) {
@@ -878,8 +970,8 @@ function renderLibrary() {
   const { phrase } = scene;
   setText(sceneTitleEl, sceneName(phrase));
   setText(sceneKindEl, scene.builtin ? "Built in" : "Saved on this device");
-  setFact(sceneEventEl, metaText(phrase, "event").trim(), "Not noted yet");
-  setFact(sceneNoteEl, metaText(phrase, "note").trim(), "None");
+  setFact(sceneEventEl, sceneText(phrase, "event"), "Not noted yet");
+  setFact(sceneNoteEl, sceneText(phrase, "note"), "None");
   const reference = metaText(phrase, "reference").trim();
   const href = referenceUrl(reference);
   sceneReferenceEl.classList.toggle("is-empty", !href);
@@ -907,6 +999,11 @@ function renderCreator(index, step) {
   const phrase = state.phrase;
   const fencer = editingFencer();
 
+  // While the data is text that is not a phrase yet, the fields wait: a change
+  // to one would put the last good phrase over what is being typed.
+  const paused = state.phraseError !== "";
+  for (const el of editors) setDisabled(el, paused, phraseTextEl);
+
   // The scene as a whole.
   for (const key of TEXT_KEYS) setValue(metaInputs[key], metaText(phrase, key));
   if (metaSoloEl.checked !== timeline.solo) metaSoloEl.checked = timeline.solo;
@@ -916,19 +1013,20 @@ function renderCreator(index, step) {
   referenceHintEl.classList.toggle("field__hint--error", badLink);
   setText(sceneSaveButton, state.editing ? "Save changes" : "Save to library");
   sceneSaveCopyButton.classList.toggle("hidden", !state.editing);
-  setText(saveStatusEl, state.saveMessage);
-  saveStatusEl.classList.toggle("phrase-status--error", state.saveTone === "error");
+  setText(saveStatusEl, state.saveMessage || (paused ? "On hold: the phrase data is not applied yet." : ""));
+  saveStatusEl.classList.toggle("phrase-status--error", state.saveMessage !== "" && state.saveTone === "error");
+  saveStatusEl.classList.toggle("phrase-status--warn", state.saveMessage === "" && paused);
 
   // This step: what the phrase itself says, not what the page fills in.
   const own = isPlainObject(phrase.steps[index]) ? phrase.steps[index] : {};
   setValue(stepNameEl, typeof own.label === "string" ? own.label : "");
   setAttr(stepNameEl, "placeholder", `Step ${index + 1}`);
   setValue(stepMsEl, typeof own.ms === "number" ? own.ms : "");
-  stepMsEl.disabled = index === 0;
+  setDisabled(stepMsEl, paused || index === 0, paused ? phraseTextEl : stepHoldEl);
   setValue(stepHoldEl, typeof own.hold === "number" ? own.hold : "");
   setValue(stepEaseEl, own.ease === "snap" || own.ease === "linear" ? own.ease : "");
   setText(stepHintEl, index === 0 ? "The first step is where the scene starts, so it has no move time." : "");
-  stepRemoveButton.disabled = timeline.steps.length < 2;
+  setDisabled(stepRemoveButton, paused || timeline.steps.length < 2, paused ? phraseTextEl : stepNameEl);
 
   // Adjust this moment, and the poses.
   setText(editTitleEl, `Step ${index + 1}: ${step.label}. Fencer ${fencer}.`);
@@ -953,7 +1051,7 @@ function renderCreator(index, step) {
   let status = `Applied: ${timeline.steps.length} ${timeline.steps.length === 1 ? "step" : "steps"}, ${seconds(timeline.duration)} s`;
   let tone = "ok";
   if (state.phraseError) {
-    status = `Not applied: ${state.phraseError}`;
+    status = `Not applied: ${state.phraseError}. The fields are on hold until it is.`;
     tone = "error";
   } else if (timeline.unknown.length) {
     status = `Applied. Unknown pose ${timeline.unknown.join(", ")} shown as guard`;
@@ -1003,4 +1101,5 @@ function render() {
 setSaved(readSaved(getStorage()));
 parked = creatorView(newPhrase());
 state.baseline = parked.phraseText;
+state.baselineCamera = parked.camera;
 showScene(PRESETS[0].id);

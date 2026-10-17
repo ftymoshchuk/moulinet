@@ -39,30 +39,56 @@ export function sceneSummary(phrase) {
 // `storage` is a browser's localStorage, or null where the browser will not
 // give one. Every call reads what is stored afresh and writes it back whole, so
 // a scene saved in another tab is not lost to this one's older copy.
+//
+// Writing back whole means giving back all of it. What this page cannot show, an
+// entry it does not understand or a setting it does not know, is written back as
+// it was, after the scenes it can; and a store from a newer version of the page
+// is not written at all, since this one would only destroy it.
+
+function readable(entry) {
+  if (!isPlainObject(entry) || typeof entry.id !== "string" || !entry.id) return false;
+  const { phrase } = entry;
+  return isPlainObject(phrase) && Array.isArray(phrase.steps) && phrase.steps.length > 0;
+}
+
+// What is stored: the scenes this page can show, everything else to give back
+// with them (`kept` entries and `rest` of the store), and whether it was written
+// by a newer version of the page.
+function readStore(storage) {
+  let data;
+  try {
+    data = JSON.parse(storage.getItem(STORAGE_KEY));
+  } catch {
+    data = null;
+  }
+  const empty = { scenes: [], kept: [], rest: {}, newer: false };
+  if (!isPlainObject(data)) return empty;
+  if (data.version !== VERSION) return { ...empty, newer: typeof data.version === "number" && data.version > VERSION };
+  const rest = { ...data };
+  delete rest.version;
+  delete rest.scenes;
+  const seen = new Set();
+  const scenes = [];
+  const kept = [];
+  for (const entry of Array.isArray(data.scenes) ? data.scenes : []) {
+    if (readable(entry) && !seen.has(entry.id)) {
+      seen.add(entry.id);
+      scenes.push({ id: entry.id, phrase: entry.phrase });
+    } else {
+      kept.push(entry);
+    }
+  }
+  return { scenes, kept, rest, newer: false };
+}
 
 /** The saved scenes, newest first, as `{ id, phrase }`. What cannot be read is left out. */
 export function readSaved(storage) {
-  try {
-    const data = JSON.parse(storage.getItem(STORAGE_KEY));
-    if (!isPlainObject(data) || data.version !== VERSION || !Array.isArray(data.scenes)) return [];
-    const seen = new Set();
-    const scenes = [];
-    for (const entry of data.scenes) {
-      if (!isPlainObject(entry) || typeof entry.id !== "string" || !entry.id || seen.has(entry.id)) continue;
-      const { phrase } = entry;
-      if (!isPlainObject(phrase) || !Array.isArray(phrase.steps) || phrase.steps.length === 0) continue;
-      seen.add(entry.id);
-      scenes.push({ id: entry.id, phrase });
-    }
-    return scenes;
-  } catch {
-    return [];
-  }
+  return readStore(storage).scenes;
 }
 
-function write(storage, scenes) {
+function write(storage, store, scenes) {
   try {
-    storage.setItem(STORAGE_KEY, JSON.stringify({ version: VERSION, scenes }));
+    storage.setItem(STORAGE_KEY, JSON.stringify({ ...store.rest, version: VERSION, scenes: [...scenes, ...store.kept] }));
     return true;
   } catch {
     return false;
@@ -82,23 +108,28 @@ export function newId(scenes) {
 /**
  * Saves `phrase` as the scene `id`, or as a new scene, at the top, when `id` is
  * null or no longer saved. Returns the scene's id and every saved scene, or
- * null if the browser would not keep them.
+ * `{ error }`: "storage" if the browser would not keep them, "newer" if they
+ * were saved by a newer version of the page, which this one leaves alone.
  */
 export function saveScene(storage, phrase, id = null) {
-  const scenes = readSaved(storage);
+  const store = readStore(storage);
+  if (store.newer) return { error: "newer" };
+  const scenes = store.scenes;
   const at = id === null ? -1 : scenes.findIndex((scene) => scene.id === id);
   let saved = id;
   if (at >= 0) {
     scenes[at] = { id, phrase };
   } else {
-    saved = newId(scenes);
+    saved = newId([...scenes, ...store.kept.filter(isPlainObject)]);
     scenes.unshift({ id: saved, phrase });
   }
-  return write(storage, scenes) ? { id: saved, scenes } : null;
+  return write(storage, store, scenes) ? { id: saved, scenes } : { error: "storage" };
 }
 
-/** Forgets the saved scene `id`. Returns the scenes left, or null if the browser would not keep the change. */
+/** Forgets the saved scene `id`. Returns the scenes left, or `{ error }` as saveScene does. */
 export function deleteScene(storage, id) {
-  const scenes = readSaved(storage).filter((scene) => scene.id !== id);
-  return write(storage, scenes) ? scenes : null;
+  const store = readStore(storage);
+  if (store.newer) return { error: "newer" };
+  const scenes = store.scenes.filter((scene) => scene.id !== id);
+  return write(storage, store, scenes) ? { scenes } : { error: "storage" };
 }

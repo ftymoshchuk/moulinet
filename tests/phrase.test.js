@@ -5,8 +5,10 @@ import { POSES, PRESETS } from "../site/js/library.js";
 import {
   MAX_STEP_MS,
   TEXT_KEYS,
+  TEXT_LIMITS,
   buildTimeline,
   clearAdjustments,
+  clip,
   clone,
   ease,
   editSpec,
@@ -396,4 +398,30 @@ test("a setting that is not a step's, and a step that is not there, change nothi
   for (const index of [-1, 1, 0.5]) assert.equal(setStepField(phrase, index, "label", "x"), null, String(index));
   assert.equal(setStepField({ steps: {} }, 0, "label", "x"), null);
   assert.deepEqual(setStepField({ steps: [7] }, 0, "label", "x").steps, [{ label: "x" }], "a step that is not an object becomes one");
+});
+
+test("text is cut to the limit with an ellipsis, and never in the middle of a character", () => {
+  assert.equal(clip("short", 10), "short");
+  assert.equal(clip("exactly ten", 11), "exactly ten", "as long as it may be is not cut");
+  assert.equal(clip("abcdefghij", 5), "abcd…");
+  assert.equal(clip("abcdefghij", 5).length, 5, "the ellipsis counts");
+  assert.equal(clip("ab😀cd", 4), "ab…", "a character of two code units is kept whole or not at all");
+  assert.equal(clip("ab😀cd", 5), "ab😀…");
+  assert.equal(clip("W".repeat(30000), TEXT_LIMITS.name).length, TEXT_LIMITS.name);
+  assert.equal(clip("anything", 1), "…");
+});
+
+test("each kind of text has a limit, and the fields on the page hold to the same ones", () => {
+  assert.deepEqual(TEXT_LIMITS, { name: 100, event: 160, reference: 2000, note: 1000, label: 100 });
+  for (const key of TEXT_KEYS) assert.ok(Number.isInteger(TEXT_LIMITS[key]) && TEXT_LIMITS[key] > 0, key);
+});
+
+test("a step's label is shown no longer than the limit, and the phrase keeps what was written", () => {
+  const long = "Q".repeat(5000);
+  const phrase = { steps: [{ label: long }, { label: "x".repeat(TEXT_LIMITS.label) }, { label: "Short" }, {}] };
+  const labels = buildTimeline(phrase).steps.map((step) => step.label);
+  assert.equal(labels[0], `${"Q".repeat(TEXT_LIMITS.label - 1)}…`);
+  assert.equal(labels[1], "x".repeat(TEXT_LIMITS.label), "one as long as it may be is not cut");
+  assert.deepEqual(labels.slice(2), ["Short", "Step 4"]);
+  assert.equal(phrase.steps[0].label, long, "the data is not changed");
 });
