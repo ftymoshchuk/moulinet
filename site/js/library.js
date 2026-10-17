@@ -12,7 +12,7 @@
 //   rArm, rFore   rear arm, hand on the hip
 // A pose fills in whatever it leaves out from the guard.
 export const POSES = {
-  guard: { hipX: 38, hipY: 80, footF: 80, liftF: 0, liftB: 0, lean: 3, turn: 58, arm: -34, fore: 16, blade: 34, yaw: 0, rArm: -120, rFore: -32 },
+  guard: { hipX: 38, hipY: 80, footF: 80, liftF: 0, liftB: 0, lean: 3, turn: 58, arm: -34, fore: 16, blade: 34, yaw: 0, rArm: -134, rFore: -32 },
   advLift: { hipX: 47, hipY: 81, footF: 106, liftF: 9 },
   advLand: { hipX: 52, hipY: 77, footF: 110 },
   prep: { hipX: 41, lean: 4, arm: 15, fore: 30, blade: 85 },

@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { along, groundStrokes, kneeFolds, sleeveFolds, sockWrinkles, thighFolds, torsoFolds, waistband } from "../site/js/folds.js";
-import { area, blob, brush, curve, dist, lerp, line, perp, rotate, unit, wound } from "../site/js/ink.js";
+import { along, cuffGathers, groundStrokes, kneeFolds, sleeveFolds, sockWrinkles, thighFolds, torsoFolds, waistband } from "../site/js/folds.js";
+import { area, blob, brush, curve, dist, lerp, line, perp, ribbon, rotate, solid, unit, wound } from "../site/js/ink.js";
 import { boxOf, readPath } from "./path-data.js";
 
 // Path data is written to a tenth of a unit, so a point is that close to where it was given.
@@ -106,6 +106,76 @@ test("a brush stroke is wound the same way whichever way it runs, so strokes tha
   assert.ok(!ways.has(0), "and not a flat one");
 });
 
+// A regular polygon of `n` corners round (0, 0), wound anticlockwise.
+function polygon(n, radius) {
+  return Array.from({ length: n }, (_, i) => [radius * Math.cos((i / n) * 2 * Math.PI), radius * Math.sin((i / n) * 2 * Math.PI)]);
+}
+
+test("a line of ink is laid just outside its shape, a curve with a point for each of the shape's", () => {
+  const ring = polygon(24, 20);
+  const [edge] = readPath(ribbon(ring));
+  assert.equal(edge.closed, true);
+  assert.equal(edge.points.length, ring.length + 1, "the outer edge only, the start shut at the end");
+  assert.ok(area(edge.points) > 0, "wound the same way as a shape");
+  edge.points.slice(0, ring.length).forEach((p, i) => {
+    const out = Math.hypot(...p) - 20;
+    assert.ok(out > 0.2 && out < 1.7, `point ${i} is ${out} cm outside the shape`);
+  });
+});
+
+test("the line is thin where the shape faces the light and heavy where it turns away", () => {
+  const ring = polygon(36, 20);
+  const edge = readPath(ribbon(ring))[0].points;
+  // The light comes from above and to the left of the page.
+  const lit = ring.map((p, i) => [Math.hypot(...edge[i]) - 20, (p[0] * -0.6 + p[1] * -0.8) / 20]);
+  const toward = lit.filter(([, facing]) => facing > 0.9).map(([weight]) => weight);
+  const away = lit.filter(([, facing]) => facing < -0.9).map(([weight]) => weight);
+  assert.ok(toward.length >= 2 && away.length >= 2);
+  const mean = (list) => list.reduce((sum, v) => sum + v, 0) / list.length;
+  assert.ok(mean(toward) < 0.6, `thin toward the light (${mean(toward)})`);
+  assert.ok(mean(away) > 1.0, `heavy away from it (${mean(away)})`);
+  assert.ok(mean(away) > mean(toward) * 2);
+  const [fine] = readPath(ribbon(ring, 0.1, 0.2));
+  const finest = Math.max(...fine.points.slice(0, 36).map((p) => Math.hypot(...p) - 20));
+  assert.ok(finest < 0.5, "the weights are the ones asked for");
+});
+
+test("a point can keep part of the line, or none, and a point given as a corner stays a corner", () => {
+  const ring = polygon(12, 10);
+  const plain = readPath(ribbon(ring))[0].points;
+  const half = readPath(ribbon(ring.map((p, i) => (i === 3 ? [p[0], p[1], 0, 0.5] : p))))[0].points;
+  const none = readPath(ribbon(ring.map((p, i) => (i === 3 ? [p[0], p[1], 0, 0] : p))))[0].points;
+  const out = (points) => Math.hypot(...points[3]) - 10;
+  near(out(none), 0, 0.06, "no line where the edge is only a seam");
+  near(out(half), out(plain) / 2, 0.1, "half of it");
+  near(Math.hypot(...half[4]), Math.hypot(...plain[4]), 0.06, "and the points round it are as they were");
+
+  const square = [[0, 0], [10, 0, 1], [10, 10], [0, 10]];
+  const [corner] = readPath(ribbon(square));
+  nearPoint(corner.controls[1], corner.points[1], 1e-9, "the handle into a corner");
+  nearPoint(corner.controls[2], corner.points[1], 1e-9, "the handle out of a corner");
+});
+
+test("a line of ink round a shape is the same whichever way the shape was given, and is never not a number", () => {
+  const ring = polygon(10, 15);
+  assert.equal(ribbon(ring), ribbon(ring.slice().reverse()));
+  for (const points of [[[0, 0], [0, 0], [0, 0]], [[1, 1], [1, 1], [5, 5]], [[0, 0], [10, 0]], [[3, 3]]]) {
+    assert.doesNotMatch(ribbon(points), /NaN|Infinity|undefined/);
+  }
+});
+
+test("a shape of solid ink is wound the way a brush stroke is, opposite to a shape that merges", () => {
+  const square = [[0, 0], [10, 0], [10, 10], [0, 10]];
+  for (const points of [square, square.slice().reverse()]) {
+    const [ink] = readPath(solid(points));
+    const [shape] = readPath(blob(points));
+    assert.ok(area(ink.points) < 0 && area(shape.points) > 0);
+    assert.equal(ink.closed, true);
+  }
+  const [stroke] = readPath(brush([[0, 0], [10, 0]], 2));
+  assert.equal(Math.sign(area(readPath(solid(square))[0].points)), Math.sign(area(stroke.points)), "the way every stroke is wound");
+});
+
 test("the vector helpers", () => {
   assert.deepEqual(unit([1, 1], [1, 1]), [1, 0], "where the points coincide, along x");
   near(Math.hypot(...unit([0, 0], [3, 4])), 1, 1e-12);
@@ -132,6 +202,7 @@ function folds(seed = 1) {
     thigh: thighFolds(FLAT, hip, knee, [1, 0], seed),
     knee: kneeFolds(FLAT, knee, su, [1, 0], seed),
     sock: sockWrinkles(FLAT, lerp(knee, ankle, 0.2), ankle, [1, 0], seed),
+    cuff: cuffGathers(FLAT, ankle, su, [1, 0], seed),
     torso: torsoFolds(at, seed),
     belly: torsoFolds(at, seed, true),
     waist: waistband(at, seed),

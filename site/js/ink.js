@@ -133,6 +133,14 @@ export function blob(points) {
   return curve(wound(points), true);
 }
 
+/**
+ * A closed smooth shape of solid ink, wound the way every brush stroke is, so it
+ * and the strokes that cross it in one path stay solid.
+ */
+export function solid(points) {
+  return curve(wound(points).reverse(), true);
+}
+
 // The way the light comes, on the page: from above and to the left.
 const LIGHT = [-0.6, -0.8];
 
@@ -144,7 +152,7 @@ const LIGHT = [-0.6, -0.8];
  * that reaches over the whole shape; drawn first, with the shape filled over it,
  * only the line itself shows.
  */
-export function ribbon(points, thin = 0.3, thick = 1.5) {
+export function ribbon(points, thin = 0.36, thick = 1.35) {
   const shape = wound(points);
   const n = shape.length;
   const outer = new Array(n);

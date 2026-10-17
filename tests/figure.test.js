@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { basePhrase } from "../site/js/bases.js";
-import { PIVOT, bladePaths, bladeTip, floorPath, inkFigure, knee, projector, skeleton, stickFigure } from "../site/js/figure.js";
+import { DEFAULT_FRAME, PIVOT, bladePaths, bladeTip, floorPath, frameOf, inkFigure, knee, projector, skeleton, stickFigure } from "../site/js/figure.js";
 import { area } from "../site/js/ink.js";
 import { POSES, PRESETS } from "../site/js/library.js";
 import { buildTimeline, poseAt, resolvePose } from "../site/js/phrase.js";
@@ -94,6 +94,61 @@ test("turning the camera swings the piste around the pivot and brings depth into
   assert.ok(Math.abs(atPivot[0] - (PIVOT + 10)) < 1e-9);
   const farAlong = projector({ x: PIVOT + 100 }, 1, 60)([0, 0, 0]);
   assert.ok(Math.abs(farAlong[0] - (PIVOT + 50)) < 1e-9);
+});
+
+test("a shape worked out as the camera sees it is set across the page and up, and the projector knows its camera", () => {
+  for (const camera of [-60, 0, 25, 60]) {
+    const c = Math.cos((camera * Math.PI) / 180);
+    for (const dir of [1, -1]) {
+      const W = projector({ x: 140 }, dir, camera);
+      assert.equal(W.camera, camera);
+      const [x, y] = W.flat([20, 35]);
+      assert.ok(Math.abs(x - ((140 - PIVOT) * c + PIVOT + dir * 20)) < 1e-9, `across, facing ${dir} from ${camera}°`);
+      assert.equal(y, -35);
+    }
+  }
+});
+
+test("the shoulders turn toward the camera by the pose's turn: the two arms lie in planes either side of the body", () => {
+  const side = skeleton(resolvePose({ pose: "guard", adj: { turn: 0 } }));
+  const turned = skeleton(resolvePose({ pose: "guard", adj: { turn: 58 } }));
+  assert.ok(Math.abs(side.sh[2] + 19) < 1e-9 && Math.abs(side.rs[2] - 19) < 1e-9, "side on, a shoulder's width either side");
+  assert.ok(Math.abs(turned.sh[2] + 19 * Math.cos((58 * Math.PI) / 180)) < 1e-9, "turned, nearer the line of sight");
+  assert.ok(Math.abs(turned.rs[2] + turned.sh[2]) < 1e-9, "evenly either side");
+  assert.ok(turned.sh[0] !== side.sh[0] || turned.rs[0] !== side.rs[0], "and the rear shoulder is set back");
+  assert.ok(Math.abs(turned.rs[0] - turned.T(48, 0)[0]) > 5, "well behind the spine");
+});
+
+test("the stage looks where the fencers are: everyone, at every step, is in a frame the shape of the page", () => {
+  const shape = DEFAULT_FRAME[2] / DEFAULT_FRAME[3];
+  for (const phrase of [...PRESETS.map((preset) => preset.phrase), basePhrase()]) {
+    const timeline = buildTimeline(phrase);
+    const [x, y, w, h] = frameOf(timeline);
+    assert.ok(Math.abs(w / h - shape) < 0.01, `${phrase.name} is in the shape of the page`);
+    assert.ok(w >= DEFAULT_FRAME[2] * 0.72 - 0.1 && w <= DEFAULT_FRAME[2] * 1.3 + 0.1, `${phrase.name} is no closer than a third of the way in, nor further than a third out (${w})`);
+    assert.ok(y < 0 && y + h > 8, "the floor is in it, with room under it for the strokes at the feet");
+    for (const step of timeline.steps) {
+      for (const [who, dir] of timeline.solo ? [["A", 1]] : [["A", 1], ["B", -1]]) {
+        const J = skeleton(step[who]);
+        const W = projector(step[who], dir, 0);
+        for (const [name, q] of Object.entries({ head: J.hd, hand: J.hn, tip: J.tip, back: J.ankB, front: J.ankF })) {
+          const [px, py] = W(q);
+          assert.ok(px >= x && px <= x + w && py >= y && py <= y + h, `${phrase.name}: ${who}'s ${name} is on the stage`);
+        }
+      }
+    }
+  }
+});
+
+test("a lone fencer is looked at closer than a pair, and the frame is worked out from the phrase alone", () => {
+  const lone = frameOf(buildTimeline({ solo: true, steps: [{ A: { pose: "guard", x: 40 } }] }));
+  const pair = frameOf(buildTimeline({ steps: [{ A: { pose: "lungeChest", x: 0 }, B: { pose: "parry3", x: 245 } }] }));
+  assert.ok(lone[2] < pair[2], `${lone[2]} is closer than ${pair[2]}`);
+  assert.deepEqual(frameOf(buildTimeline({ solo: true, steps: [{ A: { pose: "guard", x: 40 } }] })), lone);
+  // Where the fencers stand moves the frame across, and does not zoom it.
+  const moved = frameOf(buildTimeline({ solo: true, steps: [{ A: { pose: "guard", x: 340 } }] }));
+  assert.ok(Math.abs(moved[2] - lone[2]) < 1e-9 && Math.abs(moved[3] - lone[3]) < 1e-9);
+  assert.ok(Math.abs(moved[0] - lone[0] - 300) < 0.2, "moved with him");
 });
 
 test("the floor has a tick every 50 cm, and a longer one at the centre", () => {

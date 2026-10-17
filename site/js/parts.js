@@ -18,10 +18,10 @@ const SKULL = [
   [9.5, -4.8],
   [9.1, -6.2], // upper lip
   [9.4, -7.3], // lips
-  [8.6, -8.3],
-  [7.7, -9.6],
-  [8.5, -11.3], // chin
-  [6.2, -12.6],
+  [8.8, -8.3],
+  [8.1, -9.5],
+  [8.6, -11.2], // chin
+  [6.4, -12.6],
   [1.5, -11.4], // under the jaw
   [-3.0, -9.0], // angle of the jaw
   [-5.6, -8.2],
@@ -202,9 +202,10 @@ export function handParts() {
   return { fist: shifted(FIST, -9.4), hip: HIP_HAND };
 }
 
-// A low lace-up shoe seen from the side, in a frame with the ankle at the origin
-// and x toward the toe: the outline from the heel round the toe, the line of the
-// sole, the laces and the seam of the toe cap. The floor is 8 below the origin.
+// A lace-up leather shoe seen from the side, in a frame with the ankle at the
+// origin and x toward the toe: the outline from the heel round the toe, the dark
+// sole and heel, the hatching on the heel and the toe cap, the laces and the
+// seams. The floor is 8 below the origin.
 const SHOE = {
   shape: [
     [-6.4, -8.0],
@@ -222,13 +223,29 @@ const SHOE = {
     [19.6, -8.0],
     [8.0, -8.3],
   ],
-  sole: [[-6.8, -6.0], [6.0, -6.3], [20.9, -6.4]],
-  heel: [[-1.6, -8.0], [-1.7, -6.1]],
-  laces: [
-    [[0.4, 0.6], [1.8, -2.0]],
-    [[2.4, -0.2], [3.8, -2.8]],
-    [[4.4, -1.0], [5.8, -3.6]],
+  ink: [
+    [[-6.9, -8.1], [-7.0, -6.1], [8.0, -6.8], [20.4, -6.4], [21.5, -7.2], [20.0, -8.1], [8.0, -8.5]],
+    [[-7.0, -8.1], [-7.2, -5.0], [-2.8, -5.0], [-2.4, -8.2]],
   ],
+  hatch: [
+    [[-6.6, -2.2], [-5.2, -4.4]],
+    [[-6.2, -0.6], [-4.6, -3.0]],
+    [[-5.4, 0.7], [-3.8, -1.6]],
+    [[13.4, -3.6], [14.0, -5.8]],
+    [[15.0, -3.5], [15.6, -5.7]],
+    [[16.6, -3.7], [17.2, -5.6]],
+    [[18.2, -4.2], [18.7, -5.6]],
+    [[9.6, -4.4], [10.4, -6.0]],
+    [[11.2, -4.6], [11.9, -6.0]],
+  ],
+  laces: [
+    [[0.6, 0.4], [2.0, -2.0]],
+    [[2.6, -0.2], [4.0, -2.6]],
+    [[4.6, -1.0], [6.0, -3.2]],
+    [[6.6, -1.8], [8.0, -3.8]],
+  ],
+  sole: [[-6.8, -6.1], [6.0, -6.6], [20.9, -6.3]],
+  heel: [[-2.6, -8.0], [-2.7, -5.0]],
   cap: [[11.6, -3.4], [12.6, -5.0], [12.2, -6.2]],
 };
 
@@ -257,6 +274,7 @@ export function torsoParts(older = false) {
   if (!older) return TORSO;
   return TORSO.map(([up, mid, depth, width]) => {
     const belly = Math.max(0, Math.min(1, (40 - up) / 30));
-    return [up, mid + 1.6 * belly, depth + 1.4 * belly, width - (up > 48 ? 0.8 : 0)];
+    const shoulders = Math.max(0, Math.min(1, (up - 36) / 12));
+    return [up, mid + 2.2 * belly, depth + 2.0 * belly, width - 1.8 * shoulders - 0.4 * belly];
   });
 }

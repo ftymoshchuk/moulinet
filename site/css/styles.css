@@ -577,43 +577,43 @@ textarea:focus-visible {
 }
 
 .ghost {
-  stroke-width: 1.2;
+  stroke-width: 0.9;
 }
 
 .ghost--1 {
-  opacity: 0.8;
-}
-
-.ghost--2 {
   opacity: 0.6;
 }
 
-.ghost--3 {
-  opacity: 0.4;
-}
-
-.ghost--4 {
-  opacity: 0.25;
-}
-
-.ghost-blade {
-  stroke-width: 0.8;
-}
-
-.ghost-blade--1 {
-  opacity: 0.85;
-}
-
-.ghost-blade--2 {
-  opacity: 0.65;
-}
-
-.ghost-blade--3 {
+.ghost--2 {
   opacity: 0.45;
 }
 
-.ghost-blade--4 {
+.ghost--3 {
   opacity: 0.3;
+}
+
+.ghost--4 {
+  opacity: 0.18;
+}
+
+.ghost-blade {
+  stroke-width: 0.6;
+}
+
+.ghost-blade--1 {
+  opacity: 0.65;
+}
+
+.ghost-blade--2 {
+  opacity: 0.5;
+}
+
+.ghost-blade--3 {
+  opacity: 0.35;
+}
+
+.ghost-blade--4 {
+  opacity: 0.22;
 }
 
 .ink {

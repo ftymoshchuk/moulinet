@@ -90,6 +90,20 @@ export function sockWrinkles(W, from, ankle, ref, seed = 3) {
   return d;
 }
 
+/** Loose trousers gathered at the ankle: short curved strokes above the cuff, and two long folds down the shin. */
+export function cuffGathers(W, ankle, su, ref, seed = 3) {
+  const f = along(add(ankle, mul(su, -30)), ankle, ref);
+  const r = wobble(seed);
+  let d = "";
+  for (let i = 0; i < 5; i++) {
+    const t = 0.64 + i * 0.062 + r() * 0.02;
+    d += stroke(W, [f.at(t, 5.8 - r()), f.at(t + 0.018, 0.6), f.at(t + 0.034, -5.6 + r())], 0.5 + r() * 0.2, 0.5);
+  }
+  d += stroke(W, [f.at(0.2, 3.6), f.at(0.45, 4.2), f.at(0.62, 3.4)], 0.5, 0.5);
+  d += stroke(W, [f.at(0.14, -4.4), f.at(0.42, -4.8), f.at(0.6, -4.0)], 0.5, 0.5);
+  return d;
+}
+
 /**
  * The creases of a jersey, each a thin stroke laid on its surface: under the
  * sleeve, radiating from the armpit; across the chest; at the waist, where the

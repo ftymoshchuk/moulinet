@@ -164,6 +164,20 @@ test("angles take the short way round; lengths go straight", () => {
   assert.equal(mixPoses({ arm: -170 }, { arm: 170 }, 0.25).arm, -175);
 });
 
+test("how far the shoulders are turned is an angle like the others: a phrase can set it, and it eases between steps", () => {
+  assert.equal(POSES.guard.turn, 58, "the guard has the shoulders turned toward the camera");
+  assert.equal(resolvePose({ pose: "guard", adj: { turn: 20 } }).turn, 20);
+  assert.equal(resolvePose({ pose: "lungeChest" }).turn, 58, "a pose that leaves it out keeps the guard's");
+  const timeline = buildTimeline({
+    steps: [
+      { hold: 100, A: { pose: "guard", x: 0 } },
+      { ms: 200, hold: 100, ease: "linear", A: { pose: "guard", x: 0, adj: { turn: 18 } } },
+    ],
+  });
+  assert.equal(poseAt(timeline, 200).A.turn, 38, "halfway from 58 to 18");
+  assert.equal(mixPoses({ turn: 170 }, { turn: -170 }, 0.5).turn, 180, "the short way round");
+});
+
 test("phrase text keeps one setting per line and one step per line, and reads back the same", () => {
   for (const { phrase } of PRESETS) {
     const text = phraseToText(phrase);

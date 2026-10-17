@@ -158,6 +158,53 @@ function draw(p, dir, camera, backView, older) {
   };
 }
 
+// How the stage looks at the piste unless a phrase asks for closer: x, y, width
+// and height in the page's units. Every view has this shape.
+export const DEFAULT_FRAME = [-80, -236, 420, 254];
+const FRAME_SHAPE = DEFAULT_FRAME[2] / DEFAULT_FRAME[3];
+
+/**
+ * Where the stage should look so that the fencers fill it: the box round everyone
+ * at every moment of the phrase, seen side on, with room round it, in the shape of
+ * the default view and no closer than a third of the way in. The camera does not
+ * change it, so turning the camera never zooms.
+ */
+export function frameOf(timeline) {
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  const take = ([x, y]) => {
+    minX = Math.min(minX, x);
+    maxX = Math.max(maxX, x);
+    minY = Math.min(minY, y);
+    maxY = Math.max(maxY, y);
+  };
+  // At every step, and between them.
+  const times = timeline.steps.map((step) => step.holdStart);
+  for (let i = 0; i <= 24; i++) times.push((timeline.duration * i) / 24);
+  for (const t of times) {
+    const at = poseAt(timeline, Math.min(t, timeline.duration));
+    for (const [who, dir] of timeline.solo ? [["A", 1]] : [["A", 1], ["B", -1]]) {
+      const p = at[who];
+      const J = skeleton(p);
+      const W = projector(p, dir, 0);
+      const feet = [-8, 24].flatMap((reach) => [[J.ankB[0] + reach, 0], [J.ankF[0] + reach, 0]]);
+      const body = [[J.hd[0], J.hd[1] + 14], J.hn, J.tip, J.kF, J.kB, J.re, J.rs, [J.hip[0] - 16, J.hip[1]], [J.hip[0] + 16, J.hip[1]]];
+      for (const q of [...feet, ...body]) take(W(q));
+    }
+  }
+  // Room round it, and for the strokes under the floor.
+  maxY = Math.max(maxY, 0) + 8;
+  const width = Math.max(maxX - minX + 36, (maxY - minY + 24) * FRAME_SHAPE, DEFAULT_FRAME[2] * 0.72);
+  const w = Math.min(width, DEFAULT_FRAME[2] * 1.3);
+  const h = w / FRAME_SHAPE;
+  // Centred across, and set down on the floor.
+  const x = (minX + maxX) / 2 - w / 2;
+  const y = maxY + 6 - h;
+  return [x, y, w, h].map((v) => Math.round(v * 10) / 10);
+}
+
 /** The piste: a floor line with a tick every 50 cm and a longer one at the centre. */
 export function floorPath(camera) {
   const c = Math.cos(camera * RAD);

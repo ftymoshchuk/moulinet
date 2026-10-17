@@ -4,7 +4,7 @@
 // where it was noted. The base postures show one fencer in one posture at a
 // time, in words as well as lines. The Creator makes new scenes.
 import { BASES, BASE_GROUPS, basePhrase } from "./bases.js";
-import { bladePaths, floorPath, inkFigure, stickFigure } from "./figure.js";
+import { DEFAULT_FRAME, bladePaths, floorPath, frameOf, inkFigure, stickFigure } from "./figure.js";
 import { JOINTS, POSE_NAMES, POSES, PRESETS } from "./library.js";
 import {
   TEXT_KEYS,
@@ -47,6 +47,7 @@ const modeButtons = document.querySelectorAll("[data-mode]");
 // Every panel that belongs to some modes only, with the modes it belongs to.
 const modePanels = [...document.querySelectorAll("[data-modes]")].map((el) => ({ el, modes: el.dataset.modes.split(" ") }));
 const stagePanelEl = document.getElementById("stage-panel");
+const stageEl = document.getElementById("stage");
 const stepCountEl = document.getElementById("step-count");
 const stepLabelEl = document.getElementById("step-label");
 const timecodeEl = document.getElementById("timecode");
@@ -155,6 +156,8 @@ const state = {
 // state.phrase laid out in time, and its blade paths for one camera angle.
 let timeline = buildTimeline(null);
 let trails = null;
+// Where the stage looks, worked out once for each timeline.
+let framed = { timeline: null, frame: DEFAULT_FRAME };
 // What the Creator had on stage while another mode has the stage.
 let parked = null;
 
@@ -878,8 +881,17 @@ function drawFencer(parts, figure) {
   setAttr(parts.blade.bow, "d", figure.blade.d);
 }
 
+// The Creator keeps one view as a scene is reshaped; the library and the postures
+// look as close as keeps everyone in.
+function frameFor() {
+  if (state.mode === "creator") return DEFAULT_FRAME;
+  if (framed.timeline !== timeline) framed = { timeline, frame: frameOf(timeline) };
+  return framed.frame;
+}
+
 function drawStage(now) {
   const camera = state.camera;
+  setAttr(stageEl, "viewBox", frameFor().join(" "));
   // The postures stand still, so they have no motion to show.
   const moving = state.mode !== "base";
   stagePanelEl.classList.toggle("is-solo", timeline.solo);
