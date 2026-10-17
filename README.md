@@ -188,15 +188,16 @@ npm test
 ```
 There is nothing to install: the tests use Node's own test runner. They cover
 the timeline and its maths, the edits the Creator makes to a scene, the saved
-scenes and the check that a reference link is a web address, the base postures,
-the drawing (the curves and brush strokes, the parts of a body, and every
-phrase and posture at every moment from five camera angles, checked for broken
-path data and for shapes that do not merge), and the published files (only relative links to
-files that exist, no outside requests, every element the scripts need). Seven
-more run in a real browser: headless Chrome or Chromium loads the page, then a
-driver page works every control of every mode, with hostile input among it, and
-checks the result. They need Chrome or Chromium on your `PATH`, or `CHROME_BIN`
-pointing at one, and are skipped without it.
+scenes (what they keep and what they leave alone) and the check that a
+reference link is a web address, the base postures, the drawing (the curves and
+brush strokes, the parts of a body, and every phrase and posture at every
+moment from five camera angles, checked for broken path data and for shapes
+that do not merge), and the published files (only relative links to files that
+exist, no outside requests, every element the scripts need). Twelve more run in
+a real browser: headless Chrome or Chromium loads the page, then a driver page
+works every control of every mode, with hostile input among it, and checks the
+result, down to two tabs saving the same scene. They need Chrome or Chromium on
+your `PATH`, or `CHROME_BIN` pointing at one, and are skipped without it.
 
 CI runs the same on every pull request, with the runner's Chrome and the
 browser tests required. Its `ci-passed` job succeeds only when every other job
