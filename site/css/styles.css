@@ -79,7 +79,9 @@
   --ink: #1d1b18;
   --hair-grey: #4b463f;
   --fencer-a: #f6f3ec;
-  --fencer-b: #dcd6c9;
+  --fencer-b: #e0dacd;
+  --fencer-b-trousers: #cdc6b5;
+  --fencer-b-face: #ebe6da;
   --trail-a: #9a3a27;
   --trail-b: #2f4f7f;
 
@@ -647,6 +649,15 @@ textarea:focus-visible {
 .figure__fill {
   fill: var(--fencer);
   stroke: none;
+}
+
+/* The older man's trousers are a shade darker than his jersey, and his face is paper. */
+.fencer--b .figure__fill--trousers {
+  fill: var(--fencer-b-trousers);
+}
+
+.fencer--b .figure__fill--face {
+  fill: var(--fencer-b-face);
 }
 
 .figure__hair {

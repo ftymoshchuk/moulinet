@@ -32,6 +32,8 @@ import { STORAGE_KEY, deleteScene, readSaved, referenceUrl, saveScene, sceneSumm
 const SVG_NS = "http://www.w3.org/2000/svg";
 // Layers of an ink figure, back to front, as inkFigure names them.
 const LAYERS = ["l1", "l2", "l3", "l4", "head", "l6"];
+// What each layer is when both fencers are drawn from the back (as the stage draws them): the sword arm, the two legs, the jersey, the head and the rear arm.
+const PARTS = { l1: "jersey", l2: "trousers", l3: "trousers", l4: "jersey", head: "face", l6: "jersey" };
 // Four motion ghosts, each this far behind the one before.
 const GHOSTS = [1, 2, 3, 4];
 const GHOST_GAP_MS = 45;
@@ -593,7 +595,7 @@ function createFencer(id) {
     const isHead = name === "head";
     layers[name] = {
       outline: svgPath(body, "figure__outline"),
-      fill: svgPath(body, "figure__fill"),
+      fill: svgPath(body, `figure__fill figure__fill--${PARTS[name]}`),
       hair: isHead ? svgPath(body, "figure__hair") : null,
       shine: isHead ? svgPath(body, "figure__shine") : null,
       detail: svgPath(body, "figure__detail"),

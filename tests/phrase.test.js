@@ -89,10 +89,10 @@ test("a fencer a step leaves out keeps the spec from the step before", () => {
   assert.deepEqual(timeline.steps[1].B, { ...POSES.guard, ...POSES.parry3, x: 200 });
 });
 
-test("fencers start in guard, A at 0 and B at 245, until a phrase places them", () => {
+test("fencers start in guard, A at 0 and B at 310, until a phrase places them", () => {
   const [step] = buildTimeline({ steps: [{ label: "Nothing yet" }] }).steps;
   assert.deepEqual(step.A, { ...POSES.guard, x: 0 });
-  assert.deepEqual(step.B, { ...POSES.guard, x: 245 });
+  assert.deepEqual(step.B, { ...POSES.guard, x: 310 });
 });
 
 test("steps without a label are numbered, and an empty phrase still shows one step", () => {
@@ -254,7 +254,7 @@ test("a new scene is a valid phrase: one step, both fencers in guard, no pose th
   assert.equal(timeline.steps.length, 1);
   assert.deepEqual(timeline.unknown, []);
   assert.deepEqual(timeline.steps[0].A, { ...POSES.guard, x: 0 });
-  assert.deepEqual(timeline.steps[0].B, { ...POSES.guard, x: 245 });
+  assert.deepEqual(timeline.steps[0].B, { ...POSES.guard, x: 310 });
   assert.notEqual(newPhrase().steps[0].A, phrase.steps[0].A, "each one is its own copy");
 });
 
@@ -314,7 +314,7 @@ test("a step added after step i stands as step i does, so nothing else on the pa
 test("a new step moves quickly and holds briefly, has no label, and takes both fencers unless the scene is solo", () => {
   const phrase = newPhrase();
   const added = insertStep(phrase, buildTimeline(phrase), 0).phrase.steps[1];
-  assert.deepEqual(added, { ms: 300, hold: 200, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 245 } });
+  assert.deepEqual(added, { ms: 300, hold: 200, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 310 } });
   const solo = setSolo(phrase, true);
   assert.deepEqual(Object.keys(insertStep(solo, buildTimeline(solo), 0).phrase.steps[1]), ["ms", "hold", "A"]);
   const copy = insertStep(phrase, buildTimeline(phrase), 0).phrase;

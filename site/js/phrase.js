@@ -3,7 +3,7 @@
 import { POSES } from "./library.js";
 
 // Where each fencer stands until a phrase places them.
-const START = { A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 245 } };
+const START = { A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 310 } };
 // Values that are angles, so a move between two of them takes the short way round.
 const ANGLES = new Set(["lean", "turn", "arm", "fore", "blade", "yaw", "rArm", "rFore"]);
 // What a pose can hold. An adjustment to anything else is ignored.

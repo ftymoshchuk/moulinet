@@ -3,7 +3,7 @@
 // `W`, which sets a point on the piste and turns it for the camera, and gives
 // back `{ g, d, k }`: the shapes that make the silhouette, the thin lines, and
 // the brush strokes.
-import { cuffGathers, kneeFolds, sleeveFolds, sockWrinkles, thighFolds, torsoFolds, waistband } from "./folds.js";
+import { crotchFolds, cuffGathers, kneeFolds, kneePuckers, sleeveFolds, sockWrinkles, thighFolds, torsoFolds, waistband } from "./folds.js";
 import { add, blob, brush, dist, lerp, line, mul, perp, pt, ribbon, rotate, solid, sub, unit } from "./ink.js";
 import { headParts, shoeParts, torsoParts } from "./parts.js";
 
@@ -117,17 +117,19 @@ export function trunk(J, W, older, frame = torsoFrame(J, W, older)) {
   const back = rows.map(([up]) => slice(up).back).reverse();
   front[0] = [...front[0], 1];
   back[back.length - 1] = [...back[back.length - 1], 1];
-  const neck = segment(J.T(60, 0.2), J.T(71, 1.4), [4.8, 4.4], [5.6, 5.2], J.f);
-  const collar = segment(J.T(57.5, 0.3), J.T(65.5, 0.9), [5.9, 5.6, 5.2], [6.9, 6.4, 6.0], J.f, [0.3, 0.3]);
-  const shapes = drawn([[...front, ...back], neck.map(W), collar.map(W)]);
+  const neck = segment(J.T(58, 0.2), J.T(72, 2.8), [4.8, 4.4], [5.6, 5.2], J.f);
+  const collar = segment(J.T(54.5, 0.3), J.T(62, 0.9), [5.9, 5.6, 5.2], [6.9, 6.4, 6.0], J.f, [0.3, 0.3]);
+  // The hem is not ruled across: it hangs a little lower in the middle, as the belt goes round the body.
+  const hem = lerp(front[0], back[back.length - 1], 0.5);
+  const jersey = [...front, ...back, [hem[0], hem[1] + 1.3]];
+  const shapes = drawn([jersey, neck.map(W), collar.map(W)]);
   // The roll of the collar: its upper edge, a fold, its seam with the jersey; and the stitching along the hem.
   const d =
-    line([T(66.6, -5.0), T(67.1, 0.3), T(66.0, 5.0)]) +
-    line([T(63.4, -5.4), T(63.9, 0.1), T(63.0, 5.3)]) +
-    line([T(59.8, -5.8), T(60.4, 0.2), T(59.4, 5.6)]) +
+    line([T(63.1, -5.0), T(63.6, 0.3), T(62.5, 5.0)]) +
+    line([T(59.4, -5.4), T(59.9, 0.1), T(59.0, 5.3)]) +
     line([across(10.6, 0.9), across(10.2, 0.3), across(10, -0.3), across(10.4, -0.9)]);
   // The shadow the jaw throws on the neck.
-  const jaw = brush([T(66.6, 4.2), T(65.2, 0.6), T(64.4, -3.6)].map(W), 1.5, 0.5);
+  const jaw = brush([T(64.8, 5.2), T(63.6, 1.4), T(62.8, -2.8)].map(W), 1.5, 0.5);
   return { ...shapes, d, k: torsoFolds(across, 4, older) + waistband(across) + jaw };
 }
 
@@ -141,17 +143,17 @@ export function swordArm(J, W, fist) {
   // The arm lies in a plane, at its shoulder's distance from the camera.
   const Wa = (q) => W([q[0], q[1], J.sh[2]]);
   const fu = unit(J.el, J.hn);
-  const wrist = sub(J.hn, mul(fu, 11.5));
+  const wrist = sub(J.hn, mul(fu, 12.5));
   const up = [0, 1];
   // The sleeve is full above the elbow and at the forearm's top, and tapers to the wrist.
-  const upper = segment(J.sh, J.el, [6.6, 7.2, 7.4, 6.8], [6.2, 6.8, 7.0, 6.4], up);
-  const fore = segment(J.el, wrist, [6.8, 6.0, 5.2, 4.6], [6.4, 5.7, 5.0, 4.5], up);
+  const upper = segment(J.sh, J.el, [5.8, 6.2, 6.2, 5.6], [5.4, 5.8, 5.9, 5.3], up, [0.55, 1]);
+  const fore = segment(J.el, wrist, [5.9, 5.3, 4.7, 4.3], [5.5, 5.0, 4.5, 4.2], up);
   // The gauntlet, flaring a little from the wrist, with its seam where it meets the fist.
-  const cuff = segment(sub(J.hn, mul(fu, 15.5)), sub(J.hn, mul(fu, 9.8)), [5.0, 5.3, 5.6], [5.0, 5.3, 5.6], up, [0.2, 0.2]);
+  const cuff = segment(sub(J.hn, mul(fu, 17.0)), sub(J.hn, mul(fu, 10.6)), [5.2, 5.7, 6.2], [5.2, 5.7, 6.2], up, [0.2, 0.2]);
   const hand = fist.shape.map(([x, y]) => Wa(place(J.hn, fu, x, y)));
   const shapes = drawn([...[upper, fore, cuff].map((s) => s.map(Wa)), hand]);
   const d = fist.lines.map((l) => line(l.map(([x, y]) => Wa(place(J.hn, fu, x, y))))).join("");
-  return { ...shapes, d, k: sleeveFolds(Wa, J.sh, J.el, sub(J.hn, mul(fu, 15.5)), 6) };
+  return { ...shapes, d, k: sleeveFolds(Wa, J.sh, J.el, sub(J.hn, mul(fu, 17.0)), 6) };
 }
 
 /**
@@ -163,8 +165,8 @@ export function rearArm(J, W, hand, frame = torsoFrame(J, W, false)) {
   const Wa = (q) => W([q[0], q[1], J.rs[2]]);
   const qu = unit(J.re, J.rh);
   const up = [0, 1];
-  const hi = [6.8, 7.4, 7.6, 7.0];
-  const lo = [6.0, 6.6, 7.0, 6.4];
+  const hi = [5.9, 6.4, 6.5, 6.0];
+  const lo = [5.3, 5.8, 6.0, 5.5];
   const tube = segment(J.rs, J.re, hi, lo, up, [0, 1]);
   const n = hi.length;
   // Down the outer side of the arm, round the elbow, and back up the inner side...
@@ -173,11 +175,17 @@ export function rearArm(J, W, hand, frame = torsoFrame(J, W, false)) {
   const { across } = frame;
   // Along the jersey's own edge the sleeve has no line, and the seam is a light one.
   const on = (p) => [p[0], p[1], 0, 0];
-  const seam = (p) => [p[0], p[1], 0, 0.35];
+  const seam = (p) => [p[0], p[1], 0, 0.15];
   const sleeve = [on(across(54.2, -0.97)), on(across(52.4, -1)), on(across(50.4, -1)), ...outline.slice(1), seam(across(43, -0.62)), seam(across(47, -0.86))];
   const fore = segment(J.re, J.rh, [6.4, 5.5, 4.8, 4.3], [6.0, 5.2, 4.6, 4.2], up);
   const palm = hand.shape.map(([x, y]) => Wa(place(J.rh, qu, x, y)));
-  const shapes = drawn([sleeve, fore.map(Wa), palm]);
+  // The point of the elbow: a corner on the outside of the bend, where the plates draw one.
+  const e = Wa(J.re);
+  const toward = add(unit(e, Wa(J.rs)), unit(e, Wa(J.rh)));
+  const outward = Math.hypot(...toward) < 0.2 ? perp(unit(e, Wa(J.rs))) : mul(unit([0, 0], toward), -1);
+  const side = perp(outward);
+  const elbow = [add(add(e, mul(outward, 2.6)), mul(side, 4.6)), [...add(e, mul(outward, 7.6)), 1], add(add(e, mul(outward, 2.6)), mul(side, -4.6)), add(e, mul(outward, -2))];
+  const shapes = drawn([sleeve, fore.map(Wa), palm, elbow]);
   const d = hand.lines.map((l) => line(l.map(([x, y]) => Wa(place(J.rh, qu, x, y))))).join("");
   return { ...shapes, d, k: sleeveFolds(Wa, J.rs, J.re, J.rh, 8) };
 }
@@ -229,8 +237,8 @@ function legShapes(J, ank, kn, { seat, tilt, length, parts, older }) {
     lines.push(across(add(ank, mul(su, -1.2)), su, 7.2, 6.8, 0.6));
   } else {
     // Knickerbockers: close at the hip and full at the knee, where the cloth hangs over the band.
-    shapes.push(segment(top, kn, [12.6, 13.0, 13.6, 13.8], [12.2, 12.6, 13.0, 12.8], f, [round, 1]));
-    shapes.push(segment(kn, k(12), [14.4, 14.0, 12.2, 9.0], [12.6, 11.8, 9.8, 7.6], f));
+    shapes.push(segment(top, kn, [13.0, 12.8, 12.2, 11.4], [12.6, 12.2, 11.4, 10.6], f, [round, 1]));
+    shapes.push(segment(kn, k(12), [13.4, 13.0, 11.6, 8.8], [11.8, 11.0, 9.2, 7.2], f));
     shapes.push(segment(k(10.5), add(ank, mul(su, 2)), [6.8, 6.8, 5.6, 4.4, 3.8], [6.6, 7.4, 5.8, 4.2, 3.7], f, [0.2, 0.4]));
     // The lower edge of the cloth over the band, and the band itself.
     lines.push(across(k(11.6), su, 9.4, 7.6, 1.8));
@@ -288,7 +296,7 @@ export function legPart(J, W, ank, kn, { front, seat, older }) {
   const ref = [1, 0];
   const stocking = add(kn, mul(su, 8.5));
   const folds = older
-    ? thighFolds(W, J.hip, kn, ref, seed) + cuffGathers(W, ank, su, ref, seed + 2)
+    ? crotchFolds(W, J.hip, kn, ref, seed) + kneePuckers(W, kn, su, ref, seed + 1) + cuffGathers(W, ank, su, ref, seed + 2)
     : thighFolds(W, J.hip, kn, ref, seed) + sockWrinkles(W, stocking, ank, ref, seed + 2) + kneeFolds(W, kn, su, ref, seed + 1);
   // The leather is dark where the sole and heel are, and hatched where the shoe turns away from the light.
   const leather = made.foot.ink.map((shape) => solid(set(shape))).join("") + made.foot.hatch.map((stroke) => brush(set(stroke), 0.5, 0.4)).join("");
@@ -320,11 +328,10 @@ export function headPart(J, W, older) {
   const mark = (m) => brush(m.slice(0, 3).map(H), m[3], 0.5);
   const face = parts.face;
   return {
-    ...drawn([Hs(parts.skull)], 0.25, 0.9),
+    ...drawn([Hs(parts.skull)], 0.2, 0.7),
     hair: blob(Hs(parts.hair)),
     s: parts.streaks.map((streak) => brush(streak.map(H), 0.7, 0.5)).join(""),
-    // A line down the cheek is the mark of age, and a young face is left clean.
-    d: line(Hs(parts.ear)) + line(Hs(parts.earFold)) + (older ? line(Hs(face.cheek.slice(0, 3))) : ""),
+    d: line(Hs(parts.ear)) + line(Hs(parts.earFold)),
     k: [face.brow, face.eye, face.lid, face.nostril, face.mouth].map(mark).join("") + parts.tufts.map((tuft) => brush(tuft.map(H), 0.9, 0.35)).join(""),
   };
 }
@@ -344,10 +351,17 @@ export function bladePart(J, W) {
     const n = perp(unit(a, b));
     return `M${[add(a, mul(n, w0)), add(b, mul(n, w1)), sub(b, mul(n, w1)), sub(a, mul(n, w0))].map(pt).join("L")}Z`;
   };
-  const cup = Array.from({ length: 14 }, (_, i) => {
-    const t = (i / 14) * Math.PI * 2;
-    return add(cc, add(mul(along, 2.3 * Math.cos(t)), mul(across, 5.8 * Math.sin(t))));
-  });
+  // The bell seen from the side is a dark crescent, open toward the hand.
+  const at = (x, y) => add(cc, add(mul(along, x), mul(across, y)));
+  const arc = (rx, ry, shift, n) =>
+    Array.from({ length: n }, (_, i) => {
+      const t = -Math.PI / 2 + (i / (n - 1)) * Math.PI;
+      return at(rx * Math.cos(t) + shift, ry * Math.sin(t));
+    });
+  const tip = (p) => [p[0], p[1], 1];
+  const outer = arc(2.3, 5.6, 0.3, 7);
+  const inner = arc(1.0, 5.6, -0.2, 7).reverse().slice(1, -1);
+  const cup = [tip(outer[0]), ...outer.slice(1, -1), tip(outer[outer.length - 1]), ...inner];
   // The bow, in the frame of the forearm, which is how the fist is set.
   const forearm = unit(J.el, J.hn);
   const bow = [[0.4, -5.2], [-3.6, -6.8], [-8.6, -6.4], [-11.4, -4.4]].map(([x, y]) => W(place(J.hn, forearm, x, y)));

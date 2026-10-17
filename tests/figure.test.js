@@ -69,6 +69,47 @@ test("the knee keeps thigh and shin lengths and bends forward", () => {
   assert.ok(side > 0);
 });
 
+test("the knee can bend the other way: the same lengths, on the far side of the line from hip to ankle", () => {
+  const side = (hx, hy, ax, ay, [kx, ky]) => (ax - hx) * (ky - hy) - (ay - hy) * (kx - hx);
+  const [fx, fy] = knee(41, 80, 0, 8);
+  const [bx, by] = knee(41, 80, 0, 8, -1);
+  assert.ok(Math.abs(Math.hypot(bx - 41, by - 80) - 44) < 1e-9 && Math.abs(Math.hypot(bx - 0, by - 8) - 46) < 1e-9, "the thigh and shin are as long");
+  assert.ok(side(41, 80, 0, 8, [fx, fy]) * side(41, 80, 0, 8, [bx, by]) < 0, "on the other side of the line");
+  // A leg that cannot bend does not care which way it was asked to.
+  assert.deepEqual(knee(0, 200, 0, 8, -1), knee(0, 200, 0, 8, 1));
+});
+
+test("the leg behind bends back at the knee, as the plates draw it, and the leg in front bends forward", () => {
+  for (const name of ["guard", "advLand", "parry3", "extend"]) {
+    const J = skeleton(resolvePose({ pose: name }));
+    const line = (a, k) => (a[0] - J.hip[0]) * (k[1] - J.hip[1]) - (a[1] - J.hip[1]) * (k[0] - J.hip[0]);
+    assert.ok(line(J.ankB, J.kB) < 0, `${name}: the rear knee bends back`);
+    assert.ok(J.kB[0] < J.hip[0], `${name}: and is behind the hips`);
+    // (Landing from an advance, the front leg is straight, and bends neither way.)
+    if (name !== "advLand") assert.ok(line(J.ankF, J.kF) > 0, `${name}: the front knee bends forward`);
+  }
+  // A lunge has the leg behind straight, so which way it bends makes no difference.
+  const lunge = skeleton(resolvePose({ pose: "lungeChest" }));
+  const straight = Math.hypot(lunge.hip[0] - lunge.ankB[0], lunge.hip[1] - lunge.ankB[1]);
+  assert.ok(Math.abs(straight - 90) < 1.5, "the rear leg is straight in the lunge");
+});
+
+test("the sword arm is set on the shoulder turned away, at the front of the chest, and is as long as an arm", () => {
+  const side = skeleton(resolvePose({ pose: "guard", adj: { turn: 0 } }));
+  const turned = skeleton(resolvePose({ pose: "guard", adj: { turn: 58 } }));
+  const spine = (J) => J.T(52, 0)[0];
+  assert.ok(Math.abs(side.sh[0] - side.T(50, 0)[0]) < 1e-9, "side on, the shoulder is over the spine");
+  assert.ok(turned.sh[0] - turned.T(50, 0)[0] > 12, "turned, it is well forward of it");
+  assert.ok(turned.sh[0] - spine(turned) > 12 && spine(turned) - turned.rs[0] > 12, "and the other shoulder well behind");
+  for (const J of [side, turned]) {
+    const upper = Math.hypot(J.el[0] - J.sh[0], J.el[1] - J.sh[1]);
+    const fore = Math.hypot(J.hn[0] - J.el[0], J.hn[1] - J.el[1]);
+    assert.ok(Math.abs(upper - 31) < 1e-9 && Math.abs(fore - 31) < 1e-9, "shoulder to elbow, and elbow to the grip");
+  }
+  // From the shoulder the hand reaches the length of the arm, so the guard hand is well ahead of the chest.
+  assert.ok(turned.hn[0] - turned.sh[0] > 40);
+});
+
 test("a leg too short to reach the foot goes straight toward it", () => {
   const [kx, ky] = knee(0, 200, 0, 8);
   assert.ok(Math.abs(kx) < 1e-9);
@@ -181,7 +222,8 @@ test("the shapes of a figure are wound one way and its strokes another, so shape
       const shapes = [figure.l1.g, figure.l2.g, figure.l3.g, figure.l4.g, figure.l6.g, figure.head.g, figure.head.hair].flatMap(readPath);
       assert.ok(shapes.length > 10);
       assert.ok(shapes.every((shape) => shape.closed && area(shape.points) > 0), `silhouettes, ${where}`);
-      for (const layer of [figure.l1.k, figure.l2.k, figure.l3.k, figure.l4.k, figure.l6.k, figure.head.k, figure.head.s, figure.ground]) {
+      // (An older man's hair has no strokes of paper left in it, so his `s` is empty.)
+      for (const layer of [figure.l1.k, figure.l2.k, figure.l3.k, figure.l4.k, figure.l6.k, figure.head.k, figure.head.s, figure.ground].filter(Boolean)) {
         const ways = new Set(readPath(layer).map((stroke) => Math.sign(area(stroke.points))));
         assert.equal(ways.size, 1, `strokes, ${where}`);
         assert.ok(!ways.has(0));

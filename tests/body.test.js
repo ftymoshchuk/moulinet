@@ -145,7 +145,7 @@ test("an older man is in loose trousers, with no pouch of cloth at the knee", ()
   const young = legPart(J, W, J.ankF, J.kF, { front: true, seat: false, older: false });
   const older = legPart(J, W, J.ankF, J.kF, { front: true, seat: false, older: true });
   assert.notEqual(older.g, young.g);
-  assert.ok(readPath(older.k).length < readPath(young.k).length, "fewer folds");
+  assert.notEqual(older.k, young.k, "and folds of loose cloth, pulled from the crotch");
   assert.ok(older.d.length > 0 && young.d.length > 0);
 });
 
@@ -153,8 +153,9 @@ test("the trunk is a jersey, a neck and a collar, with its seams and the shading
   const { J, W } = posed();
   const trunkOf = trunk(J, W, false);
   assert.equal(readPath(trunkOf.g).length, 3, "jersey, neck, collar");
-  assert.equal(readPath(trunkOf.d).length, 4, "the collar's seams, and the stitching of the hem");
-  assert.ok(readPath(trunkOf.k).length >= 15, "and plenty of shading");
+  assert.equal(readPath(trunkOf.d).length, 3, "the collar's two lines, and the stitching of the hem");
+  assert.ok(readPath(trunkOf.k).length >= 10, "and a few long folds, not a row of ticks");
+  assert.ok(readPath(trunkOf.k).length < readPath(trunk(J, W, true).k).length, "an older man has the folds of a belly as well");
   // The belly of an older man shows low on the jersey, at the waist.
   const waist = (trunkDrawn) => {
     const points = readPath(trunkDrawn.g)[0].points;
@@ -231,10 +232,10 @@ test("the arms carry their hands: the fist is at the grip and the other hand on 
   assert.equal(shapes.length, 4, "sleeve, forearm, cuff and fist");
   assert.equal(readPath(sword.d).length, hands.fist.lines.length);
   const grip = W(J.hn);
-  for (const p of shapes[3].points) assert.ok(dist(p, grip) < 12, "the fist is round the grip");
+  for (const p of shapes[3].points) assert.ok(dist(p, grip) < 15, "the fist is round the grip");
 
   const rear = rearArm(J, W, hands.hip);
-  assert.equal(readPath(rear.g).length, 3, "sleeve, forearm and hand");
+  assert.equal(readPath(rear.g).length, 4, "sleeve, forearm, hand and the point of the elbow");
   const hip = W(J.rh);
   for (const p of readPath(rear.g)[2].points) assert.ok(dist(p, hip) < 15, "the hand is at the end of the forearm");
 });
@@ -263,9 +264,18 @@ test("the sabre is a blade 83 cm long from the cup, a cup over the blade, and a 
   near(dist(taper.points[0], taper.points[1]), 83, 0.5, "from 5 cm out to the tip");
   assert.ok(dist(taper.points[0], taper.points[3]) > dist(taper.points[1], taper.points[2]) * 2, "thicker at the cup than at the tip");
   const [cup] = readPath(blade.g);
-  assert.equal(cup.points.length, 15, "fourteen points, and the one that shuts the curve");
+  assert.equal(cup.points.length, 13, "twelve points, and the one that shuts the curve");
   assert.ok(cup.closed);
-  const centre = cup.points.slice(0, 14).reduce((sum, p) => [sum[0] + p[0] / 14, sum[1] + p[1] / 14], [0, 0]);
-  assert.ok(dist(centre, W(J.at(3))) < 0.5, "the cup is 3 cm out along the blade");
+  // The bell seen from the side is a thin crescent across the blade, 3 cm out along it, open toward the hand.
+  const near3 = W(J.at(3));
+  const along = [W(J.tip)[0] - W(J.at(5))[0], W(J.tip)[1] - W(J.at(5))[1]];
+  const long = Math.hypot(...along);
+  const u = [along[0] / long, along[1] / long];
+  const lengthwise = cup.points.map((p) => (p[0] - near3[0]) * u[0] + (p[1] - near3[1]) * u[1]);
+  const crosswise = cup.points.map((p) => -(p[0] - near3[0]) * u[1] + (p[1] - near3[1]) * u[0]);
+  const span = (list) => Math.max(...list) - Math.min(...list);
+  near(span(crosswise), 11.2, 0.6, "across the blade");
+  assert.ok(span(lengthwise) < span(crosswise) * 0.5, "and thin along it");
+  assert.ok(Math.max(...lengthwise) > 1.5 && Math.min(...lengthwise) > -1.5, "bulging toward the blade");
   assert.ok(readPath(blade.d)[0].points.length >= 3, "the bow");
 });

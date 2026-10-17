@@ -113,3 +113,15 @@ test("the fields hold typing to the same limits the scene is saved and shown wit
   for (const key of TEXT_KEYS) assert.equal(limitOf(`meta-${key}`), TEXT_LIMITS[key], `#meta-${key}`);
   assert.equal(limitOf("step-name"), TEXT_LIMITS.label, "#step-name");
 });
+
+test("every part of a figure the page fills has a colour, and the older man's face and trousers differ from his jersey", () => {
+  const parts = [...app.matchAll(/PARTS = \{([^}]*)\}/g)][0][1];
+  const kinds = new Set([...parts.matchAll(/"(\w+)"/g)].map((m) => m[1]));
+  assert.deepEqual([...kinds].toSorted(), ["face", "jersey", "trousers"]);
+  const rule = (selector) => css.match(new RegExp(`${selector.replace(/[.\\[\]]/g, "\\$&")}\\s*\\{([^}]*)\\}`))?.[1] ?? "";
+  const variable = (name) => css.match(new RegExp(`${name}:\\s*(#[0-9a-f]{6})`, "i"))?.[1];
+  assert.match(rule(".fencer--b .figure__fill--trousers"), /fill:\s*var\(--fencer-b-trousers\)/);
+  assert.match(rule(".fencer--b .figure__fill--face"), /fill:\s*var\(--fencer-b-face\)/);
+  const colours = new Set(["--fencer-b", "--fencer-b-trousers", "--fencer-b-face"].map(variable));
+  assert.ok(!colours.has(undefined) && colours.size === 3, "three colours, all different");
+});

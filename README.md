@@ -105,7 +105,7 @@ data** shows the one on stage, a step per line:
   "note": "The arm moves before the legs.",
   "camera": 0,
   "steps": [
-    {"label": "En garde", "hold": 600, "A": {"pose": "guard", "x": -30}, "B": {"pose": "guard", "x": 245}},
+    {"label": "En garde", "hold": 600, "A": {"pose": "guard", "x": -30}, "B": {"pose": "guard", "x": 310}},
     {"label": "Lunge", "ms": 150, "A": {"pose": "lungeFly", "x": 0}},
     {"label": "Head cut lands", "ms": 120, "hold": 700, "ease": "snap", "A": {"pose": "lungeHead", "x": 0}}
   ]
@@ -144,7 +144,7 @@ A fencer is `{"pose": …, "x": …, "adj": {…}}`:
 - `pose`: a name from the pose library below. A name it does not know is drawn
   as the guard, and **Phrase data** says which name that was.
 - `x`: where the fencer stands on the piste, in centimetres. Until a phrase
-  places them, A stands at 0 and B at 245, facing each other.
+  places them, A stands at 0 and B at 310, facing each other.
 - `adj`: joint values that override the pose on this step. **Adjust this
   moment** writes them; picking a pose or **Reset this step's adjustments**
   clears them.

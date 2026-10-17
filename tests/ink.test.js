@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { along, cuffGathers, groundStrokes, kneeFolds, sleeveFolds, sockWrinkles, thighFolds, torsoFolds, waistband } from "../site/js/folds.js";
+import { along, crotchFolds, cuffGathers, groundStrokes, kneeFolds, kneePuckers, sleeveFolds, sockWrinkles, thighFolds, torsoFolds, waistband } from "../site/js/folds.js";
 import { area, blob, brush, curve, dist, lerp, line, perp, ribbon, rotate, solid, unit, wound } from "../site/js/ink.js";
 import { boxOf, readPath } from "./path-data.js";
 
@@ -119,7 +119,7 @@ test("a line of ink is laid just outside its shape, a curve with a point for eac
   assert.ok(area(edge.points) > 0, "wound the same way as a shape");
   edge.points.slice(0, ring.length).forEach((p, i) => {
     const out = Math.hypot(...p) - 20;
-    assert.ok(out > 0.2 && out < 1.7, `point ${i} is ${out} cm outside the shape`);
+    assert.ok(out > 0.1 && out < 1.4, `point ${i} is ${out} cm outside the shape`);
   });
 });
 
@@ -132,8 +132,8 @@ test("the line is thin where the shape faces the light and heavy where it turns 
   const away = lit.filter(([, facing]) => facing < -0.9).map(([weight]) => weight);
   assert.ok(toward.length >= 2 && away.length >= 2);
   const mean = (list) => list.reduce((sum, v) => sum + v, 0) / list.length;
-  assert.ok(mean(toward) < 0.6, `thin toward the light (${mean(toward)})`);
-  assert.ok(mean(away) > 1.0, `heavy away from it (${mean(away)})`);
+  assert.ok(mean(toward) < 0.45, `thin toward the light (${mean(toward)})`);
+  assert.ok(mean(away) > 0.7, `heavy away from it (${mean(away)})`);
   assert.ok(mean(away) > mean(toward) * 2);
   const [fine] = readPath(ribbon(ring, 0.1, 0.2));
   const finest = Math.max(...fine.points.slice(0, 36).map((p) => Math.hypot(...p) - 20));
@@ -203,6 +203,8 @@ function folds(seed = 1) {
     knee: kneeFolds(FLAT, knee, su, [1, 0], seed),
     sock: sockWrinkles(FLAT, lerp(knee, ankle, 0.2), ankle, [1, 0], seed),
     cuff: cuffGathers(FLAT, ankle, su, [1, 0], seed),
+    crotch: crotchFolds(FLAT, hip, knee, [1, 0], seed),
+    puckers: kneePuckers(FLAT, knee, su, [1, 0], seed),
     torso: torsoFolds(at, seed),
     belly: torsoFolds(at, seed, true),
     waist: waistband(at, seed),
@@ -214,7 +216,7 @@ function folds(seed = 1) {
 test("every fold is a row of lens-shaped strokes, long and slender", () => {
   for (const [name, d] of Object.entries(folds())) {
     const strokes = readPath(d);
-    assert.ok(strokes.length >= 3, `${name} has strokes`);
+    assert.ok(strokes.length >= (name === "puckers" ? 2 : 3), `${name} has strokes`);
     for (const lens of strokes) {
       assert.equal(lens.closed, true, name);
       assert.equal(lens.points.length, 8, name);

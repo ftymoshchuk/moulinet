@@ -56,19 +56,19 @@ const HAIR_YOUNG = [
 
 // An older man's: bare on top, a ring of hair from above the ear round the back.
 const HAIR_OLD = [
-  [-1.6, 3.6],
-  [-3.2, 8.6],
-  [-5.6, 11.2],
-  [-8.4, 8.4],
+  [-2.4, 4.6],
+  [-3.6, 9.0],
+  [-5.8, 11.3],
+  [-8.4, 8.5],
   [-9.8, 2.4],
   [-9.6, -3.0],
   [-7.6, -6.8],
-  [-5.6, -7.0],
-  [-4.4, -4.2],
-  [-5.6, -0.2],
-  [-6.0, 4.6],
-  [-4.4, 7.4],
-  [-2.8, 5.0],
+  [-6.0, -6.8],
+  [-5.8, -4.4],
+  [-7.2, -0.4],
+  [-7.4, 4.4],
+  [-5.6, 7.8],
+  [-3.4, 6.2],
 ];
 
 // The way the hair lies, as strokes of paper left in it: along each, from the
@@ -78,10 +78,7 @@ const STREAKS_YOUNG = [
   [[4.2, 7.4], [0.4, 8.8], [-4.8, 8.0]],
   [[-1.6, 4.6], [-5.0, 5.2], [-8.4, 2.4]],
 ];
-const STREAKS_OLD = [
-  [[-3.4, 7.4], [-5.8, 9.8], [-7.8, 7.8]],
-  [[-8.4, 3.6], [-8.8, 0.0], [-8.2, -3.6]],
-];
+const STREAKS_OLD = [];
 
 // The ear: an outer curve and the fold inside it.
 const EAR = [
@@ -106,8 +103,7 @@ const FACE = {
   eye: [[5.2, 1.0], [6.1, 1.35], [7.0, 1.0], 0.95],
   lid: [[5.0, 1.9], [6.0, 2.1], [7.1, 1.9], 0.25],
   nostril: [[8.6, -4.2], [9.1, -4.2], [9.6, -4.5], 0.7],
-  mouth: [[7.1, -6.9], [8.3, -7.3], [9.3, -7.1], 0.35],
-  cheek: [[3.4, -3.2], [2.4, -5.8], [0.4, -8.0], 0.5],
+  mouth: [[7.2, -7.2], [8.3, -7.3], [9.3, -7.0], 0.35],
 };
 
 // Loose ends of hair at the edge of the hairline, and the short hair that is
@@ -116,13 +112,14 @@ const FACE = {
 const TUFTS_YOUNG = [
   [[7.2, 7.8], [8.1, 8.6]],
   [[6.0, 9.8], [6.9, 10.7]],
-  [[-7.0, -7.4], [-6.6, -9.2]],
-  [[-5.0, -7.8], [-4.4, -9.6]],
   [[3.6, 1.6], [3.0, -0.8]],
 ];
 const TUFTS_OLD = [
-  [[-7.0, -7.2], [-6.6, -8.8]],
-  [[-2.0, 3.8], [-1.6, 5.2]],
+  [[-4.0, 9.2], [-6.6, 8.8], [-8.0, 6.2]],
+  [[-7.6, 5.0], [-8.6, 2.2], [-8.8, -0.6]],
+  [[-8.4, -1.8], [-8.4, -4.2], [-7.4, -6.0]],
+  [[-6.4, 9.8], [-8.0, 8.2]],
+  [[-8.8, 3.4], [-9.2, 0.6]],
 ];
 
 /**
@@ -191,15 +188,18 @@ const HIP_HAND = {
 };
 
 // A hand shape moved `dx` along its x axis.
-function shifted(hand, dx) {
-  const move = ([x, y]) => [x + dx, y];
+function shifted(hand, dx, scale = 1) {
+  const move = ([x, y]) => [x * scale + dx, y * scale];
   return { shape: hand.shape.map(move), lines: hand.lines.map((l) => l.map(move)) };
 }
+
+// The sword hand is a big gauntlet glove, a fifth larger than drawn above.
+const GLOVE = 1.2;
 
 // The fist sits behind the guard, which is at the front of the grip: its front
 // is at the origin, so it reaches back from there.
 export function handParts() {
-  return { fist: shifted(FIST, -9.4), hip: HIP_HAND };
+  return { fist: shifted(FIST, -9.4 * GLOVE, GLOVE), hip: HIP_HAND };
 }
 
 // A lace-up leather shoe seen from the side, in a frame with the ankle at the
@@ -224,8 +224,8 @@ const SHOE = {
     [8.0, -8.3],
   ],
   ink: [
-    [[-6.9, -8.1], [-7.0, -6.1], [8.0, -6.8], [20.4, -6.4], [21.5, -7.2], [20.0, -8.1], [8.0, -8.5]],
-    [[-7.0, -8.1], [-7.2, -5.0], [-2.8, -5.0], [-2.4, -8.2]],
+    [[-2.8, -7.4], [8.0, -7.5], [18.0, -7.3], [21.3, -7.6], [20.2, -8.2], [8.0, -8.5], [-2.6, -8.4]],
+    [[-7.0, -8.1], [-7.2, -6.0], [-2.8, -6.0], [-2.4, -8.2]],
   ],
   hatch: [
     [[-6.6, -2.2], [-5.2, -4.4]],
@@ -244,8 +244,8 @@ const SHOE = {
     [[4.6, -1.0], [6.0, -3.2]],
     [[6.6, -1.8], [8.0, -3.8]],
   ],
-  sole: [[-6.8, -6.1], [6.0, -6.6], [20.9, -6.3]],
-  heel: [[-2.6, -8.0], [-2.7, -5.0]],
+  sole: [[-2.8, -7.3], [6.0, -7.4], [20.9, -7.2]],
+  heel: [[-2.7, -7.8], [-2.8, -6.3]],
   cap: [[11.6, -3.4], [12.6, -5.0], [12.2, -6.2]],
 };
 
@@ -259,9 +259,9 @@ export function shoeParts() {
 // the shoulders turned toward the camera the slices make the broad shoulders
 // that taper to the waist, and the camera swings them round as it swings.
 const TORSO = [
-  [8, 0.4, 11.8, 15.2],
-  [17, 0.4, 11.6, 14.8],
-  [27, 0.8, 12.6, 16.4],
+  [8, 0.4, 11.8, 12.6],
+  [17, 0.4, 11.4, 12.0],
+  [27, 0.8, 12.4, 14.4],
   [37, 1.4, 13.4, 18.0],
   [45, 1.4, 12.8, 19.4],
   [51, 0.6, 10.6, 19.6],

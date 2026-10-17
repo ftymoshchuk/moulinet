@@ -15,6 +15,9 @@ const RAD = Math.PI / 180;
 // Thigh and shin, hip to ankle (cm).
 const THIGH = 44;
 const SHIN = 46;
+// The sword arm: shoulder to elbow, and elbow to the grip (the forearm and the hand round it).
+const UPPER_ARM = 31;
+const FOREARM = 31;
 // Half the width between the shoulder joints (cm).
 const SHOULDER = 19;
 
@@ -23,7 +26,7 @@ function fmt(point) {
 }
 
 /** The knee for a hip and an ankle; it bends forward, and a leg too short to reach goes straight. */
-export function knee(hx, hy, ax, ay) {
+export function knee(hx, hy, ax, ay, side = 1) {
   const dx = ax - hx;
   const dy = ay - hy;
   const d = Math.hypot(dx, dy);
@@ -32,7 +35,7 @@ export function knee(hx, hy, ax, ay) {
   }
   const towardAnkle = Math.atan2(dy, dx);
   const bend = Math.acos(Math.max(-1, Math.min(1, (THIGH * THIGH + d * d - SHIN * SHIN) / (2 * THIGH * d))));
-  return [hx + THIGH * Math.cos(towardAnkle + bend), hy + THIGH * Math.sin(towardAnkle + bend)];
+  return [hx + THIGH * Math.cos(towardAnkle + side * bend), hy + THIGH * Math.sin(towardAnkle + side * bend)];
 }
 
 /** Every joint of a pose, plus `at(k)`: the point k cm along the blade from the hand. */
@@ -40,7 +43,7 @@ export function skeleton(p) {
   const hip = [p.hipX, p.hipY];
   const ankB = [0, 8 + Math.max(0, p.liftB)];
   const ankF = [p.footF, 8 + Math.max(0, p.liftF)];
-  const kB = knee(hip[0], hip[1], ankB[0], ankB[1]);
+  const kB = knee(hip[0], hip[1], ankB[0], ankB[1], -1);
   const kF = knee(hip[0], hip[1], ankF[0], ankF[1]);
   // Up the torso, and forward across it.
   const u = [Math.sin(p.lean * RAD), Math.cos(p.lean * RAD)];
@@ -51,11 +54,13 @@ export function skeleton(p) {
   // lies in a plane of its own, at its shoulder's distance from the camera.
   const across = SHOULDER * Math.cos(p.turn * RAD);
   const back = SHOULDER * Math.sin(p.turn * RAD);
-  const sh = [...T(52, 0), -across];
+  // The sword shoulder is the one turned away, at the front of the chest.
+  const sh = [...T(50, back * 0.9), -across];
   const nk = T(58, 0);
-  const hd = T(72, 1);
-  const el = [sh[0] + 30 * Math.cos(p.arm * RAD), sh[1] + 30 * Math.sin(p.arm * RAD), sh[2]];
-  const hn = [el[0] + 27 * Math.cos(p.fore * RAD), el[1] + 27 * Math.sin(p.fore * RAD), sh[2]];
+  // The head is thrust forward of the shoulders on a neck, as the plates have it.
+  const hd = T(74.5, 3);
+  const el = [sh[0] + UPPER_ARM * Math.cos(p.arm * RAD), sh[1] + UPPER_ARM * Math.sin(p.arm * RAD), sh[2]];
+  const hn = [el[0] + FOREARM * Math.cos(p.fore * RAD), el[1] + FOREARM * Math.sin(p.fore * RAD), sh[2]];
   const bp = p.blade * RAD;
   const by = p.yaw * RAD;
   const bd = [Math.cos(bp) * Math.cos(by), Math.sin(bp) * Math.cos(by), Math.sin(by)];

@@ -152,7 +152,7 @@ const LIGHT = [-0.6, -0.8];
  * that reaches over the whole shape; drawn first, with the shape filled over it,
  * only the line itself shows.
  */
-export function ribbon(points, thin = 0.36, thick = 1.35) {
+export function ribbon(points, thin = 0.26, thick = 0.95) {
   const shape = wound(points);
   const n = shape.length;
   const outer = new Array(n);
