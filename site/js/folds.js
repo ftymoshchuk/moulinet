@@ -138,7 +138,7 @@ export function cuffGathers(W, ankle, su, ref, seed = 3) {
 /**
  * The creases of a jersey, each a thin stroke laid on its surface: under the
  * sleeve, radiating from the armpit; across the chest; at the waist, where the
- * body bends; and down the front edge, as the shading of the turn of the body.
+ * body bends; and two long folds down the front, where the body turns away.
  * `at(up, v)` is a point of the jersey: `up` cm above the hips, and `v` across
  * from the back, -1, to the front, 1. An older man has the folds of a belly.
  */
