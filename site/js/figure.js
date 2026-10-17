@@ -101,6 +101,20 @@ export function stickFigure(p, dir, camera) {
  * instead of knickerbockers.
  */
 export function inkFigure(p, dir, camera, { backView = false, older = false } = {}) {
+  // A pose held on a step, or a page left paused, is drawn again and again: the
+  // last drawing of each pose object is kept, for the same view. A pose is never
+  // changed once made, so the drawing cannot go stale.
+  const view = `${dir} ${camera} ${backView} ${older}`;
+  const kept = DRAWN.get(p);
+  if (kept?.view === view) return kept.figure;
+  const figure = draw(p, dir, camera, backView, older);
+  DRAWN.set(p, { view, figure });
+  return figure;
+}
+
+const DRAWN = new WeakMap();
+
+function draw(p, dir, camera, backView, older) {
   const J = skeleton(p);
   const W = projector(p, dir, camera);
   const hands = handParts();

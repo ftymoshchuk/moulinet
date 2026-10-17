@@ -47,20 +47,20 @@ export function place(o, axis, x, y) {
 // The jersey from the side, in the torso's frame: [along the spine from the
 // hips, forward], from the hem up the front and down the back.
 const JERSEY = [
-  [12, 13.8],
-  [22, 15.2],
-  [34, 16.6],
-  [45, 16.4],
-  [53, 13.0],
-  [58.5, 6.6],
+  [9, 14.8],
+  [21, 16.6],
+  [33, 18.2],
+  [44, 17.8],
+  [52.5, 14.2],
+  [58.5, 6.8],
   [60.5, -3.8],
-  [56.5, -10.8],
-  [49, -15.6],
-  [38, -17.4],
-  [24, -16.8],
-  [12, -15.0],
-  [9.4, -7.0],
-  [9.2, 3.0],
+  [56.5, -11.6],
+  [49, -17.2],
+  [38, -19.4],
+  [24, -19.0],
+  [11, -16.6],
+  [7.6, -7.4],
+  [7.4, 3.6],
 ];
 
 /**
@@ -159,8 +159,8 @@ function legShapes(J, ank, kn, { seat, tilt, length, parts, older }) {
     shapes.push(segment(add(ank, mul(su, -7)), add(ank, mul(su, 1)), [7.4, 6.4, 6.6], [7.4, 6.4, 6.6], f, [0.2, 0.5]));
     lines.push(across(add(ank, mul(su, -7.4)), su, 7.4, 7.2, 0.8));
   } else {
-    shapes.push(segment(top, kn, [13.6, 14.0, 13.0, 11.0], [13.0, 13.0, 11.6, 9.6], f));
-    shapes.push(segment(kn, k(12), [11.4, 11.2, 10.0, 7.8], [9.2, 8.8, 7.8, 6.9], f));
+    shapes.push(segment(top, kn, [14.8, 15.4, 14.2, 11.6], [14.2, 14.4, 12.6, 10.2], f));
+    shapes.push(segment(kn, k(12), [12.0, 11.8, 10.4, 8.0], [9.6, 9.0, 8.0, 7.0], f));
     shapes.push(segment(k(10.5), add(ank, mul(su, 2)), [6.8, 6.8, 5.6, 4.4, 3.8], [6.6, 7.4, 5.8, 4.2, 3.7], f, [0.2, 0.4]));
     // The lower edge of the cloth over the band, and the band itself.
     lines.push(across(k(11.6), su, 9.4, 7.6, 1.8));
@@ -190,14 +190,14 @@ function lerp2(a, b) {
 // the top, fuller below it.
 function seatShape(J) {
   return [
-    [10, 12.6],
-    [3, 14.2],
-    [-5, 12.8],
-    [-11, 5.5],
-    [-11, -3.5],
-    [-5, -11.8],
-    [2, -15.4],
-    [10, -14.2],
+    [9, 13.8],
+    [3, 15.6],
+    [-5, 14.2],
+    [-11.5, 6],
+    [-11.5, -4],
+    [-5, -12.8],
+    [2, -16.8],
+    [9, -15.6],
   ].map(([a, b]) => J.T(a, b));
 }
 
