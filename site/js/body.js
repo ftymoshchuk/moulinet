@@ -226,6 +226,9 @@ export function legPart(J, W, ank, kn, { front, seat, older }) {
 
 // ---------- Head and sabre ----------
 
+// The head is set a little smaller than the points of parts.js, as in the plates, where it is small for the body.
+const HEAD_SIZE = 0.92;
+
 /** The head in profile: the face, the hair, the ear and the marks of the features. */
 export function headPart(J, W, older) {
   const lean = (J.lean * 0.35 * Math.PI) / 180;
@@ -233,7 +236,7 @@ export function headPart(J, W, older) {
   const hu = [Math.sin(lean), Math.cos(lean)];
   const parts = headParts(older);
   // A point in the head's own frame, set on the body and turned for the camera.
-  const H = (q) => W([J.hd[0] + hf[0] * q[0] + hu[0] * q[1], J.hd[1] + hf[1] * q[0] + hu[1] * q[1]]);
+  const H = (q) => W([J.hd[0] + (hf[0] * q[0] + hu[0] * q[1]) * HEAD_SIZE, J.hd[1] + (hf[1] * q[0] + hu[1] * q[1]) * HEAD_SIZE]);
   const Hs = (list) =>
     list.map((q) => {
       const o = H(q);
