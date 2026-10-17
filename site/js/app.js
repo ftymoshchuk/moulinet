@@ -531,7 +531,9 @@ function createFencer(id) {
       outline: svgPath(body, isHead ? "figure__outline figure__outline--head" : "figure__outline"),
       fill: svgPath(body, "figure__fill"),
       hair: isHead ? svgPath(body, "figure__hair") : null,
+      shine: isHead ? svgPath(body, "figure__shine") : null,
       detail: svgPath(body, "figure__detail"),
+      ink: svgPath(body, "figure__ink"),
     };
   }
   const blade = document.getElementById(`blade-${id}`);
@@ -774,7 +776,9 @@ function drawFencer(parts, figure) {
     setAttr(layer.outline, "d", shape.g);
     setAttr(layer.fill, "d", shape.g);
     if (layer.hair) setAttr(layer.hair, "d", shape.hair);
+    if (layer.shine) setAttr(layer.shine, "d", shape.s);
     setAttr(layer.detail, "d", shape.d);
+    setAttr(layer.ink, "d", shape.k ?? "");
   }
   setAttr(parts.ground, "d", figure.ground);
   setAttr(parts.blade.steel, "d", figure.blade.k);
@@ -789,7 +793,7 @@ function drawStage(now) {
   stagePanelEl.classList.toggle("is-solo", timeline.solo);
   setAttr(floorEl, "d", floorPath(camera));
   drawFencer(fencers.A, inkFigure(now.A, 1, camera, { backView: true }));
-  drawFencer(fencers.B, inkFigure(now.B, -1, camera, { bald: true }));
+  drawFencer(fencers.B, inkFigure(now.B, -1, camera, { older: true }));
   if (state.ink) setAttr(inkEl, "filter", "url(#ink-texture)");
   else inkEl.removeAttribute("filter");
 

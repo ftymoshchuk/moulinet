@@ -77,9 +77,9 @@
   --floor: #cbc5b9;
   --ghost: #a39c8f;
   --ink: #1d1b18;
-  --hair-grey: #7e776c;
+  --hair-grey: #4b463f;
   --fencer-a: #f6f3ec;
-  --fencer-b: #ddd5c6;
+  --fencer-b: #dcd6c9;
   --trail-a: #9a3a27;
   --trail-b: #2f4f7f;
 
@@ -622,9 +622,8 @@ textarea:focus-visible {
 }
 
 .ground {
-  fill: none;
-  stroke: var(--ink);
-  stroke-width: 0.6;
+  fill: var(--ink);
+  stroke: none;
 }
 
 .fencer--a {
@@ -642,11 +641,11 @@ textarea:focus-visible {
 .figure__outline {
   fill: var(--fencer);
   stroke: var(--ink);
-  stroke-width: 2.6;
+  stroke-width: 1.7;
 }
 
 .figure__outline--head {
-  stroke-width: 2.4;
+  stroke-width: 0.8;
 }
 
 .figure__fill {
@@ -659,10 +658,23 @@ textarea:focus-visible {
   stroke: none;
 }
 
+/* Strokes of paper left in the hair. */
+.figure__shine {
+  fill: var(--paper);
+  stroke: none;
+}
+
+/* Brush strokes: tapered shapes of ink, for the shading and the heavy lines. */
+.figure__ink {
+  fill: var(--ink);
+  stroke: none;
+}
+
 .figure__detail {
   fill: none;
   stroke: var(--ink);
-  stroke-width: 0.6;
+  stroke-width: 0.55;
+  stroke-linecap: round;
 }
 
 .blade__steel {
@@ -671,9 +683,9 @@ textarea:focus-visible {
 }
 
 .blade__guard {
-  fill: var(--fencer);
+  fill: var(--ink);
   stroke: var(--ink);
-  stroke-width: 1;
+  stroke-width: 0.8;
 }
 
 .blade__bow {

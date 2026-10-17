@@ -3,20 +3,12 @@ import { test } from "node:test";
 
 import { basePhrase } from "../site/js/bases.js";
 import { PIVOT, bladePaths, bladeTip, floorPath, inkFigure, knee, projector, skeleton, stickFigure } from "../site/js/figure.js";
-import { PRESETS } from "../site/js/library.js";
+import { area } from "../site/js/ink.js";
+import { POSES, PRESETS } from "../site/js/library.js";
 import { buildTimeline, poseAt, resolvePose } from "../site/js/phrase.js";
+import { allPaths, readPath } from "./path-data.js";
 
 const BAD_NUMBER = /NaN|Infinity|undefined/;
-
-function pathsOf(figure) {
-  const out = [];
-  const walk = (value) => {
-    if (typeof value === "string") out.push(value);
-    else if (value && typeof value === "object") Object.values(value).forEach(walk);
-  };
-  walk(figure);
-  return out;
-}
 
 test("every phrase and every base posture draws clean paths at every moment, from every camera angle", () => {
   for (const phrase of [...PRESETS.map((preset) => preset.phrase), basePhrase()]) {
@@ -26,11 +18,11 @@ test("every phrase and every base posture draws clean paths at every moment, fro
         const { A, B } = poseAt(timeline, t);
         const drawn = [
           inkFigure(A, 1, camera, { backView: true }),
-          inkFigure(B, -1, camera, { bald: true }),
+          inkFigure(B, -1, camera, { older: true }),
           stickFigure(A, 1, camera),
           stickFigure(B, -1, camera),
         ];
-        for (const d of drawn.flatMap(pathsOf)) {
+        for (const d of drawn.flatMap((figure) => allPaths(figure))) {
           assert.doesNotMatch(d, BAD_NUMBER, `${phrase.name} at ${t} ms, camera ${camera}`);
         }
       }
@@ -43,6 +35,7 @@ test("an ink figure has every layer, each with a silhouette and detail lines", (
   for (const layer of ["l1", "l2", "l3", "l4", "l6"]) {
     assert.match(figure[layer].g, /^M.*Z$/, layer);
     assert.match(figure[layer].d, /^M/, layer);
+    assert.match(figure[layer].k, /^M.*z$/, layer);
   }
   assert.match(figure.head.g, /^M.*Z$/);
   assert.match(figure.head.hair, /^M.*Z$/);
@@ -123,4 +116,57 @@ test("blade paths sample the whole phrase about every 10 ms, at most 700 times",
 
   const long = buildTimeline({ steps: [{ hold: 60000 }] });
   assert.equal(bladePaths(long, 0).times.length, 701);
+});
+
+test("the shapes of a figure are wound one way and its strokes another, so shapes merge and strokes stay solid", () => {
+  for (const [dir, options] of [[1, { backView: true }], [-1, { older: true }], [1, {}], [-1, {}]]) {
+    for (const name of ["guard", "lungeChest", "parry5"]) {
+      const figure = inkFigure(resolvePose({ pose: name }), dir, 25, options);
+      const where = `${name}, facing ${dir}, ${JSON.stringify(options)}`;
+      const shapes = [figure.l1.g, figure.l2.g, figure.l3.g, figure.l4.g, figure.l6.g, figure.head.g, figure.head.hair].flatMap(readPath);
+      assert.ok(shapes.length > 10);
+      assert.ok(shapes.every((shape) => shape.closed && area(shape.points) > 0), `silhouettes, ${where}`);
+      for (const layer of [figure.l1.k, figure.l2.k, figure.l3.k, figure.l4.k, figure.l6.k, figure.head.k, figure.head.s, figure.ground]) {
+        const ways = new Set(readPath(layer).map((stroke) => Math.sign(area(stroke.points))));
+        assert.equal(ways.size, 1, `strokes, ${where}`);
+        assert.ok(!ways.has(0));
+      }
+    }
+  }
+});
+
+test("a pose is drawn once for a view, and when drawn again for another it comes out the same", () => {
+  const pose = resolvePose({ pose: "guard" });
+  const first = inkFigure(pose, 1, 0);
+  assert.equal(inkFigure(pose, 1, 0), first, "held, it is the same drawing");
+  for (const [dir, camera, options] of [[1, 30, {}], [-1, 0, {}], [1, 0, { backView: true }], [1, 0, { older: true }]]) {
+    const other = inkFigure(pose, dir, camera, options);
+    assert.notEqual(other, first, `facing ${dir} from ${camera}° ${JSON.stringify(options)} is a new drawing`);
+    assert.equal(inkFigure(pose, dir, camera, options), other, "and that one is held");
+  }
+  assert.deepEqual(inkFigure(pose, 1, 0), first, "nothing in a drawing is left to chance");
+  assert.deepEqual(inkFigure(resolvePose({ pose: "guard" }), 1, 0), first, "nor to which pose object it was made from");
+});
+
+test("a pose held on a step is one drawing, however long the step lasts", () => {
+  const timeline = buildTimeline(PRESETS[0].phrase);
+  const early = poseAt(timeline, 100).A;
+  const late = poseAt(timeline, 500).A;
+  assert.equal(inkFigure(early, 1, 0), inkFigure(late, 1, 0));
+  const moving = poseAt(timeline, timeline.steps[1].start + 40).A;
+  assert.notEqual(inkFigure(moving, 1, 0), inkFigure(late, 1, 0));
+});
+
+test("a figure's path data stays small enough to draw again on every frame", () => {
+  let largest = 0;
+  for (const name of Object.keys(POSES)) {
+    for (const camera of [-60, -30, 0, 30, 60]) {
+      for (const [dir, options] of [[1, { backView: true }], [-1, { older: true }], [1, {}], [-1, {}]]) {
+        const size = allPaths(inkFigure(resolvePose({ pose: name }), dir, camera, options)).reduce((sum, d) => sum + d.length, 0);
+        largest = Math.max(largest, size);
+        assert.ok(size < 24000, `${name} from ${camera}° is ${size} characters`);
+      }
+    }
+  }
+  assert.ok(largest > 8000, "and it is a drawing, not an outline");
 });
