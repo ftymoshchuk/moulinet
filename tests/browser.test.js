@@ -157,6 +157,8 @@ test("in a browser, the practice library plays each scene and says what it is", 
     label: "Advance: front foot lands",
     play: "Play",
     announced: "Step 3 of 8: Advance: front foot lands",
+    // A advances and has all four ghosts, a body and a blade each; B holds the guard and has none.
+    ghosts: { A: 8, B: 0 },
   });
   assert.deepEqual(seen.toggledOff, { pressed: ["false", "false", "false", "false"], ghostsHidden: true, trailsHidden: true, inkFilter: null });
   assert.equal(seen.inkFilter, "url(#ink-texture)");

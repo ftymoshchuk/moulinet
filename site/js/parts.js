@@ -99,8 +99,8 @@ const EAR_FOLD = [
 // Marks on the face: [where a stroke starts, where it ends, how thick]. The eye
 // and brow are heavier than the nostril and the line of the mouth.
 const FACE = {
-  brow: [[4.2, 2.7], [6.2, 3.1], [8.1, 2.8], 1.2],
-  eye: [[5.2, 1.0], [6.1, 1.35], [7.0, 1.0], 0.95],
+  brow: [[4.2, 2.7], [6.2, 3.1], [8.1, 2.8], 0.8],
+  eye: [[5.2, 1.0], [6.1, 1.35], [7.0, 1.0], 0.8],
   lid: [[5.0, 1.9], [6.0, 2.1], [7.1, 1.9], 0.25],
   nostril: [[8.6, -4.2], [9.1, -4.2], [9.6, -4.5], 0.7],
   mouth: [[7.2, -7.2], [8.3, -7.3], [9.3, -7.0], 0.35],
@@ -204,11 +204,12 @@ export function handParts() {
 
 // A lace-up leather shoe seen from the side, in a frame with the ankle at the
 // origin and x toward the toe: the outline from the heel round the toe, the dark
-// sole and heel, the hatching on the heel and the toe cap, the laces and the
-// seams. The floor is 8 below the origin.
+// heel block, the hatching on the heel and the toe cap, the laces, the toe cap's
+// seam and the welt above the sole. The floor is 8 below the origin.
 const SHOE = {
+  // The points along the sole, the heavy edge of the line, keep half of it ([x, y, 0, weight]).
   shape: [
-    [-6.4, -8.0],
+    [-6.4, -8.0, 0, 0.5],
     [-7.0, -5.4],
     [-6.4, -1.8],
     [-5.0, 1.2],
@@ -219,14 +220,11 @@ const SHOE = {
     [14.4, -4.0],
     [18.4, -4.0],
     [21.0, -5.4],
-    [21.4, -7.0],
-    [19.6, -8.0],
-    [8.0, -8.3],
+    [21.4, -7.0, 0, 0.7],
+    [19.6, -8.0, 0, 0.5],
+    [8.0, -8.3, 0, 0.5],
   ],
-  ink: [
-    [[-2.8, -7.4], [8.0, -7.5], [18.0, -7.3], [21.3, -7.6], [20.2, -8.2], [8.0, -8.5], [-2.6, -8.4]],
-    [[-7.0, -8.1], [-7.2, -6.0], [-2.8, -6.0], [-2.4, -8.2]],
-  ],
+  ink: [[[-6.6, -8.1], [-6.8, -6.6], [-3.0, -6.6], [-2.6, -8.2]]],
   hatch: [
     [[-6.6, -2.2], [-5.2, -4.4]],
     [[-6.2, -0.6], [-4.6, -3.0]],
@@ -244,8 +242,7 @@ const SHOE = {
     [[4.6, -1.0], [6.0, -3.2]],
     [[6.6, -1.8], [8.0, -3.8]],
   ],
-  sole: [[-2.8, -7.3], [6.0, -7.4], [20.9, -7.2]],
-  heel: [[-2.7, -7.8], [-2.8, -6.3]],
+  sole: [[-2.4, -7.2], [6.0, -7.4], [20.4, -6.9]],
   cap: [[11.6, -3.4], [12.6, -5.0], [12.2, -6.2]],
 };
 
@@ -269,12 +266,12 @@ const TORSO = [
   [58, -0.4, 5.6, 8.6],
 ];
 
-/** The slices of the jersey; an older man carries more at the waist and has rounder shoulders. */
+/** The slices of the jersey; an older man carries more at the waist and has narrower, more sloping shoulders. */
 export function torsoParts(older = false) {
   if (!older) return TORSO;
   return TORSO.map(([up, mid, depth, width]) => {
     const belly = Math.max(0, Math.min(1, (40 - up) / 30));
-    const shoulders = Math.max(0, Math.min(1, (up - 36) / 12));
-    return [up, mid + 2.2 * belly, depth + 2.0 * belly, width - 1.8 * shoulders - 0.4 * belly];
+    const shoulders = Math.max(0, Math.min(1, (up - 36) / 15));
+    return [up, mid + 2.2 * belly, depth + 2.0 * belly, width - 2.6 * shoulders - 0.4 * belly];
   });
 }

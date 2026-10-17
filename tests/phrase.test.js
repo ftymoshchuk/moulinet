@@ -20,6 +20,7 @@ import {
   poseAt,
   removeStep,
   resolvePose,
+  samePose,
   setJoint,
   setMeta,
   setPose,
@@ -162,6 +163,20 @@ test("angles take the short way round; lengths go straight", () => {
   assert.equal(halfway.blade, 180);
   assert.equal(halfway.hipX, 15);
   assert.equal(mixPoses({ arm: -170 }, { arm: 170 }, 0.25).arm, -175);
+});
+
+test("two poses are the same when every joint is, so a fencer who is not moving has no ghosts", () => {
+  const guard = resolvePose({ pose: "guard", x: 5 });
+  assert.equal(samePose(guard, resolvePose({ pose: "guard", x: 5 })), true);
+  assert.equal(samePose(guard, resolvePose({ pose: "guard", x: 6 })), false, "a position");
+  assert.equal(samePose(guard, resolvePose({ pose: "guard", x: 5, adj: { turn: 57 } })), false, "a joint");
+  assert.equal(samePose(guard, { ...guard, extra: 1 }), false, "or a joint more");
+  // A fencer a step leaves alone is mixed with himself on the way, and comes out the same.
+  const timeline = buildTimeline({ steps: [{ A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 300 } }, { ms: 200, A: { pose: "lungeHead", x: 0 } }] });
+  const during = poseAt(timeline, timeline.steps[1].start + 90);
+  assert.equal(samePose(during.B, timeline.steps[1].B), true, "B has not moved");
+  assert.equal(samePose(during.A, timeline.steps[1].A), false, "A is on the way");
+  assert.equal(samePose(poseAt(timeline, timeline.steps[1].start + 40).B, during.B), true, "at any moment of the move");
 });
 
 test("how far the shoulders are turned is an angle like the others: a phrase can set it, and it eases between steps", () => {

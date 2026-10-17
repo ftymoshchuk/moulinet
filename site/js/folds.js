@@ -36,17 +36,17 @@ function stroke(W, points, width, swell) {
 }
 
 // How much heavier than first drawn every stroke is.
-const INK = 1.05;
+const INK = 0.78;
 
 /**
  * Long dry strokes down a baggy thigh from the hip toward the knee, spreading at
  * the top and drawing together at the bottom, where the cloth is gathered.
  */
-export function thighFolds(W, hip, knee, ref, seed = 1) {
+export function thighFolds(W, hip, knee, ref, seed = 1, offsets = [7.4, 3.0, -1.2, -5.2]) {
   const f = along(hip, knee, ref);
   const r = wobble(seed);
   let d = "";
-  [7.4, 3.0, -1.2, -5.2].forEach((c, i) => {
+  offsets.forEach((c, i) => {
     const t0 = 0.06 + r() * 0.2;
     const t1 = 0.56 + r() * 0.36;
     const a = f.at(t0, c + (r() - 0.5) * 2);
@@ -156,8 +156,6 @@ export function torsoFolds(at, seed = 4, older = false) {
   [[40.6, -0.5, 38.0, -0.18], [42.0, -0.46, 40.2, -0.04]].forEach(([u0, v0, u1, v1]) => {
     d += crease([[u0, v0], [u1, v1]], 0.5);
   });
-  // Across the chest, the line under it.
-  d += crease([[39.4, 0.1], [38.4, 0.4], [39.8, 0.74]], 0.55);
   // At the waist, where the jersey is gathered.
   [[18.4, -0.5, 16.6, 0.6], [14.8, -0.62, 13.2, 0.72], [21.6, -0.3, 20.6, 0.5]].forEach(([u0, v0, u1, v1]) => {
     d += crease([[u0, v0], [(u0 + u1) / 2 - 0.5, (v0 + v1) / 2], [u1, v1]], 0.5);
@@ -173,15 +171,10 @@ export function torsoFolds(at, seed = 4, older = false) {
   return d;
 }
 
-/** A heavier line along the hem, where the jersey meets the waistband, and the wrinkles it drags in the cloth below. */
-export function waistband(at, seed = 5) {
-  const r = wobble(seed);
+/** A heavier line along the hem, where the jersey meets the waistband. */
+export function waistband(at) {
   const page = (q) => q;
-  let d = stroke(page, [at(9.6, -0.94), at(8.6, 0.0), at(9.8, 0.96)], 1.0, 0.5);
-  for (let v = -0.7; v < 0.9; v += 0.42 + r() * 0.2) {
-    d += stroke(page, [at(8.4, v), at(6.2 - r() * 1.2, v + 0.04)], 0.5, 0.35);
-  }
-  return d;
+  return stroke(page, [at(9.6, -0.94), at(8.6, 0.0), at(9.8, 0.96)], 1.0, 0.5);
 }
 
 /**
@@ -217,8 +210,8 @@ export function groundStrokes(W, ankle, front, seed = 7, k = 1) {
   const x = ankle[0];
   const reach = (front ? 24 : 15) * k;
   return [
-    stroke(W, [[x - 19 - r() * 3, -0.5], [x + reach * 0.6, -0.8], [x + reach + 8 + r() * 4, -0.3]], 1.2, 0.4),
-    stroke(W, [[x - 12, -2.4], [x + reach * 0.5, -2.6], [x + reach + 3, -2.3]], 0.9, 0.45),
-    stroke(W, [[x - 7 - r() * 3, -4.0], [x + reach * 0.3, -4.1], [x + reach - 3, -3.8]], 0.7, 0.5),
+    stroke(W, [[x - 17 - r() * 3, -1.3], [x + reach * 0.6, -1.6], [x + reach + 6 + r() * 4, -1.1]], 1.0, 0.4),
+    stroke(W, [[x - 11, -3.0], [x + reach * 0.5, -3.2], [x + reach + 2, -2.9]], 0.8, 0.45),
+    stroke(W, [[x - 6 - r() * 3, -4.5], [x + reach * 0.3, -4.6], [x + reach - 3, -4.3]], 0.6, 0.5),
   ].join("");
 }

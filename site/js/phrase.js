@@ -114,6 +114,12 @@ export function ease(u, kind) {
   return 0.5 - 0.5 * Math.cos(Math.PI * x);
 }
 
+/** Whether two poses are the same, joint for joint. */
+export function samePose(a, b) {
+  const keys = Object.keys(a);
+  return keys.length === Object.keys(b).length && keys.every((key) => a[key] === b[key]);
+}
+
 export function mixPoses(from, to, amount) {
   const out = {};
   for (const key of Object.keys(to)) {

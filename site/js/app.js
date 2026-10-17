@@ -21,6 +21,7 @@ import {
   phraseToText,
   poseAt,
   removeStep,
+  samePose,
   setJoint,
   setMeta,
   setPose,
@@ -37,6 +38,8 @@ const PARTS = { l1: "jersey", l2: "trousers", l3: "trousers", l4: "jersey", head
 // Four motion ghosts, each this far behind the one before.
 const GHOSTS = [1, 2, 3, 4];
 const GHOST_GAP_MS = 45;
+// What a fencer who has not moved leaves behind.
+const NO_GHOST = { body: "", blade: "" };
 // The most one frame may advance, so a tab coming back does not leap ahead.
 const MAX_FRAME_MS = 64;
 // The camera slider's range, which a pasted phrase is held to as well.
@@ -907,8 +910,8 @@ function drawStage(now) {
   if (state.ghosts && moving) {
     for (const k of GHOSTS) {
       const then = poseAt(timeline, Math.max(0, state.time - k * GHOST_GAP_MS));
-      const a = stickFigure(then.A, 1, camera);
-      const b = stickFigure(then.B, -1, camera);
+      const a = samePose(then.A, now.A) ? NO_GHOST : stickFigure(then.A, 1, camera);
+      const b = samePose(then.B, now.B) ? NO_GHOST : stickFigure(then.B, -1, camera);
       setAttr(fencers.A.ghostBodies[k], "d", a.body);
       setAttr(fencers.A.ghostBlades[k], "d", a.blade);
       setAttr(fencers.B.ghostBodies[k], "d", b.body);

@@ -129,6 +129,8 @@
           label: text("#step-label"),
           play: $("#play-button").getAttribute("aria-label"),
           announced: text("#announcer"),
+          // A ghost shows where a fencer was a moment ago, so one who has not moved has none.
+          ghosts: { A: $$("#ghosts-a path").filter((path) => path.getAttribute("d")).length, B: $$("#ghosts-b path").filter((path) => path.getAttribute("d")).length },
         };
 
         // The view: toggles, camera, speed, play and pause.

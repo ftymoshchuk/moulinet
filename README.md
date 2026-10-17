@@ -55,8 +55,8 @@ and the Creator, which play scenes, add:
 - **Playback** at ¼, ½ or full speed, a step at a time, or scrubbed along the
   timeline, looped or once through.
 - **Motion ghosts and blade paths** show how each moment was reached: four
-  fading stick figures trail the fencers, and dotted lines trace both blade
-  tips through the whole scene.
+  fading stick figures trail each fencer who is moving, and dotted lines trace
+  both blade tips through the whole scene.
 
 The base postures stand still, so they have neither.
 

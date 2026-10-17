@@ -216,7 +216,7 @@ function folds(seed = 1) {
 test("every fold is a row of lens-shaped strokes, long and slender", () => {
   for (const [name, d] of Object.entries(folds())) {
     const strokes = readPath(d);
-    assert.ok(strokes.length >= (name === "puckers" ? 2 : 3), `${name} has strokes`);
+    assert.ok(strokes.length >= (name === "puckers" ? 2 : name === "waist" ? 1 : 3), `${name} has strokes`);
     for (const lens of strokes) {
       assert.equal(lens.closed, true, name);
       assert.equal(lens.points.length, 8, name);
@@ -230,7 +230,9 @@ test("every fold is a row of lens-shaped strokes, long and slender", () => {
 test("the folds are the same every time and move with the seed: nothing is random", () => {
   assert.deepEqual(folds(), folds());
   const other = folds(5);
-  for (const [name, d] of Object.entries(folds())) assert.notEqual(d, other[name], `${name} varies with its seed`);
+  // (The belt is ruled, not wobbled, so it is the same line for every seed.)
+  for (const [name, d] of Object.entries(folds()).filter(([name]) => name !== "waist")) assert.notEqual(d, other[name], `${name} varies with its seed`);
+  assert.equal(folds().waist, other.waist);
 });
 
 test("a frame along a bone faces the side it is told to", () => {

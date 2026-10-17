@@ -63,9 +63,9 @@ test("the shoe stands on the floor 8 cm below the ankle, toe forward and heel ba
   const { shape, sole, laces, ink, hatch } = shoeParts();
   near(Math.min(...shape.map((p) => p[1])), -8, 0.5, "the sole");
   assert.ok(Math.max(...shape.map((p) => p[0])) > 20 && Math.min(...shape.map((p) => p[0])) < -5, "toe and heel");
-  assert.equal(sole.length, 3);
+  assert.equal(sole.length, 3, "the welt above the sole");
   assert.equal(laces.length, 4);
-  assert.equal(ink.length, 2, "the dark sole and heel");
+  assert.equal(ink.length, 1, "the dark heel block");
   assert.ok(hatch.length >= 6 && hatch.every((stroke) => stroke.length === 2), "strokes on the heel and the toe cap");
   for (const [, y] of ink.flat()) assert.ok(y < -4.9 && y > -8.7, "the sole and heel are low on the shoe");
 });
@@ -102,10 +102,11 @@ test("a point of a frame is the origin, then so far along the axis, then so far 
 test("a shoe is turned up at the toe, and seen short when it points across", () => {
   const parts = shoeParts();
   const flat = shoe([100, 8], 0, 1, parts);
-  assert.deepEqual(flat.shape[0], [100 + parts.shape[0][0], 8 + parts.shape[0][1]], "set on the ankle");
+  assert.deepEqual(flat.shape[0].slice(0, 2), [100 + parts.shape[0][0], 8 + parts.shape[0][1]], "set on the ankle");
+  assert.deepEqual(flat.shape[0].slice(2), parts.shape[0].slice(2), "and keeping how much of its line it has");
   assert.equal(flat.shape.length, parts.shape.length);
-  assert.equal(flat.lines.length, 7, "the sole, the heel, the toe cap and four laces");
-  assert.equal(flat.ink.length, 2, "the dark sole and heel go with it");
+  assert.equal(flat.lines.length, 6, "the welt, the toe cap and four laces");
+  assert.equal(flat.ink.length, 1, "the dark heel goes with it");
   assert.equal(flat.hatch.length, parts.hatch.length);
   const toeOf = (made) => made.shape.reduce((best, p) => (p[0] > best[0] ? p : best));
 
@@ -115,8 +116,8 @@ test("a shoe is turned up at the toe, and seen short when it points across", () 
 
   const tilted = shoe([100, 8], 30, 1, parts);
   assert.ok(toeOf(tilted)[1] > toeOf(flat)[1] + 8, "a foot off the floor lands on its heel");
-  const soleToe = (made) => made.ink[0].reduce((best, p) => (p[0] > best[0] ? p : best));
-  assert.ok(soleToe(tilted)[1] > soleToe(flat)[1] + 8, "and its sole turns with it");
+  const heelFront = (made) => made.ink[0].reduce((best, p) => (p[0] > best[0] ? p : best));
+  assert.ok(heelFront(tilted)[0] > heelFront(flat)[0] + 3, "and its dark heel block turns with it, the foot pivoting on the ankle");
 });
 
 test("the legs: the foot behind is seen shorter, the seat belongs to one leg, a lifted foot is turned up", () => {
@@ -153,8 +154,9 @@ test("the trunk is a jersey, a neck and a collar, with its seams and the shading
   const { J, W } = posed();
   const trunkOf = trunk(J, W, false);
   assert.equal(readPath(trunkOf.g).length, 3, "jersey, neck, collar");
-  assert.equal(readPath(trunkOf.d).length, 3, "the collar's two lines, and the stitching of the hem");
-  assert.ok(readPath(trunkOf.k).length >= 10, "and a few long folds, not a row of ticks");
+  assert.equal(readPath(trunkOf.d).length, 1, "one line where the collar turns over, and no more");
+  assert.ok(readPath(trunkOf.k).length >= 8, "and a few long folds, not a row of ticks");
+  assert.ok(readPath(trunkOf.k).length <= 14, "not many more than a few");
   assert.ok(readPath(trunkOf.k).length < readPath(trunk(J, W, true).k).length, "an older man has the folds of a belly as well");
   // The belly of an older man shows low on the jersey, at the waist.
   const waist = (trunkDrawn) => {
@@ -247,9 +249,16 @@ test("the head sits where the skeleton puts it, and turns older with the hair", 
   const centre = [(box.minX + box.maxX) / 2, (box.minY + box.maxY) / 2];
   assert.ok(dist(centre, W(J.hd)) < 3);
   assert.ok(box.maxY - box.minY > 20 && box.maxY - box.minY < 30, "about a head tall");
-  for (const key of ["g", "hair", "s", "d", "k"]) assert.match(head[key], /^M/, key);
-  assert.equal(headPart(J, W, true).g, head.g, "the same skull");
-  assert.notEqual(headPart(J, W, true).hair, head.hair);
+  for (const key of ["g", "hair", "k"]) assert.match(head[key], /^M/, key);
+  assert.match(head.s, /^M/, "a young man's dark hair has strokes of paper left in it");
+  assert.equal(headPart(J, W, true).s, "", "and an older man's thin grey hair has none");
+  const old = headPart(J, W, true);
+  assert.notEqual(old.hair, head.hair);
+  // An older man's head is a little larger, and carried lower and further forward.
+  const oldBox = boxOf(readPath(old.g));
+  assert.ok(oldBox.maxY - oldBox.minY > (box.maxY - box.minY) * 1.04, "a little larger");
+  const oldCentre = [(oldBox.minX + oldBox.maxX) / 2, (oldBox.minY + oldBox.maxY) / 2];
+  assert.ok(oldCentre[0] > centre[0] + 0.5 && oldCentre[1] > centre[1] + 0.5, "lower and further forward");
 
   const turned = headPart(J, projector(posed().pose, 1, 60), false);
   const narrow = boxOf(readPath(turned.g));

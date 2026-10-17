@@ -77,7 +77,7 @@
   --floor: #cbc5b9;
   --ghost: #a39c8f;
   --ink: #1d1b18;
-  --hair-grey: #4b463f;
+  --hair-grey: #7a746a;
   --fencer-a: #f6f3ec;
   --fencer-b: #e0dacd;
   --fencer-b-trousers: #cdc6b5;
@@ -680,7 +680,7 @@ textarea:focus-visible {
 .figure__detail {
   fill: none;
   stroke: var(--ink);
-  stroke-width: 0.55;
+  stroke-width: 0.42;
   stroke-linecap: round;
 }
 

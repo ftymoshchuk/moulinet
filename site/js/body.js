@@ -117,19 +117,21 @@ export function trunk(J, W, older, frame = torsoFrame(J, W, older)) {
   const back = rows.map(([up]) => slice(up).back).reverse();
   front[0] = [...front[0], 1];
   back[back.length - 1] = [...back[back.length - 1], 1];
-  const neck = segment(J.T(58, 0.2), J.T(71, 2.8), [5.4, 5.0], [6.2, 5.8], J.f);
+  const [headUp, headForward] = older ? OLDER_HEAD : YOUNGER_HEAD;
+  const neck = older
+    ? segment(J.T(58, 0.2), J.T(headUp - 2.6, headForward - 0.2), [6.0, 5.6], [6.8, 6.4], J.f)
+    : segment(J.T(58, 0.2), J.T(headUp - 2.6, headForward - 0.2), [5.4, 5.0], [6.2, 5.8], J.f);
   const collar = segment(J.T(54.5, 0.3), J.T(62.6, 1.0), [6.1, 5.8, 5.5], [7.0, 6.6, 6.3], J.f, [0.3, 0.3]);
   // The hem is not ruled across: it hangs a little lower in the middle, as the belt goes round the body.
   const hem = lerp(front[0], back[back.length - 1], 0.5);
   const jersey = [...front, ...back, [hem[0], hem[1] + 1.3]];
-  const shapes = drawn([jersey, neck.map(W), collar.map(W)]);
-  // The roll of the collar: its upper edge, a fold, its seam with the jersey; and the stitching along the hem.
-  const d =
-    line([T(63.1, -5.0), T(63.6, 0.3), T(62.5, 5.0)]) +
-    line([T(59.4, -5.4), T(59.9, 0.1), T(59.0, 5.3)]) +
-    line([across(10.6, 0.9), across(10.2, 0.3), across(10, -0.3), across(10.4, -0.9)]);
+  const body = drawn([jersey]);
+  const throat = drawn([neck.map(W), collar.map(W)], 0.16, 0.4);
+  const shapes = { g: body.g + throat.g, o: body.o + throat.o };
+  // The roll of the collar: the line where it turns over.
+  const d = line([T(59.4, -5.4), T(59.9, 0.1), T(59.0, 5.3)]);
   // The shadow the jaw throws on the neck.
-  const jaw = brush([T(64.8, 5.2), T(63.6, 1.4), T(62.8, -2.8)].map(W), 1.5, 0.5);
+  const jaw = brush([T(headUp - 8.8, headForward + 2.2), T(headUp - 10, headForward - 1.6), T(headUp - 10.8, headForward - 5.8)].map(W), 1.5, 0.5);
   return { ...shapes, d, k: torsoFolds(across, 4, older) + waistband(across) + jaw };
 }
 
@@ -147,7 +149,7 @@ export function swordArm(J, W, fist) {
   const up = [0, 1];
   // The sleeve is full above the elbow and at the forearm's top, and tapers to the wrist.
   const upper = segment(J.sh, J.el, [5.8, 6.2, 6.2, 5.6], [5.4, 5.8, 5.9, 5.3], up, [0.55, 1]);
-  const fore = segment(J.el, wrist, [5.9, 5.3, 4.7, 4.3], [5.5, 5.0, 4.5, 4.2], up);
+  const fore = segment(J.el, wrist, [5.9, 5.1, 4.3, 3.8], [5.5, 4.8, 4.1, 3.7], up);
   // The gauntlet, flaring a little from the wrist, with its seam where it meets the fist.
   const cuff = segment(sub(J.hn, mul(fu, 17.0)), sub(J.hn, mul(fu, 10.6)), [5.2, 5.7, 6.2], [5.2, 5.7, 6.2], up, [0.2, 0.2]);
   const hand = fist.shape.map(([x, y]) => Wa(place(J.hn, fu, x, y)));
@@ -173,18 +175,18 @@ export function rearArm(J, W, hand, frame = torsoFrame(J, W, false)) {
   const outline = tube.slice(1, 2 * n + 3).map(Wa);
   // ...to where the sleeve is sewn to the jersey, up the armhole to the top of the shoulder.
   const { across } = frame;
-  // Along the jersey's own edge the sleeve has no line, and the seam is a light one.
+  // Along the jersey's own edge the sleeve has no line, and nor has its seam.
   const on = (p) => [p[0], p[1], 0, 0];
-  const seam = (p) => [p[0], p[1], 0, 0.15];
+  const seam = (p) => [p[0], p[1], 0, 0];
   const sleeve = [on(across(54.2, -0.97)), on(across(52.4, -1)), on(across(50.4, -1)), ...outline.slice(1), seam(across(43, -0.62)), seam(across(47, -0.86))];
-  const fore = segment(J.re, J.rh, [6.4, 5.5, 4.8, 4.3], [6.0, 5.2, 4.6, 4.2], up);
+  const fore = segment(J.re, J.rh, [6.2, 5.2, 4.3, 3.6], [5.8, 4.9, 4.1, 3.5], up);
   const palm = hand.shape.map(([x, y]) => Wa(place(J.rh, qu, x, y)));
-  // The point of the elbow: a corner on the outside of the bend, where the plates draw one.
+  // The point of the elbow, rounded, on the outside of the bend.
   const e = Wa(J.re);
   const toward = add(unit(e, Wa(J.rs)), unit(e, Wa(J.rh)));
   const outward = Math.hypot(...toward) < 0.2 ? perp(unit(e, Wa(J.rs))) : mul(unit([0, 0], toward), -1);
   const side = perp(outward);
-  const elbow = [add(add(e, mul(outward, 2.6)), mul(side, 4.6)), [...add(e, mul(outward, 7.6)), 1], add(add(e, mul(outward, 2.6)), mul(side, -4.6)), add(e, mul(outward, -2))];
+  const elbow = [add(add(e, mul(outward, 2.2)), mul(side, 5.2)), add(e, mul(outward, 6.0)), add(add(e, mul(outward, 2.2)), mul(side, -5.2)), add(e, mul(outward, -2))];
   const shapes = drawn([sleeve, fore.map(Wa), palm, elbow]);
   const d = hand.lines.map((l) => line(l.map(([x, y]) => Wa(place(J.rh, qu, x, y))))).join("");
   return { ...shapes, d, k: sleeveFolds(Wa, J.rs, J.re, J.rh, 8) };
@@ -199,13 +201,15 @@ export function rearArm(J, W, hand, frame = torsoFrame(J, W, false)) {
  * shape, the thin lines on it, in centimetres.
  */
 export function shoe(ank, tilt, length, parts) {
-  const set = ([x, y]) => {
+  // A point that keeps only part of its line (a fourth item) keeps that on the way.
+  const set = ([x, y, corner, weight]) => {
     const r = rotate([x > 0 ? x * length : x, y], tilt);
-    return [ank[0] + r[0], ank[1] + r[1]];
+    const q = [ank[0] + r[0], ank[1] + r[1]];
+    return weight === undefined ? q : [q[0], q[1], corner, weight];
   };
   return {
     shape: parts.shape.map(set),
-    lines: [parts.sole, parts.heel, parts.cap, ...parts.laces].map((l) => l.map(set)),
+    lines: [parts.sole, parts.cap, ...parts.laces].map((l) => l.map(set)),
     ink: parts.ink.map((shape) => shape.map(set)),
     hatch: parts.hatch.map((stroke) => stroke.map(set)),
   };
@@ -229,24 +233,34 @@ function legShapes(J, ank, kn, { seat, tilt, length, parts, older }) {
   // The top of the thigh is round only where the seat is not: a leg without it must not bulge out behind the other.
   const round = seat ? 1 : 0.62;
   if (older) {
-    // Loose trousers: full at the thigh, narrowing to the shin, and bloused over the shoe at the ankle.
+    // Loose trousers, one cloth from the hip to the ankle: full at the thigh, narrowing down the shin, and bloused over the shoe in a soft S.
     shapes.push(segment(top, kn, [11.8, 12.6, 13.0, 12.4], [11.4, 12.2, 12.4, 11.6], f, [round, 1]));
-    shapes.push(segment(kn, add(ank, mul(su, -9)), [11.8, 10.4, 8.8, 7.6], [11.2, 10.0, 8.4, 7.4], f));
-    shapes.push(segment(add(ank, mul(su, -11)), add(ank, mul(su, 1)), [7.6, 9.0, 9.4, 7.4], [7.2, 8.6, 9.0, 7.0], f, [0.4, 0.5]));
-    lines.push(across(add(ank, mul(su, -10.4)), su, 7.8, 7.4, 0.8));
-    lines.push(across(add(ank, mul(su, -1.2)), su, 7.2, 6.8, 0.6));
+    const hi = [12.4, 11.2, 10.0, 9.0, 8.3, 7.9, 7.8, 9.4, 7.4];
+    const lo = [11.6, 10.6, 9.5, 8.6, 8.0, 7.7, 7.6, 9.0, 7.0];
+    shapes.push(segment(kn, add(ank, mul(su, 1)), hi, lo, f, [0, 0.5]));
+    // The hem, where the cloth is gathered over the shoe, from one edge of the leg to the other.
+    const at = 1 - 1.2 / (dist(kn, ank) + 1);
+    lines.push(across(add(ank, mul(su, -1.2)), su, edge(hi, at) - 0.2, edge(lo, at) - 0.2, 0.7));
   } else {
     // Knickerbockers: close at the hip and full at the knee, where the cloth hangs over the band.
     shapes.push(segment(top, kn, [13.0, 12.8, 12.2, 11.4], [12.6, 12.2, 11.4, 10.6], f, [round, 1]));
-    shapes.push(segment(kn, k(12), [13.4, 13.0, 11.6, 8.8], [11.8, 11.0, 9.2, 7.2], f));
-    shapes.push(segment(k(10.5), add(ank, mul(su, 2)), [6.8, 6.8, 5.6, 4.4, 3.8], [6.6, 7.4, 5.8, 4.2, 3.7], f, [0.2, 0.4]));
-    // The lower edge of the cloth over the band, and the band itself.
-    lines.push(across(k(11.6), su, 9.4, 7.6, 1.8));
-    lines.push(across(k(14.2), su, 6.8, 6.8, 0.6));
+    // (It starts square at the knee, inside the round end of the thigh, so the two make one knee.)
+    shapes.push(segment(kn, k(12), [11.4, 12.2, 10.6, 8.0], [10.6, 10.6, 8.6, 6.8], f, [0, 1]));
+    shapes.push(segment(k(10.5), add(ank, mul(su, 2)), [6.4, 6.9, 5.8, 4.6, 3.9], [6.4, 7.4, 5.8, 4.3, 3.7], f, [0.2, 0.4]));
+    // The lower edge of the cloth over the band, and the band itself, each curved round the leg.
+    lines.push(across(k(11.6), su, 8.1, 6.7, 3.0));
+    lines.push(across(k(14.2), su, 6.3, 6.3, 2.6));
   }
   if (seat) shapes.push(seatShape(J, older));
   const foot = shoe(ank, tilt, length, parts);
   return { shapes, foot, lines };
+}
+
+// How far out a shape's edge is `t` of the way along it, for the half-widths given at evenly spaced stations.
+function edge(widths, t) {
+  const at = t * (widths.length - 1);
+  const i = Math.min(widths.length - 2, Math.floor(at));
+  return widths[i] + (widths[i + 1] - widths[i]) * (at - i);
 }
 
 // A line across a leg at `c`, from `hi` out on the side that faces forward to
@@ -290,13 +304,17 @@ function seatShape(J, older) {
 export function legPart(J, W, ank, kn, { front, seat, older }) {
   const tilt = front ? Math.min(30, Math.max(0, (ank[1] - 8) * 2.1)) : 0;
   const made = legShapes(J, ank, kn, { seat, tilt, length: front ? 1 : 0.62, parts: shoeParts(), older });
-  const set = (points) => points.map(W);
+  const set = (points) =>
+    points.map((q) => {
+      const o = W(q);
+      return q.length > 3 ? [o[0], o[1], q[2], q[3]] : o;
+    });
   const su = unit(kn, ank);
   const seed = front ? 11 : 21;
   const ref = [1, 0];
   const stocking = add(kn, mul(su, 8.5));
   const folds = older
-    ? crotchFolds(W, J.hip, kn, ref, seed) + kneePuckers(W, kn, su, ref, seed + 1) + cuffGathers(W, ank, su, ref, seed + 2)
+    ? thighFolds(W, J.hip, kn, ref, seed, [6.2, 1.4, -3.4]) + crotchFolds(W, J.hip, kn, ref, seed) + kneePuckers(W, kn, su, ref, seed + 1) + cuffGathers(W, ank, su, ref, seed + 2)
     : thighFolds(W, J.hip, kn, ref, seed) + sockWrinkles(W, stocking, ank, ref, seed + 2) + kneeFolds(W, kn, su, ref, seed + 1);
   // The leather is dark where the sole and heel are, and hatched where the shoe turns away from the light.
   const leather = made.foot.ink.map((shape) => solid(set(shape))).join("") + made.foot.hatch.map((stroke) => brush(set(stroke), 0.5, 0.4)).join("");
@@ -311,6 +329,9 @@ export function legPart(J, W, ank, kn, { front, seat, older }) {
 
 // The head is set a little smaller than the points of parts.js, as in the plates, where it is small for the body.
 const HEAD_SIZE = 0.92;
+// Where the middle of the head is in the torso's frame, up the spine and forward of it. An older man carries his head lower and thrust further forward.
+const YOUNGER_HEAD = [73.6, 3];
+const OLDER_HEAD = [72.2, 4.8];
 
 /** The head in profile: the face, the hair, the ear and the marks of the features. */
 export function headPart(J, W, older) {
@@ -318,8 +339,11 @@ export function headPart(J, W, older) {
   const hf = [Math.cos(lean), -Math.sin(lean)];
   const hu = [Math.sin(lean), Math.cos(lean)];
   const parts = headParts(older);
+  // An older man's head is a little larger for his height.
+  const size = HEAD_SIZE * (older ? 1.07 : 1);
+  const centre = J.T(...(older ? OLDER_HEAD : YOUNGER_HEAD));
   // A point in the head's own frame, set on the body and turned for the camera.
-  const H = (q) => W([J.hd[0] + (hf[0] * q[0] + hu[0] * q[1]) * HEAD_SIZE, J.hd[1] + (hf[1] * q[0] + hu[1] * q[1]) * HEAD_SIZE]);
+  const H = (q) => W([centre[0] + (hf[0] * q[0] + hu[0] * q[1]) * size, centre[1] + (hf[1] * q[0] + hu[1] * q[1]) * size]);
   const Hs = (list) =>
     list.map((q) => {
       const o = H(q);
@@ -328,11 +352,12 @@ export function headPart(J, W, older) {
   const mark = (m) => brush(m.slice(0, 3).map(H), m[3], 0.5);
   const face = parts.face;
   return {
-    ...drawn([Hs(parts.skull)], 0.2, 0.7),
+    ...drawn([Hs(parts.skull)], 0.18, 0.6),
     hair: blob(Hs(parts.hair)),
     s: parts.streaks.map((streak) => brush(streak.map(H), 0.7, 0.5)).join(""),
     d: line(Hs(parts.ear)) + line(Hs(parts.earFold)),
-    k: [face.brow, face.eye, face.lid, face.nostril, face.mouth].map(mark).join("") + parts.tufts.map((tuft) => brush(tuft.map(H), 0.9, 0.35)).join(""),
+    // The older man's grey hair is drawn with finer strokes than a young man's dark hair.
+    k: [face.brow, face.eye, face.lid, face.nostril, face.mouth].map(mark).join("") + parts.tufts.map((tuft) => brush(tuft.map(H), older ? 0.45 : 0.9, 0.35)).join(""),
   };
 }
 
