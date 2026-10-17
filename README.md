@@ -86,7 +86,9 @@ The shoulders are turned toward you, as in those books: the jersey is a stack
 of slices of the body, set round by the pose's `turn`, so it is broad at the
 shoulders and narrow at the waist, and the camera swings it as it swings the
 piste. The sleeve of the arm on your side begins on the jersey itself, and the
-other arm lies behind it.
+other arm lies behind it, set on the shoulder at the front of the chest and as
+long as an arm. The knee of the leg behind bends back, which gives the guard
+its wide stance.
 
 A young fencer wears knickerbockers and long stockings, an older one loose
 trousers gathered at the ankle, a belly and narrower shoulders. The strokes are

@@ -58,7 +58,7 @@ export function skeleton(p) {
   const sh = [...T(50, back * 0.9), -across];
   const nk = T(58, 0);
   // The head is thrust forward of the shoulders on a neck, as the plates have it.
-  const hd = T(74.5, 3);
+  const hd = T(73.6, 3);
   const el = [sh[0] + UPPER_ARM * Math.cos(p.arm * RAD), sh[1] + UPPER_ARM * Math.sin(p.arm * RAD), sh[2]];
   const hn = [el[0] + FOREARM * Math.cos(p.fore * RAD), el[1] + FOREARM * Math.sin(p.fore * RAD), sh[2]];
   const bp = p.blade * RAD;

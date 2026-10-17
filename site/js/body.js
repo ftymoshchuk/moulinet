@@ -117,8 +117,8 @@ export function trunk(J, W, older, frame = torsoFrame(J, W, older)) {
   const back = rows.map(([up]) => slice(up).back).reverse();
   front[0] = [...front[0], 1];
   back[back.length - 1] = [...back[back.length - 1], 1];
-  const neck = segment(J.T(58, 0.2), J.T(72, 2.8), [4.8, 4.4], [5.6, 5.2], J.f);
-  const collar = segment(J.T(54.5, 0.3), J.T(62, 0.9), [5.9, 5.6, 5.2], [6.9, 6.4, 6.0], J.f, [0.3, 0.3]);
+  const neck = segment(J.T(58, 0.2), J.T(71, 2.8), [5.4, 5.0], [6.2, 5.8], J.f);
+  const collar = segment(J.T(54.5, 0.3), J.T(62.6, 1.0), [6.1, 5.8, 5.5], [7.0, 6.6, 6.3], J.f, [0.3, 0.3]);
   // The hem is not ruled across: it hangs a little lower in the middle, as the belt goes round the body.
   const hem = lerp(front[0], back[back.length - 1], 0.5);
   const jersey = [...front, ...back, [hem[0], hem[1] + 1.3]];
