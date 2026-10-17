@@ -417,7 +417,7 @@ textarea:focus-visible {
 .fencer-button:not([aria-pressed="true"]):enabled:hover,
 .toggle:not([aria-pressed="true"]):hover,
 .step-button:not([aria-pressed="true"]):hover,
-.pose-button:not([aria-pressed="true"]):hover,
+.pose-button:not([aria-pressed="true"]):enabled:hover,
 .scene-button:not([aria-pressed="true"]):hover,
 .base-button:not([aria-pressed="true"]):hover,
 .icon-button:hover,
@@ -1129,6 +1129,13 @@ textarea:focus-visible {
 }
 
 .field__input:disabled {
+  opacity: 0.4;
+}
+
+/* The Creator's fields wait while the phrase data has an error. */
+.pose-button:disabled,
+.joint input:disabled,
+.check input:disabled {
   opacity: 0.4;
 }
 

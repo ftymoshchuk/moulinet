@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 
+import { TEXT_KEYS, TEXT_LIMITS } from "../site/js/phrase.js";
+
 const SITE = new URL("../site/", import.meta.url);
 const read = (path) => readFileSync(new URL(path, SITE), "utf8");
 const html = read("index.html");
@@ -104,4 +106,10 @@ test("every bundled font is used, preloaded fonts among them, and has its licenc
   for (const licence of ["OFL-BigShoulders.txt", "OFL-IBMPlex.txt"]) {
     assert.match(read(`fonts/${licence}`), /SIL OPEN FONT LICENSE Version 1\.1/);
   }
+});
+
+test("the fields hold typing to the same limits the scene is saved and shown within", () => {
+  const limitOf = (id) => Number(html.match(new RegExp(`<(?:input|textarea)\\b[^>]*\\bid="${id}"[^>]*>`))?.[0].match(/\bmaxlength="(\d+)"/)?.[1]);
+  for (const key of TEXT_KEYS) assert.equal(limitOf(`meta-${key}`), TEXT_LIMITS[key], `#meta-${key}`);
+  assert.equal(limitOf("step-name"), TEXT_LIMITS.label, "#step-name");
 });

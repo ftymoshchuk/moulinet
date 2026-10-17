@@ -12,6 +12,10 @@ const POSE_KEYS = new Set(Object.keys(POSES.guard));
 // these, then the camera and solo, then the steps.
 export const TEXT_KEYS = ["name", "event", "reference", "note"];
 const HEAD_KEYS = [...TEXT_KEYS, "camera", "solo"];
+// The most each of them may say, and a step's label. The fields hold typing to
+// these, a scene is saved only within them, and the page shows no more than they
+// allow: a wall of pasted text would otherwise take seconds to lay out.
+export const TEXT_LIMITS = { name: 100, event: 160, reference: 2000, note: 1000, label: 100 };
 // A step's own keys, in the order its line shows them.
 const STEP_KEYS = ["label", "ms", "hold", "ease", "A", "B"];
 // The longest move or hold the controls will write, in milliseconds.
@@ -25,6 +29,16 @@ export function isPlainObject(value) {
 
 export function clone(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+/** `text` cut to `limit` characters, with an ellipsis where it was cut, and never in the middle of a character. */
+export function clip(text, limit) {
+  if (text.length <= limit) return text;
+  let end = limit - 1;
+  // A character outside the basic plane is two code units; keep both or neither.
+  const last = text.charCodeAt(end - 1);
+  if (last >= 0xd800 && last <= 0xdbff) end--;
+  return `${text.slice(0, end)}…`;
 }
 
 function duration(value) {
@@ -74,7 +88,7 @@ export function buildTimeline(phrase) {
     const holdStart = t;
     t += duration(step.hold);
     out.push({
-      label: String(step.label || `Step ${i + 1}`),
+      label: clip(String(step.label || `Step ${i + 1}`), TEXT_LIMITS.label),
       specA,
       specB,
       A: resolvePose(specA, unknown),

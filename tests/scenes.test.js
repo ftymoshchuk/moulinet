@@ -97,22 +97,23 @@ test("a scene saved in another tab is not lost to this one's older list", () => 
   storage.data.set(STORAGE_KEY, stored([scene("theirs", "Theirs"), ...other]));
   saveScene(storage, scene("b", "Mine too").phrase);
   assert.deepEqual(readSaved(storage).map(({ phrase }) => phrase.name), ["Mine too", "Theirs", "Mine"]);
-  assert.deepEqual(deleteScene(storage, "theirs").map(({ phrase }) => phrase.name), ["Mine too", "Mine"]);
+  assert.deepEqual(deleteScene(storage, "theirs").scenes.map(({ phrase }) => phrase.name), ["Mine too", "Mine"]);
 });
 
 test("a saved scene is forgotten, and forgetting one that is not there changes nothing", () => {
   const storage = memoryStorage();
   const a = saveScene(storage, scene("a", "A").phrase);
   const b = saveScene(storage, scene("b", "B").phrase);
-  assert.deepEqual(deleteScene(storage, a.id).map(({ id }) => id), [b.id]);
-  assert.deepEqual(deleteScene(storage, "nope").map(({ id }) => id), [b.id]);
+  assert.deepEqual(deleteScene(storage, a.id).scenes.map(({ id }) => id), [b.id]);
+  assert.deepEqual(deleteScene(storage, "nope").scenes.map(({ id }) => id), [b.id]);
   assert.deepEqual(readSaved(storage).map(({ id }) => id), [b.id]);
 });
 
 test("a browser that will not keep scenes, or give storage at all, is reported, not thrown", () => {
-  assert.equal(saveScene(refusingStorage, newPhrase()), null);
-  assert.equal(deleteScene(refusingStorage, "a"), null);
-  assert.equal(saveScene(null, newPhrase()), null);
+  assert.deepEqual(saveScene(refusingStorage, newPhrase()), { error: "storage" });
+  assert.deepEqual(deleteScene(refusingStorage, "a"), { error: "storage" });
+  assert.deepEqual(saveScene(null, newPhrase()), { error: "storage" });
+  assert.deepEqual(deleteScene(null, "a"), { error: "storage" });
   assert.deepEqual(readSaved(null), []);
   assert.deepEqual(readSaved(refusingStorage), []);
 });
@@ -160,6 +161,69 @@ test("a new id is one the saved scenes do not have", () => {
     let calls = 0;
     Math.random = () => (calls++ < 1 ? 0.5 : 0.25);
     assert.equal(newId([{ id: `1${(0.5).toString(36).slice(2, 6)}` }]), `1${(0.25).toString(36).slice(2, 6)}`);
+  } finally {
+    Date.now = real;
+    Math.random = random;
+  }
+});
+
+test("scenes saved by a newer version of the page are not shown, and not written over", () => {
+  for (const version of [2, 7, 1.5]) {
+    const text = stored([scene("a", "From the future")], version);
+    const storage = memoryStorage({ [STORAGE_KEY]: text });
+    assert.deepEqual(readSaved(storage), [], `version ${version} is not one this page can read`);
+    assert.deepEqual(saveScene(storage, newPhrase()), { error: "newer" }, `saving over version ${version}`);
+    assert.deepEqual(deleteScene(storage, "a"), { error: "newer" }, `deleting from version ${version}`);
+    assert.equal(storage.data.get(STORAGE_KEY), text, "left exactly as it was");
+  }
+});
+
+test("a store this page cannot make sense of is the page's own to replace", () => {
+  for (const text of ["{oops", "[]", "null", "7", JSON.stringify({ scenes: [scene("a")] }), stored([scene("a")], 0), stored([scene("a")], "1"), stored([scene("a")], -3)]) {
+    const storage = memoryStorage({ [STORAGE_KEY]: text });
+    const saved = saveScene(storage, newPhrase());
+    assert.ok(saved.id, text);
+    assert.deepEqual(JSON.parse(storage.data.get(STORAGE_KEY)), { version: 1, scenes: [{ id: saved.id, phrase: newPhrase() }] }, text);
+  }
+});
+
+test("what this page cannot show is written back as it was, after the scenes it can", () => {
+  const noSteps = { id: "no-steps", phrase: { steps: [] } };
+  const text = { id: "text", phrase: "guard" };
+  const later = { id: "later", note: "an entry from a newer page" };
+  const twin = scene("a", "Same id as the first");
+  const raw = { version: 1, settings: { sort: "name" }, scenes: [scene("a", "A"), noSteps, twin, text, scene("b", "B"), null, 7, later] };
+  const storage = memoryStorage({ [STORAGE_KEY]: JSON.stringify(raw) });
+  const stored = () => JSON.parse(storage.data.get(STORAGE_KEY));
+  const unshown = [noSteps, twin, text, null, 7, later];
+
+  assert.deepEqual(readSaved(storage).map(({ id }) => id), ["a", "b"], "only the scenes it can show");
+
+  const added = saveScene(storage, { ...newPhrase(), name: "New" });
+  assert.deepEqual(added.scenes.map(({ id }) => id), [added.id, "a", "b"]);
+  assert.deepEqual(stored().scenes, [{ id: added.id, phrase: { ...newPhrase(), name: "New" } }, scene("a", "A"), scene("b", "B"), ...unshown]);
+  assert.deepEqual(stored().settings, { sort: "name" }, "and a setting it does not know is kept too");
+
+  saveScene(storage, { ...newPhrase(), name: "A, changed" }, "a");
+  assert.deepEqual(stored().scenes.slice(3), unshown, "changing a scene leaves them as they were");
+
+  assert.deepEqual(deleteScene(storage, "b").scenes.map(({ id }) => id), [added.id, "a"]);
+  assert.deepEqual(stored().scenes.slice(2), unshown, "so does forgetting one");
+  assert.deepEqual(stored().settings, { sort: "name" });
+  assert.equal(stored().version, 1);
+});
+
+test("a new scene's id is not one an entry it keeps already has", () => {
+  const real = Date.now;
+  const random = Math.random;
+  try {
+    Date.now = () => 1;
+    let calls = 0;
+    Math.random = () => (calls++ < 1 ? 0.5 : 0.25);
+    const taken = `1${(0.5).toString(36).slice(2, 6)}`;
+    const storage = memoryStorage({ [STORAGE_KEY]: stored([{ id: taken, phrase: { steps: [] } }]) });
+    const saved = saveScene(storage, newPhrase());
+    assert.equal(saved.id, `1${(0.25).toString(36).slice(2, 6)}`);
   } finally {
     Date.now = real;
     Math.random = random;
