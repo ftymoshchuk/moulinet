@@ -6,22 +6,23 @@
 //   hipX, hipY    hips forward of the back foot, and their height
 //   footF         front foot reach; liftF and liftB lift a foot off the floor
 //   lean          torso lean, forward positive
+//   turn          how far the shoulders are turned toward the camera, 0 side on
 //   arm, fore     sword arm: upper arm and forearm
 //   blade         the sabre; yaw turns it toward the camera
 //   rArm, rFore   rear arm, hand on the hip
 // A pose fills in whatever it leaves out from the guard.
 export const POSES = {
-  guard: { hipX: 33, hipY: 84, footF: 68, liftF: 0, liftB: 0, lean: 2, arm: -25, fore: 2, blade: 34, yaw: 0, rArm: -128, rFore: -28 },
-  advLift: { hipX: 42, hipY: 85, footF: 94, liftF: 9 },
-  advLand: { hipX: 47, hipY: 81, footF: 98 },
-  prep: { hipX: 36, lean: 4, arm: 15, fore: 30, blade: 85 },
-  lungeFly: { hipX: 56, hipY: 72, footF: 100, liftF: 14, lean: 8, arm: 25, fore: 25, blade: 45 },
-  lungeHead: { hipX: 77, hipY: 53, footF: 121, lean: 14, arm: 38, fore: 28, blade: 14 },
-  lungeChest: { hipX: 77, hipY: 53, footF: 121, lean: 12, arm: 8, fore: 6, blade: 8 },
-  parry3: { hipX: 30, hipY: 83, lean: -3, arm: -70, fore: 15, blade: 95 },
-  parry5: { hipX: 30, hipY: 82, lean: -4, arm: 35, fore: 60, blade: 8, yaw: 72 },
-  riposte: { hipX: 44, hipY: 80, footF: 82, lean: 12, arm: 0, fore: 0, blade: -6 },
-  extend: { hipX: 34, lean: 4, arm: 4, fore: 4, blade: 14 },
+  guard: { hipX: 38, hipY: 80, footF: 80, liftF: 0, liftB: 0, lean: 3, turn: 58, arm: -34, fore: 16, blade: 34, yaw: 0, rArm: -134, rFore: -32 },
+  advLift: { hipX: 47, hipY: 81, footF: 106, liftF: 9 },
+  advLand: { hipX: 52, hipY: 77, footF: 110 },
+  prep: { hipX: 41, lean: 4, arm: 15, fore: 30, blade: 85 },
+  lungeFly: { hipX: 57, hipY: 70, footF: 114, liftF: 8, lean: 12, arm: 25, fore: 25, blade: 45 },
+  lungeHead: { hipX: 77, hipY: 54.6, footF: 121, lean: 25, arm: 38, fore: 28, blade: 14 },
+  lungeChest: { hipX: 77, hipY: 54.6, footF: 121, lean: 24, arm: 8, fore: 6, blade: 8 },
+  parry3: { hipX: 35, hipY: 79, lean: -3, arm: -70, fore: 15, blade: 95 },
+  parry5: { hipX: 35, hipY: 79, lean: -4, arm: 35, fore: 60, blade: 8, yaw: 72 },
+  riposte: { hipX: 49, hipY: 76, footF: 94, lean: 14, arm: 0, fore: 0, blade: -6 },
+  extend: { hipX: 39, lean: 4, arm: 4, fore: 4, blade: 14 },
 };
 
 export const POSE_NAMES = {
@@ -52,7 +53,7 @@ export const PRESETS = [
       note: "A advances, raises the blade, then lunges and cuts to the head while B holds the guard. Watch the order: the arm moves before the legs.",
       camera: 0,
       steps: [
-        { label: "En garde", hold: 600, A: { pose: "guard", x: -30 }, B: { pose: "guard", x: 245 } },
+        { label: "En garde", hold: 600, A: { pose: "guard", x: -30 }, B: { pose: "guard", x: 310 } },
         { label: "Advance: front foot lifts", ms: 190, A: { pose: "advLift", x: -30 } },
         { label: "Advance: front foot lands", ms: 110, A: { pose: "advLand", x: -30 } },
         { label: "Advance: back foot follows", ms: 200, hold: 160, A: { pose: "guard", x: 0 } },
@@ -70,10 +71,10 @@ export const PRESETS = [
       note: "A lunges to the chest and B takes parry 3, then ripostes to the head before both recover.",
       camera: 0,
       steps: [
-        { label: "En garde", hold: 600, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 245 } },
-        { label: "A lunges to the chest, B takes parry 3", ms: 280, hold: 600, ease: "snap", A: { pose: "lungeChest", x: 0 }, B: { pose: "parry3", x: 245 } },
-        { label: "B ripostes to the head", ms: 220, hold: 700, ease: "snap", A: { pose: "lungeChest", x: 0, adj: { arm: 2, blade: 18 } }, B: { pose: "riposte", x: 245 } },
-        { label: "Both recover", ms: 420, hold: 500, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 245 } },
+        { label: "En garde", hold: 600, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 310 } },
+        { label: "A lunges to the chest, B takes parry 3", ms: 280, hold: 600, ease: "snap", A: { pose: "lungeChest", x: 0 }, B: { pose: "parry3", x: 310 } },
+        { label: "B ripostes to the head", ms: 220, hold: 700, ease: "snap", A: { pose: "lungeChest", x: 0, adj: { arm: 2, blade: 18 } }, B: { pose: "riposte", x: 310 } },
+        { label: "Both recover", ms: 420, hold: 500, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 310 } },
       ],
     },
   },
@@ -84,11 +85,11 @@ export const PRESETS = [
       note: "A raises the blade and lunges at the head; B takes parry 5 and ripostes to the head, then both recover.",
       camera: 28,
       steps: [
-        { label: "En garde", hold: 600, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 245 } },
+        { label: "En garde", hold: 600, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 310 } },
         { label: "A raises the blade", ms: 220, hold: 40, A: { pose: "prep", x: 0 } },
-        { label: "A lunges to the head, B takes parry 5", ms: 260, hold: 500, ease: "snap", A: { pose: "lungeHead", x: 0, adj: { arm: 50, fore: 40, blade: 30 } }, B: { pose: "parry5", x: 245 } },
-        { label: "B ripostes to the head", ms: 200, hold: 700, ease: "snap", A: { pose: "lungeHead", x: 0, adj: { blade: 48, arm: 30 } }, B: { pose: "riposte", x: 245 } },
-        { label: "Both recover", ms: 420, hold: 500, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 245 } },
+        { label: "A lunges to the head, B takes parry 5", ms: 260, hold: 500, ease: "snap", A: { pose: "lungeHead", x: 0, adj: { arm: 50, fore: 40, blade: 30 } }, B: { pose: "parry5", x: 310 } },
+        { label: "B ripostes to the head", ms: 200, hold: 700, ease: "snap", A: { pose: "lungeHead", x: 0, adj: { blade: 48, arm: 30 } }, B: { pose: "riposte", x: 310 } },
+        { label: "Both recover", ms: 420, hold: 500, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 310 } },
       ],
     },
   },

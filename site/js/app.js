@@ -4,7 +4,7 @@
 // where it was noted. The base postures show one fencer in one posture at a
 // time, in words as well as lines. The Creator makes new scenes.
 import { BASES, BASE_GROUPS, basePhrase } from "./bases.js";
-import { bladePaths, floorPath, inkFigure, stickFigure } from "./figure.js";
+import { DEFAULT_FRAME, bladePaths, floorPath, frameOf, inkFigure, stickFigure } from "./figure.js";
 import { JOINTS, POSE_NAMES, POSES, PRESETS } from "./library.js";
 import {
   TEXT_KEYS,
@@ -21,6 +21,7 @@ import {
   phraseToText,
   poseAt,
   removeStep,
+  samePose,
   setJoint,
   setMeta,
   setPose,
@@ -32,9 +33,13 @@ import { STORAGE_KEY, deleteScene, readSaved, referenceUrl, saveScene, sceneSumm
 const SVG_NS = "http://www.w3.org/2000/svg";
 // Layers of an ink figure, back to front, as inkFigure names them.
 const LAYERS = ["l1", "l2", "l3", "l4", "head", "l6"];
+// What each layer is when both fencers are drawn from the back (as the stage draws them): the sword arm, the two legs, the jersey, the head and the rear arm.
+const PARTS = { l1: "jersey", l2: "trousers", l3: "trousers", l4: "jersey", head: "face", l6: "jersey" };
 // Four motion ghosts, each this far behind the one before.
 const GHOSTS = [1, 2, 3, 4];
 const GHOST_GAP_MS = 45;
+// What a fencer who has not moved leaves behind.
+const NO_GHOST = { body: "", blade: "" };
 // The most one frame may advance, so a tab coming back does not leap ahead.
 const MAX_FRAME_MS = 64;
 // The camera slider's range, which a pasted phrase is held to as well.
@@ -47,6 +52,7 @@ const modeButtons = document.querySelectorAll("[data-mode]");
 // Every panel that belongs to some modes only, with the modes it belongs to.
 const modePanels = [...document.querySelectorAll("[data-modes]")].map((el) => ({ el, modes: el.dataset.modes.split(" ") }));
 const stagePanelEl = document.getElementById("stage-panel");
+const stageEl = document.getElementById("stage");
 const stepCountEl = document.getElementById("step-count");
 const stepLabelEl = document.getElementById("step-label");
 const timecodeEl = document.getElementById("timecode");
@@ -155,6 +161,8 @@ const state = {
 // state.phrase laid out in time, and its blade paths for one camera angle.
 let timeline = buildTimeline(null);
 let trails = null;
+// Where the stage looks, worked out once for each timeline.
+let framed = { timeline: null, frame: DEFAULT_FRAME };
 // What the Creator had on stage while another mode has the stage.
 let parked = null;
 
@@ -589,8 +597,8 @@ function createFencer(id) {
   for (const name of LAYERS) {
     const isHead = name === "head";
     layers[name] = {
-      outline: svgPath(body, isHead ? "figure__outline figure__outline--head" : "figure__outline"),
-      fill: svgPath(body, "figure__fill"),
+      outline: svgPath(body, "figure__outline"),
+      fill: svgPath(body, `figure__fill figure__fill--${PARTS[name]}`),
       hair: isHead ? svgPath(body, "figure__hair") : null,
       shine: isHead ? svgPath(body, "figure__shine") : null,
       detail: svgPath(body, "figure__detail"),
@@ -865,7 +873,7 @@ function drawFencer(parts, figure) {
   for (const name of LAYERS) {
     const layer = parts.layers[name];
     const shape = figure[name];
-    setAttr(layer.outline, "d", shape.g);
+    setAttr(layer.outline, "d", shape.o);
     setAttr(layer.fill, "d", shape.g);
     if (layer.hair) setAttr(layer.hair, "d", shape.hair);
     if (layer.shine) setAttr(layer.shine, "d", shape.s);
@@ -878,14 +886,23 @@ function drawFencer(parts, figure) {
   setAttr(parts.blade.bow, "d", figure.blade.d);
 }
 
+// The Creator keeps one view as a scene is reshaped; the library and the postures
+// look as close as keeps everyone in.
+function frameFor() {
+  if (state.mode === "creator") return DEFAULT_FRAME;
+  if (framed.timeline !== timeline) framed = { timeline, frame: frameOf(timeline) };
+  return framed.frame;
+}
+
 function drawStage(now) {
   const camera = state.camera;
+  setAttr(stageEl, "viewBox", frameFor().join(" "));
   // The postures stand still, so they have no motion to show.
   const moving = state.mode !== "base";
   stagePanelEl.classList.toggle("is-solo", timeline.solo);
   setAttr(floorEl, "d", floorPath(camera));
   drawFencer(fencers.A, inkFigure(now.A, 1, camera, { backView: true }));
-  drawFencer(fencers.B, inkFigure(now.B, -1, camera, { older: true }));
+  drawFencer(fencers.B, inkFigure(now.B, -1, camera, { backView: true, older: true }));
   if (state.ink) setAttr(inkEl, "filter", "url(#ink-texture)");
   else inkEl.removeAttribute("filter");
 
@@ -893,8 +910,8 @@ function drawStage(now) {
   if (state.ghosts && moving) {
     for (const k of GHOSTS) {
       const then = poseAt(timeline, Math.max(0, state.time - k * GHOST_GAP_MS));
-      const a = stickFigure(then.A, 1, camera);
-      const b = stickFigure(then.B, -1, camera);
+      const a = samePose(then.A, now.A) ? NO_GHOST : stickFigure(then.A, 1, camera);
+      const b = samePose(then.B, now.B) ? NO_GHOST : stickFigure(then.B, -1, camera);
       setAttr(fencers.A.ghostBodies[k], "d", a.body);
       setAttr(fencers.A.ghostBlades[k], "d", a.blade);
       setAttr(fencers.B.ghostBodies[k], "d", b.body);

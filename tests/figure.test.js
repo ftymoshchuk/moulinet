@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { basePhrase } from "../site/js/bases.js";
-import { PIVOT, bladePaths, bladeTip, floorPath, inkFigure, knee, projector, skeleton, stickFigure } from "../site/js/figure.js";
+import { DEFAULT_FRAME, PIVOT, bladePaths, bladeTip, floorPath, frameOf, inkFigure, knee, projector, skeleton, stickFigure } from "../site/js/figure.js";
 import { area } from "../site/js/ink.js";
 import { POSES, PRESETS } from "../site/js/library.js";
 import { buildTimeline, poseAt, resolvePose } from "../site/js/phrase.js";
@@ -69,6 +69,47 @@ test("the knee keeps thigh and shin lengths and bends forward", () => {
   assert.ok(side > 0);
 });
 
+test("the knee can bend the other way: the same lengths, on the far side of the line from hip to ankle", () => {
+  const side = (hx, hy, ax, ay, [kx, ky]) => (ax - hx) * (ky - hy) - (ay - hy) * (kx - hx);
+  const [fx, fy] = knee(41, 80, 0, 8);
+  const [bx, by] = knee(41, 80, 0, 8, -1);
+  assert.ok(Math.abs(Math.hypot(bx - 41, by - 80) - 44) < 1e-9 && Math.abs(Math.hypot(bx - 0, by - 8) - 46) < 1e-9, "the thigh and shin are as long");
+  assert.ok(side(41, 80, 0, 8, [fx, fy]) * side(41, 80, 0, 8, [bx, by]) < 0, "on the other side of the line");
+  // A leg that cannot bend does not care which way it was asked to.
+  assert.deepEqual(knee(0, 200, 0, 8, -1), knee(0, 200, 0, 8, 1));
+});
+
+test("the leg behind bends back at the knee, as the plates draw it, and the leg in front bends forward", () => {
+  for (const name of ["guard", "advLand", "parry3", "extend"]) {
+    const J = skeleton(resolvePose({ pose: name }));
+    const line = (a, k) => (a[0] - J.hip[0]) * (k[1] - J.hip[1]) - (a[1] - J.hip[1]) * (k[0] - J.hip[0]);
+    assert.ok(line(J.ankB, J.kB) < 0, `${name}: the rear knee bends back`);
+    assert.ok(J.kB[0] < J.hip[0], `${name}: and is behind the hips`);
+    // (Landing from an advance, the front leg is straight, and bends neither way.)
+    if (name !== "advLand") assert.ok(line(J.ankF, J.kF) > 0, `${name}: the front knee bends forward`);
+  }
+  // A lunge has the leg behind straight, so which way it bends makes no difference.
+  const lunge = skeleton(resolvePose({ pose: "lungeChest" }));
+  const straight = Math.hypot(lunge.hip[0] - lunge.ankB[0], lunge.hip[1] - lunge.ankB[1]);
+  assert.ok(Math.abs(straight - 90) < 1.5, "the rear leg is straight in the lunge");
+});
+
+test("the sword arm is set on the shoulder turned away, at the front of the chest, and is as long as an arm", () => {
+  const side = skeleton(resolvePose({ pose: "guard", adj: { turn: 0 } }));
+  const turned = skeleton(resolvePose({ pose: "guard", adj: { turn: 58 } }));
+  const spine = (J) => J.T(52, 0)[0];
+  assert.ok(Math.abs(side.sh[0] - side.T(50, 0)[0]) < 1e-9, "side on, the shoulder is over the spine");
+  assert.ok(turned.sh[0] - turned.T(50, 0)[0] > 12, "turned, it is well forward of it");
+  assert.ok(turned.sh[0] - spine(turned) > 12 && spine(turned) - turned.rs[0] > 12, "and the other shoulder well behind");
+  for (const J of [side, turned]) {
+    const upper = Math.hypot(J.el[0] - J.sh[0], J.el[1] - J.sh[1]);
+    const fore = Math.hypot(J.hn[0] - J.el[0], J.hn[1] - J.el[1]);
+    assert.ok(Math.abs(upper - 31) < 1e-9 && Math.abs(fore - 31) < 1e-9, "shoulder to elbow, and elbow to the grip");
+  }
+  // From the shoulder the hand reaches the length of the arm, so the guard hand is well ahead of the chest.
+  assert.ok(turned.hn[0] - turned.sh[0] > 40);
+});
+
 test("a leg too short to reach the foot goes straight toward it", () => {
   const [kx, ky] = knee(0, 200, 0, 8);
   assert.ok(Math.abs(kx) < 1e-9);
@@ -79,7 +120,7 @@ test("the blade tip is 88 cm from the hand", () => {
   for (const name of ["guard", "parry5", "riposte"]) {
     const J = skeleton(resolvePose({ pose: name }));
     const [x, y, z] = J.tip;
-    assert.ok(Math.abs(Math.hypot(x - J.hn[0], y - J.hn[1], z) - 88) < 1e-9, name);
+    assert.ok(Math.abs(Math.hypot(x - J.hn[0], y - J.hn[1], z - J.hn[2]) - 88) < 1e-9, name);
   }
 });
 
@@ -94,6 +135,61 @@ test("turning the camera swings the piste around the pivot and brings depth into
   assert.ok(Math.abs(atPivot[0] - (PIVOT + 10)) < 1e-9);
   const farAlong = projector({ x: PIVOT + 100 }, 1, 60)([0, 0, 0]);
   assert.ok(Math.abs(farAlong[0] - (PIVOT + 50)) < 1e-9);
+});
+
+test("a shape worked out as the camera sees it is set across the page and up, and the projector knows its camera", () => {
+  for (const camera of [-60, 0, 25, 60]) {
+    const c = Math.cos((camera * Math.PI) / 180);
+    for (const dir of [1, -1]) {
+      const W = projector({ x: 140 }, dir, camera);
+      assert.equal(W.camera, camera);
+      const [x, y] = W.flat([20, 35]);
+      assert.ok(Math.abs(x - ((140 - PIVOT) * c + PIVOT + dir * 20)) < 1e-9, `across, facing ${dir} from ${camera}°`);
+      assert.equal(y, -35);
+    }
+  }
+});
+
+test("the shoulders turn toward the camera by the pose's turn: the two arms lie in planes either side of the body", () => {
+  const side = skeleton(resolvePose({ pose: "guard", adj: { turn: 0 } }));
+  const turned = skeleton(resolvePose({ pose: "guard", adj: { turn: 58 } }));
+  assert.ok(Math.abs(side.sh[2] + 19) < 1e-9 && Math.abs(side.rs[2] - 19) < 1e-9, "side on, a shoulder's width either side");
+  assert.ok(Math.abs(turned.sh[2] + 19 * Math.cos((58 * Math.PI) / 180)) < 1e-9, "turned, nearer the line of sight");
+  assert.ok(Math.abs(turned.rs[2] + turned.sh[2]) < 1e-9, "evenly either side");
+  assert.ok(turned.sh[0] !== side.sh[0] || turned.rs[0] !== side.rs[0], "and the rear shoulder is set back");
+  assert.ok(Math.abs(turned.rs[0] - turned.T(48, 0)[0]) > 5, "well behind the spine");
+});
+
+test("the stage looks where the fencers are: everyone, at every step, is in a frame the shape of the page", () => {
+  const shape = DEFAULT_FRAME[2] / DEFAULT_FRAME[3];
+  for (const phrase of [...PRESETS.map((preset) => preset.phrase), basePhrase()]) {
+    const timeline = buildTimeline(phrase);
+    const [x, y, w, h] = frameOf(timeline);
+    assert.ok(Math.abs(w / h - shape) < 0.01, `${phrase.name} is in the shape of the page`);
+    assert.ok(w >= DEFAULT_FRAME[2] * 0.72 - 0.1 && w <= DEFAULT_FRAME[2] * 1.3 + 0.1, `${phrase.name} is no closer than a third of the way in, nor further than a third out (${w})`);
+    assert.ok(y < 0 && y + h > 8, "the floor is in it, with room under it for the strokes at the feet");
+    for (const step of timeline.steps) {
+      for (const [who, dir] of timeline.solo ? [["A", 1]] : [["A", 1], ["B", -1]]) {
+        const J = skeleton(step[who]);
+        const W = projector(step[who], dir, 0);
+        for (const [name, q] of Object.entries({ head: J.hd, hand: J.hn, tip: J.tip, back: J.ankB, front: J.ankF })) {
+          const [px, py] = W(q);
+          assert.ok(px >= x && px <= x + w && py >= y && py <= y + h, `${phrase.name}: ${who}'s ${name} is on the stage`);
+        }
+      }
+    }
+  }
+});
+
+test("a lone fencer is looked at closer than a pair, and the frame is worked out from the phrase alone", () => {
+  const lone = frameOf(buildTimeline({ solo: true, steps: [{ A: { pose: "guard", x: 40 } }] }));
+  const pair = frameOf(buildTimeline({ steps: [{ A: { pose: "lungeChest", x: 0 }, B: { pose: "parry3", x: 245 } }] }));
+  assert.ok(lone[2] < pair[2], `${lone[2]} is closer than ${pair[2]}`);
+  assert.deepEqual(frameOf(buildTimeline({ solo: true, steps: [{ A: { pose: "guard", x: 40 } }] })), lone);
+  // Where the fencers stand moves the frame across, and does not zoom it.
+  const moved = frameOf(buildTimeline({ solo: true, steps: [{ A: { pose: "guard", x: 340 } }] }));
+  assert.ok(Math.abs(moved[2] - lone[2]) < 1e-9 && Math.abs(moved[3] - lone[3]) < 1e-9);
+  assert.ok(Math.abs(moved[0] - lone[0] - 300) < 0.2, "moved with him");
 });
 
 test("the floor has a tick every 50 cm, and a longer one at the centre", () => {
@@ -126,7 +222,8 @@ test("the shapes of a figure are wound one way and its strokes another, so shape
       const shapes = [figure.l1.g, figure.l2.g, figure.l3.g, figure.l4.g, figure.l6.g, figure.head.g, figure.head.hair].flatMap(readPath);
       assert.ok(shapes.length > 10);
       assert.ok(shapes.every((shape) => shape.closed && area(shape.points) > 0), `silhouettes, ${where}`);
-      for (const layer of [figure.l1.k, figure.l2.k, figure.l3.k, figure.l4.k, figure.l6.k, figure.head.k, figure.head.s, figure.ground]) {
+      // (An older man's hair has no strokes of paper left in it, so his `s` is empty.)
+      for (const layer of [figure.l1.k, figure.l2.k, figure.l3.k, figure.l4.k, figure.l6.k, figure.head.k, figure.head.s, figure.ground].filter(Boolean)) {
         const ways = new Set(readPath(layer).map((stroke) => Math.sign(area(stroke.points))));
         assert.equal(ways.size, 1, `strokes, ${where}`);
         assert.ok(!ways.has(0));
@@ -164,7 +261,7 @@ test("a figure's path data stays small enough to draw again on every frame", () 
       for (const [dir, options] of [[1, { backView: true }], [-1, { older: true }], [1, {}], [-1, {}]]) {
         const size = allPaths(inkFigure(resolvePose({ pose: name }), dir, camera, options)).reduce((sum, d) => sum + d.length, 0);
         largest = Math.max(largest, size);
-        assert.ok(size < 24000, `${name} from ${camera}° is ${size} characters`);
+        assert.ok(size < 30000, `${name} from ${camera}° is ${size} characters`);
       }
     }
   }

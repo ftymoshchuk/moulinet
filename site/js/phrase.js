@@ -3,9 +3,9 @@
 import { POSES } from "./library.js";
 
 // Where each fencer stands until a phrase places them.
-const START = { A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 245 } };
+const START = { A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 310 } };
 // Values that are angles, so a move between two of them takes the short way round.
-const ANGLES = new Set(["lean", "arm", "fore", "blade", "yaw", "rArm", "rFore"]);
+const ANGLES = new Set(["lean", "turn", "arm", "fore", "blade", "yaw", "rArm", "rFore"]);
 // What a pose can hold. An adjustment to anything else is ignored.
 const POSE_KEYS = new Set(Object.keys(POSES.guard));
 // The text a scene carries about itself, and the order the data shows it in:
@@ -112,6 +112,12 @@ export function ease(u, kind) {
   if (kind === "snap") return 1 - (1 - x) ** 3;
   if (kind === "linear") return x;
   return 0.5 - 0.5 * Math.cos(Math.PI * x);
+}
+
+/** Whether two poses are the same, joint for joint. */
+export function samePose(a, b) {
+  const keys = Object.keys(a);
+  return keys.length === Object.keys(b).length && keys.every((key) => a[key] === b[key]);
 }
 
 export function mixPoses(from, to, amount) {

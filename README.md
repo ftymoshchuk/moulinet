@@ -49,12 +49,14 @@ beside theirs, and the Creator says so, so neither is lost.
 
 All three share the stage, and its **camera**, which turns the view up to 60°
 either way to see a blade come toward you or swing away. The library and the
-Creator, which play scenes, add:
+base postures look as close as keeps everyone in view, and turning the camera
+never zooms; the Creator keeps one view while you reshape a scene. The library
+and the Creator, which play scenes, add:
 - **Playback** at ¼, ½ or full speed, a step at a time, or scrubbed along the
   timeline, looped or once through.
 - **Motion ghosts and blade paths** show how each moment was reached: four
-  fading stick figures trail the fencers, and dotted lines trace both blade
-  tips through the whole scene.
+  fading stick figures trail each fencer who is moving, and dotted lines trace
+  both blade tips through the whole scene.
 
 The base postures stand still, so they have neither.
 
@@ -72,16 +74,26 @@ In the Creator there is more:
 
 ## The drawing
 The fencers are not pictures. Each is worked out from a pose, a few numbers for
-the joints, and drawn in the browser as pen and ink: a line round the body,
-and brush strokes that swell and end in points for the folds of the breeches,
-the wrinkles of a stocking, the shadow under the jersey and the marks on the
-floor. The look follows the line illustrations of old sabre training books, as
-a model to draw from; no scan or trace of any of them is in this repository.
+the joints, and drawn in the browser as pen and ink: a line round the body that
+is fine where it faces the light and heavy where it turns away, as a pen
+presses on the shadow side, and brush strokes that swell and end in points for
+the folds of the breeches, the creases of the jersey, the wrinkles of a stocking
+and the marks on the floor. The look follows the line illustrations of old
+sabre training books, as a model to draw from; no scan or trace of any of them
+is in this repository.
+
+The shoulders are turned toward you, as in those books: the jersey is a stack
+of slices of the body, set round by the pose's `turn`, so it is broad at the
+shoulders and narrow at the waist, and the camera swings it as it swings the
+piste. The sleeve of the arm on your side begins on the jersey itself, and the
+other arm lies behind it, set on the shoulder at the front of the chest and as
+long as an arm. The knee of the leg behind bends back, which gives the guard
+its wide stance.
 
 A young fencer wears knickerbockers and long stockings, an older one loose
-trousers gathered at the ankle. The strokes are placed by rule and never by
-chance, so a figure moves as one drawing and does not flicker, and a pose that
-is held is drawn once.
+trousers gathered at the ankle, a belly and narrower shoulders. The strokes are
+placed by rule and never by chance, so a figure moves as one drawing and does
+not flicker, and a pose that is held is drawn once.
 
 ## Writing a phrase
 A scene is a phrase: JSON, with a few words about where it comes from. **Phrase
@@ -95,7 +107,7 @@ data** shows the one on stage, a step per line:
   "note": "The arm moves before the legs.",
   "camera": 0,
   "steps": [
-    {"label": "En garde", "hold": 600, "A": {"pose": "guard", "x": -30}, "B": {"pose": "guard", "x": 245}},
+    {"label": "En garde", "hold": 600, "A": {"pose": "guard", "x": -30}, "B": {"pose": "guard", "x": 310}},
     {"label": "Lunge", "ms": 150, "A": {"pose": "lungeFly", "x": 0}},
     {"label": "Head cut lands", "ms": 120, "hold": 700, "ease": "snap", "A": {"pose": "lungeHead", "x": 0}}
   ]
@@ -134,7 +146,7 @@ A fencer is `{"pose": …, "x": …, "adj": {…}}`:
 - `pose`: a name from the pose library below. A name it does not know is drawn
   as the guard, and **Phrase data** says which name that was.
 - `x`: where the fencer stands on the piste, in centimetres. Until a phrase
-  places them, A stands at 0 and B at 245, facing each other.
+  places them, A stands at 0 and B at 310, facing each other.
 - `adj`: joint values that override the pose on this step. **Adjust this
   moment** writes them; picking a pose or **Reset this step's adjustments**
   clears them.
@@ -148,6 +160,7 @@ points at the opponent and 90 straight up.
 | `footF` | Front foot: how far forward of the back foot |
 | `liftF`, `liftB` | How far the front or back foot is off the floor |
 | `lean` | Torso lean, forward positive |
+| `turn` | How far the shoulders are turned toward the camera: 0 is side on |
 | `arm`, `fore` | Sword arm: upper arm and forearm |
 | `blade` | Blade angle |
 | `yaw` | Blade turned toward the camera |
@@ -212,11 +225,11 @@ Project layout:
 - `site/index.html` and `site/css/styles.css`: the page
 - `site/js/app.js`: the modes, the controls, and drawing each frame
 - `site/js/phrase.js`: phrases as data: timeline, in-betweens, text, edits
-- `site/js/figure.js`: a pose's skeleton, the camera, and the fencer drawn from them
-- `site/js/body.js`: the parts of a fencer: trunk, arms, legs, head and sabre
-- `site/js/parts.js`: the head, hands and shoe drawn by hand, as points
-- `site/js/folds.js`: the ink work: cloth folds, hems, stockings, floor strokes
-- `site/js/ink.js`: pen and ink as SVG path data: curves and tapered brush strokes
+- `site/js/figure.js`: a pose's skeleton, the camera, where the stage looks, and the fencer drawn from them
+- `site/js/body.js`: the parts of a fencer: jersey, arms, legs, head and sabre
+- `site/js/parts.js`: the head, hands, shoe and the slices of the jersey, drawn by hand, as points
+- `site/js/folds.js`: the ink work: cloth folds, creases, hems, stockings, floor strokes
+- `site/js/ink.js`: pen and ink as SVG path data: curves, outlines and tapered brush strokes
 - `site/js/library.js`: the poses, the built-in scenes and the sliders
 - `site/js/bases.js`: the base postures, in words
 - `site/js/scenes.js`: reference links, and the scenes saved on this device

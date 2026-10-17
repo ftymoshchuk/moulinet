@@ -86,7 +86,7 @@ export const BASES = [
       ["Front leg", "Bent, the knee over the front foot, the foot flat."],
       ["Back leg", "Straight, the back foot flat."],
       ["Sword arm", "Raised and extended, taking the blade up to head height."],
-      ["Torso", "Leans a little forward over the front leg."],
+      ["Torso", "Leans forward over the front leg, with the rear arm held back."],
     ],
   },
   {

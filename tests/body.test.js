@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { bladePart, headPart, legPart, place, rearArm, segment, shoe, swordArm, trunk } from "../site/js/body.js";
+import { bladePart, headPart, legPart, place, rearArm, segment, shoe, swordArm, torsoFrame, trunk } from "../site/js/body.js";
 import { projector, skeleton } from "../site/js/figure.js";
 import { area, dist } from "../site/js/ink.js";
 import { handParts, headParts, shoeParts } from "../site/js/parts.js";
@@ -60,11 +60,14 @@ test("the sword hand is behind the guard and the rear hand starts at the wrist",
 });
 
 test("the shoe stands on the floor 8 cm below the ankle, toe forward and heel back", () => {
-  const { shape, sole, laces } = shoeParts();
+  const { shape, sole, laces, ink, hatch } = shoeParts();
   near(Math.min(...shape.map((p) => p[1])), -8, 0.5, "the sole");
   assert.ok(Math.max(...shape.map((p) => p[0])) > 20 && Math.min(...shape.map((p) => p[0])) < -5, "toe and heel");
-  assert.equal(sole.length, 3);
-  assert.equal(laces.length, 3);
+  assert.equal(sole.length, 3, "the welt above the sole");
+  assert.equal(laces.length, 4);
+  assert.equal(ink.length, 1, "the dark heel block");
+  assert.ok(hatch.length >= 6 && hatch.every((stroke) => stroke.length === 2), "strokes on the heel and the toe cap");
+  for (const [, y] of ink.flat()) assert.ok(y < -4.9 && y > -8.7, "the sole and heel are low on the shoe");
 });
 
 // ---------- The builders ----------
@@ -99,9 +102,12 @@ test("a point of a frame is the origin, then so far along the axis, then so far 
 test("a shoe is turned up at the toe, and seen short when it points across", () => {
   const parts = shoeParts();
   const flat = shoe([100, 8], 0, 1, parts);
-  assert.deepEqual(flat.shape[0], [100 + parts.shape[0][0], 8 + parts.shape[0][1]], "set on the ankle");
+  assert.deepEqual(flat.shape[0].slice(0, 2), [100 + parts.shape[0][0], 8 + parts.shape[0][1]], "set on the ankle");
+  assert.deepEqual(flat.shape[0].slice(2), parts.shape[0].slice(2), "and keeping how much of its line it has");
   assert.equal(flat.shape.length, parts.shape.length);
-  assert.equal(flat.lines.length, 6, "the sole, the heel, the toe cap and three laces");
+  assert.equal(flat.lines.length, 6, "the welt, the toe cap and four laces");
+  assert.equal(flat.ink.length, 1, "the dark heel goes with it");
+  assert.equal(flat.hatch.length, parts.hatch.length);
   const toeOf = (made) => made.shape.reduce((best, p) => (p[0] > best[0] ? p : best));
 
   const short = shoe([100, 8], 0, 0.5, parts);
@@ -110,6 +116,8 @@ test("a shoe is turned up at the toe, and seen short when it points across", () 
 
   const tilted = shoe([100, 8], 30, 1, parts);
   assert.ok(toeOf(tilted)[1] > toeOf(flat)[1] + 8, "a foot off the floor lands on its heel");
+  const heelFront = (made) => made.ink[0].reduce((best, p) => (p[0] > best[0] ? p : best));
+  assert.ok(heelFront(tilted)[0] > heelFront(flat)[0] + 3, "and its dark heel block turns with it, the foot pivoting on the ankle");
 });
 
 test("the legs: the foot behind is seen shorter, the seat belongs to one leg, a lifted foot is turned up", () => {
@@ -138,7 +146,7 @@ test("an older man is in loose trousers, with no pouch of cloth at the knee", ()
   const young = legPart(J, W, J.ankF, J.kF, { front: true, seat: false, older: false });
   const older = legPart(J, W, J.ankF, J.kF, { front: true, seat: false, older: true });
   assert.notEqual(older.g, young.g);
-  assert.ok(readPath(older.k).length < readPath(young.k).length, "fewer folds");
+  assert.notEqual(older.k, young.k, "and folds of loose cloth, pulled from the crotch");
   assert.ok(older.d.length > 0 && young.d.length > 0);
 });
 
@@ -146,12 +154,76 @@ test("the trunk is a jersey, a neck and a collar, with its seams and the shading
   const { J, W } = posed();
   const trunkOf = trunk(J, W, false);
   assert.equal(readPath(trunkOf.g).length, 3, "jersey, neck, collar");
-  assert.equal(readPath(trunkOf.d).length, 5, "five lines");
-  assert.ok(readPath(trunkOf.k).length >= 15, "and plenty of shading");
-  const young = boxOf([readPath(trunkOf.g)[0]]);
-  const older = boxOf([readPath(trunk(J, W, true).g)[0]]);
-  near(older.maxX - young.maxX, 1.8, 0.3, "an older man carries more at the front");
-  near(older.minX, young.minX, 1e-9, "and nothing more behind");
+  assert.equal(readPath(trunkOf.d).length, 1, "one line where the collar turns over, and no more");
+  assert.ok(readPath(trunkOf.k).length >= 8, "and a few long folds, not a row of ticks");
+  assert.ok(readPath(trunkOf.k).length <= 14, "not many more than a few");
+  assert.ok(readPath(trunkOf.k).length < readPath(trunk(J, W, true).k).length, "an older man has the folds of a belly as well");
+  // The belly of an older man shows low on the jersey, at the waist.
+  const waist = (trunkDrawn) => {
+    const points = readPath(trunkDrawn.g)[0].points;
+    const lowest = Math.max(...points.map((p) => p[1]));
+    const highest = Math.min(...points.map((p) => p[1]));
+    const low = points.filter((p) => p[1] > lowest - (lowest - highest) * 0.15);
+    return { front: Math.max(...low.map((p) => p[0])), back: Math.min(...low.map((p) => p[0])) };
+  };
+  const young = waist(trunkOf);
+  const older = waist(trunk(J, W, true));
+  assert.ok(older.front - young.front > 0.6, `an older man carries more at the front (${older.front - young.front})`);
+  assert.ok(older.front - young.front > older.back - young.back, "more at the front than at the back");
+  near(older.back, young.back, 1.5, "and the back is not much changed");
+});
+
+// How wide the jersey looks, front to back across the page, `up` cm above the hips.
+const widthAt = (frame, up) => {
+  const { front, back } = frame.slice(up);
+  return front[0] - back[0];
+};
+
+test("turned toward the camera the shoulders are broad and taper to the waist; side on they are not", () => {
+  const frameOf = (turn, camera = 0, older = false) => {
+    const { J, W } = posed("guard", { turn }, camera);
+    return torsoFrame(J, W, older);
+  };
+  const turned = frameOf(58);
+  const side = frameOf(0);
+  assert.ok(widthAt(turned, 48) > widthAt(turned, 15) * 1.15, "broader at the shoulders than at the waist");
+  assert.ok(widthAt(turned, 48) > widthAt(side, 48) + 8, "and broader than the same man side on");
+  near(widthAt(side, 48), widthAt(side, 15), 2, "side on he is as deep at the shoulders as at the hips");
+  // The camera swings the jersey round as it swings: round to where the shoulders are square to it, they are side on again.
+  near(widthAt(frameOf(58, 60), 48), widthAt(side, 48), 1.5, "turned 58° and seen from 60° round");
+  near(widthAt(frameOf(0, 60), 48), widthAt(turned, 48), 1.5, "and the other way about");
+  // An older man's shoulders are narrower and his waist is not.
+  const older = frameOf(58, 0, true);
+  assert.ok(widthAt(older, 48) < widthAt(turned, 48), "narrower shoulders");
+  assert.ok(widthAt(older, 15) >= widthAt(turned, 15) - 0.5, "a waist as full");
+});
+
+test("a point of the jersey is found by its height and how far it is across, from the back, -1, to the front, 1", () => {
+  const { J, W } = posed();
+  const frame = torsoFrame(J, W, false);
+  const { front, back } = frame.slice(30);
+  assert.deepEqual(frame.across(30, -1), back);
+  assert.deepEqual(frame.across(30, 1), front);
+  near(frame.across(30, 0)[0], (front[0] + back[0]) / 2, 1e-9);
+  near(frame.across(30, 0)[1], (front[1] + back[1]) / 2, 1e-9);
+  // Higher on the jersey is higher on the page, though the body leans.
+  assert.ok(frame.across(45, 0)[1] < frame.across(15, 0)[1]);
+  // Between two slices the shape is between theirs, and beyond the last it is the last's.
+  const { rows } = frame;
+  const mid = (rows[2][0] + rows[3][0]) / 2;
+  const [a, b, c] = [rows[2][0], mid, rows[3][0]].map((up) => widthAt(frame, up));
+  assert.ok(b >= Math.min(a, c) - 0.01 && b <= Math.max(a, c) + 0.01, "between its neighbours");
+});
+
+test("the rear sleeve starts on the jersey itself, so the shoulder is the jersey's and not a tube set on it", () => {
+  const { J, W } = posed();
+  const hands = handParts();
+  const frame = torsoFrame(J, W, false);
+  const sleeve = readPath(rearArm(J, W, hands.hip, frame).g)[0].points;
+  for (const [up, v] of [[54.2, -0.97], [52.4, -1], [50.4, -1]]) {
+    const anchor = frame.across(up, v);
+    assert.ok(sleeve.some((p) => dist(p, anchor) < 0.15), `the sleeve is joined to the jersey ${up} cm up`);
+  }
 });
 
 test("the arms carry their hands: the fist is at the grip and the other hand on the hip", () => {
@@ -162,10 +234,10 @@ test("the arms carry their hands: the fist is at the grip and the other hand on 
   assert.equal(shapes.length, 4, "sleeve, forearm, cuff and fist");
   assert.equal(readPath(sword.d).length, hands.fist.lines.length);
   const grip = W(J.hn);
-  for (const p of shapes[3].points) assert.ok(dist(p, grip) < 12, "the fist is round the grip");
+  for (const p of shapes[3].points) assert.ok(dist(p, grip) < 15, "the fist is round the grip");
 
   const rear = rearArm(J, W, hands.hip);
-  assert.equal(readPath(rear.g).length, 3, "sleeve, forearm and hand");
+  assert.equal(readPath(rear.g).length, 4, "sleeve, forearm, hand and the point of the elbow");
   const hip = W(J.rh);
   for (const p of readPath(rear.g)[2].points) assert.ok(dist(p, hip) < 15, "the hand is at the end of the forearm");
 });
@@ -177,9 +249,16 @@ test("the head sits where the skeleton puts it, and turns older with the hair", 
   const centre = [(box.minX + box.maxX) / 2, (box.minY + box.maxY) / 2];
   assert.ok(dist(centre, W(J.hd)) < 3);
   assert.ok(box.maxY - box.minY > 20 && box.maxY - box.minY < 30, "about a head tall");
-  for (const key of ["g", "hair", "s", "d", "k"]) assert.match(head[key], /^M/, key);
-  assert.equal(headPart(J, W, true).g, head.g, "the same skull");
-  assert.notEqual(headPart(J, W, true).hair, head.hair);
+  for (const key of ["g", "hair", "k"]) assert.match(head[key], /^M/, key);
+  assert.match(head.s, /^M/, "a young man's dark hair has strokes of paper left in it");
+  assert.equal(headPart(J, W, true).s, "", "and an older man's thin grey hair has none");
+  const old = headPart(J, W, true);
+  assert.notEqual(old.hair, head.hair);
+  // An older man's head is a little larger, and carried lower and further forward.
+  const oldBox = boxOf(readPath(old.g));
+  assert.ok(oldBox.maxY - oldBox.minY > (box.maxY - box.minY) * 1.04, "a little larger");
+  const oldCentre = [(oldBox.minX + oldBox.maxX) / 2, (oldBox.minY + oldBox.maxY) / 2];
+  assert.ok(oldCentre[0] > centre[0] + 0.5 && oldCentre[1] > centre[1] + 0.5, "lower and further forward");
 
   const turned = headPart(J, projector(posed().pose, 1, 60), false);
   const narrow = boxOf(readPath(turned.g));
@@ -194,9 +273,18 @@ test("the sabre is a blade 83 cm long from the cup, a cup over the blade, and a 
   near(dist(taper.points[0], taper.points[1]), 83, 0.5, "from 5 cm out to the tip");
   assert.ok(dist(taper.points[0], taper.points[3]) > dist(taper.points[1], taper.points[2]) * 2, "thicker at the cup than at the tip");
   const [cup] = readPath(blade.g);
-  assert.equal(cup.points.length, 14);
+  assert.equal(cup.points.length, 13, "twelve points, and the one that shuts the curve");
   assert.ok(cup.closed);
-  const centre = cup.points.reduce((sum, p) => [sum[0] + p[0] / 14, sum[1] + p[1] / 14], [0, 0]);
-  assert.ok(dist(centre, W(J.at(3))) < 0.5, "the cup is 3 cm out along the blade");
+  // The bell seen from the side is a thin crescent across the blade, 3 cm out along it, open toward the hand.
+  const near3 = W(J.at(3));
+  const along = [W(J.tip)[0] - W(J.at(5))[0], W(J.tip)[1] - W(J.at(5))[1]];
+  const long = Math.hypot(...along);
+  const u = [along[0] / long, along[1] / long];
+  const lengthwise = cup.points.map((p) => (p[0] - near3[0]) * u[0] + (p[1] - near3[1]) * u[1]);
+  const crosswise = cup.points.map((p) => -(p[0] - near3[0]) * u[1] + (p[1] - near3[1]) * u[0]);
+  const span = (list) => Math.max(...list) - Math.min(...list);
+  near(span(crosswise), 11.2, 0.6, "across the blade");
+  assert.ok(span(lengthwise) < span(crosswise) * 0.5, "and thin along it");
+  assert.ok(Math.max(...lengthwise) > 1.5 && Math.min(...lengthwise) > -1.5, "bulging toward the blade");
   assert.ok(readPath(blade.d)[0].points.length >= 3, "the bow");
 });

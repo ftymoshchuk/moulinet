@@ -20,6 +20,7 @@ import {
   poseAt,
   removeStep,
   resolvePose,
+  samePose,
   setJoint,
   setMeta,
   setPose,
@@ -89,10 +90,10 @@ test("a fencer a step leaves out keeps the spec from the step before", () => {
   assert.deepEqual(timeline.steps[1].B, { ...POSES.guard, ...POSES.parry3, x: 200 });
 });
 
-test("fencers start in guard, A at 0 and B at 245, until a phrase places them", () => {
+test("fencers start in guard, A at 0 and B at 310, until a phrase places them", () => {
   const [step] = buildTimeline({ steps: [{ label: "Nothing yet" }] }).steps;
   assert.deepEqual(step.A, { ...POSES.guard, x: 0 });
-  assert.deepEqual(step.B, { ...POSES.guard, x: 245 });
+  assert.deepEqual(step.B, { ...POSES.guard, x: 310 });
 });
 
 test("steps without a label are numbered, and an empty phrase still shows one step", () => {
@@ -162,6 +163,34 @@ test("angles take the short way round; lengths go straight", () => {
   assert.equal(halfway.blade, 180);
   assert.equal(halfway.hipX, 15);
   assert.equal(mixPoses({ arm: -170 }, { arm: 170 }, 0.25).arm, -175);
+});
+
+test("two poses are the same when every joint is, so a fencer who is not moving has no ghosts", () => {
+  const guard = resolvePose({ pose: "guard", x: 5 });
+  assert.equal(samePose(guard, resolvePose({ pose: "guard", x: 5 })), true);
+  assert.equal(samePose(guard, resolvePose({ pose: "guard", x: 6 })), false, "a position");
+  assert.equal(samePose(guard, resolvePose({ pose: "guard", x: 5, adj: { turn: 57 } })), false, "a joint");
+  assert.equal(samePose(guard, { ...guard, extra: 1 }), false, "or a joint more");
+  // A fencer a step leaves alone is mixed with himself on the way, and comes out the same.
+  const timeline = buildTimeline({ steps: [{ A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 300 } }, { ms: 200, A: { pose: "lungeHead", x: 0 } }] });
+  const during = poseAt(timeline, timeline.steps[1].start + 90);
+  assert.equal(samePose(during.B, timeline.steps[1].B), true, "B has not moved");
+  assert.equal(samePose(during.A, timeline.steps[1].A), false, "A is on the way");
+  assert.equal(samePose(poseAt(timeline, timeline.steps[1].start + 40).B, during.B), true, "at any moment of the move");
+});
+
+test("how far the shoulders are turned is an angle like the others: a phrase can set it, and it eases between steps", () => {
+  assert.equal(POSES.guard.turn, 58, "the guard has the shoulders turned toward the camera");
+  assert.equal(resolvePose({ pose: "guard", adj: { turn: 20 } }).turn, 20);
+  assert.equal(resolvePose({ pose: "lungeChest" }).turn, 58, "a pose that leaves it out keeps the guard's");
+  const timeline = buildTimeline({
+    steps: [
+      { hold: 100, A: { pose: "guard", x: 0 } },
+      { ms: 200, hold: 100, ease: "linear", A: { pose: "guard", x: 0, adj: { turn: 18 } } },
+    ],
+  });
+  assert.equal(poseAt(timeline, 200).A.turn, 38, "halfway from 58 to 18");
+  assert.equal(mixPoses({ turn: 170 }, { turn: -170 }, 0.5).turn, 180, "the short way round");
 });
 
 test("phrase text keeps one setting per line and one step per line, and reads back the same", () => {
@@ -240,7 +269,7 @@ test("a new scene is a valid phrase: one step, both fencers in guard, no pose th
   assert.equal(timeline.steps.length, 1);
   assert.deepEqual(timeline.unknown, []);
   assert.deepEqual(timeline.steps[0].A, { ...POSES.guard, x: 0 });
-  assert.deepEqual(timeline.steps[0].B, { ...POSES.guard, x: 245 });
+  assert.deepEqual(timeline.steps[0].B, { ...POSES.guard, x: 310 });
   assert.notEqual(newPhrase().steps[0].A, phrase.steps[0].A, "each one is its own copy");
 });
 
@@ -300,7 +329,7 @@ test("a step added after step i stands as step i does, so nothing else on the pa
 test("a new step moves quickly and holds briefly, has no label, and takes both fencers unless the scene is solo", () => {
   const phrase = newPhrase();
   const added = insertStep(phrase, buildTimeline(phrase), 0).phrase.steps[1];
-  assert.deepEqual(added, { ms: 300, hold: 200, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 245 } });
+  assert.deepEqual(added, { ms: 300, hold: 200, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 310 } });
   const solo = setSolo(phrase, true);
   assert.deepEqual(Object.keys(insertStep(solo, buildTimeline(solo), 0).phrase.steps[1]), ["ms", "hold", "A"]);
   const copy = insertStep(phrase, buildTimeline(phrase), 0).phrase;

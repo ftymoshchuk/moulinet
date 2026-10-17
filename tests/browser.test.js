@@ -108,6 +108,10 @@ test("in a browser, the page opens on the practice library and builds its contro
   assert.equal(count(/class="step-button"/g), 8, "step buttons");
   assert.equal(count(/class="pose-button"/g), 11, "pose buttons");
   assert.equal(count(/class="base-button"/g), 11, "posture buttons");
+  // Each fencer's parts are filled by what they are, so the older man's trousers can be a shade darker than his jersey.
+  assert.equal(count(/class="figure__fill figure__fill--trousers"/g), 4, "two legs for each fencer");
+  assert.equal(count(/class="figure__fill figure__fill--jersey"/g), 6, "the jersey and both arms for each");
+  assert.equal(count(/class="figure__fill figure__fill--face"/g), 2, "and a face for each");
   assert.equal(count(/<input type="range" id="joint-/g), 10, "joint sliders");
   assert.match(dom, /id="step-count"[^>]*>\d\d \/ 08</);
   // The panels of the other modes are there, and out of sight.
@@ -153,6 +157,8 @@ test("in a browser, the practice library plays each scene and says what it is", 
     label: "Advance: front foot lands",
     play: "Play",
     announced: "Step 3 of 8: Advance: front foot lands",
+    // A advances and has all four ghosts, a body and a blade each; B holds the guard and has none.
+    ghosts: { A: 8, B: 0 },
   });
   assert.deepEqual(seen.toggledOff, { pressed: ["false", "false", "false", "false"], ghostsHidden: true, trailsHidden: true, inkFilter: null });
   assert.equal(seen.inkFilter, "url(#ink-texture)");
@@ -222,7 +228,7 @@ test("in a browser, the Creator edits a copy of a scene the way the page always 
     focus: "creator",
   });
   assert.deepEqual(seen.posed, {
-    line: '    {"label":"Advance: front foot lands","ms":110,"A":{"pose":"advLand","x":-30},"B":{"pose":"parry3","x":245}},',
+    line: '    {"label":"Advance: front foot lands","ms":110,"A":{"pose":"advLand","x":-30},"B":{"pose":"parry3","x":310}},',
     pressed: ["Parry 3parry3"],
     editing: "Step 3: Advance: front foot lands. Fencer B.",
   });
@@ -255,7 +261,7 @@ test("in a browser, the Creator makes a new scene, and asks before it throws one
     asked: 2,
     status: "Applied: 1 step, 0.60 s",
     name: "",
-    text: '{  "camera": 0,  "steps": [    {"label":"En garde","hold":600,"A":{"pose":"guard","x":0},"B":{"pose":"guard","x":245}}  ]}',
+    text: '{  "camera": 0,  "steps": [    {"label":"En garde","hold":600,"A":{"pose":"guard","x":0},"B":{"pose":"guard","x":310}}  ]}',
     save: "Save to library",
     copyHidden: true,
     count: "01 / 01",

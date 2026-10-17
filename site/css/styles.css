@@ -77,9 +77,11 @@
   --floor: #cbc5b9;
   --ghost: #a39c8f;
   --ink: #1d1b18;
-  --hair-grey: #4b463f;
+  --hair-grey: #7a746a;
   --fencer-a: #f6f3ec;
-  --fencer-b: #dcd6c9;
+  --fencer-b: #e0dacd;
+  --fencer-b-trousers: #cdc6b5;
+  --fencer-b-face: #ebe6da;
   --trail-a: #9a3a27;
   --trail-b: #2f4f7f;
 
@@ -577,43 +579,43 @@ textarea:focus-visible {
 }
 
 .ghost {
-  stroke-width: 1.2;
+  stroke-width: 0.9;
 }
 
 .ghost--1 {
-  opacity: 0.8;
-}
-
-.ghost--2 {
   opacity: 0.6;
 }
 
-.ghost--3 {
-  opacity: 0.4;
-}
-
-.ghost--4 {
-  opacity: 0.25;
-}
-
-.ghost-blade {
-  stroke-width: 0.8;
-}
-
-.ghost-blade--1 {
-  opacity: 0.85;
-}
-
-.ghost-blade--2 {
-  opacity: 0.65;
-}
-
-.ghost-blade--3 {
+.ghost--2 {
   opacity: 0.45;
 }
 
-.ghost-blade--4 {
+.ghost--3 {
   opacity: 0.3;
+}
+
+.ghost--4 {
+  opacity: 0.18;
+}
+
+.ghost-blade {
+  stroke-width: 0.6;
+}
+
+.ghost-blade--1 {
+  opacity: 0.65;
+}
+
+.ghost-blade--2 {
+  opacity: 0.5;
+}
+
+.ghost-blade--3 {
+  opacity: 0.35;
+}
+
+.ghost-blade--4 {
+  opacity: 0.22;
 }
 
 .ink {
@@ -636,21 +638,26 @@ textarea:focus-visible {
   --hair: var(--hair-grey);
 }
 
-/* Each layer is drawn twice: outlined, then filled again over the inner half
-   of its own outline, so overlapping parts read as one silhouette. */
+/* Each layer is drawn twice: the line of ink round every shape, then the shapes
+   filled over it, which hides the line where one part lies on another, so
+   overlapping parts read as one silhouette. */
 .figure__outline {
-  fill: var(--fencer);
-  stroke: var(--ink);
-  stroke-width: 1.7;
-}
-
-.figure__outline--head {
-  stroke-width: 0.8;
+  fill: var(--ink);
+  stroke: none;
 }
 
 .figure__fill {
   fill: var(--fencer);
   stroke: none;
+}
+
+/* The older man's trousers are a shade darker than his jersey, and his face is paper. */
+.fencer--b .figure__fill--trousers {
+  fill: var(--fencer-b-trousers);
+}
+
+.fencer--b .figure__fill--face {
+  fill: var(--fencer-b-face);
 }
 
 .figure__hair {
@@ -673,7 +680,7 @@ textarea:focus-visible {
 .figure__detail {
   fill: none;
   stroke: var(--ink);
-  stroke-width: 0.55;
+  stroke-width: 0.42;
   stroke-linecap: round;
 }
 
