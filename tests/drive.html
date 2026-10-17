@@ -35,25 +35,59 @@
           el.value = String(value);
           el.dispatchEvent(new win.Event("input", { bubbles: true }));
         };
-        const stepLine = (index) => $("#phrase-text").value.split("\n").filter((line) => line.startsWith("    {"))[index];
+        const choose = (el, value) => {
+          el.value = value;
+          el.dispatchEvent(new win.Event("change", { bubbles: true }));
+        };
+        const lines = () => $("#phrase-text").value.split("\n");
+        const stepLine = (index) => lines().filter((line) => line.startsWith("    {"))[index];
+        const text = (selector) => $(selector).textContent;
+        const visible = (el) => el.getClientRects().length > 0;
+        const hidden = (selector) => $(selector).classList.contains("hidden");
+        const display = (selector) => win.getComputedStyle($(selector)).display;
         let badPaths = 0;
         const checkPaths = () => {
           badPaths += $$("#stage path").filter((path) => /NaN|Infinity|undefined/.test(path.getAttribute("d") ?? "")).length;
         };
 
-        // Every phrase, each of its steps, and its whole timeline.
-        seen.phrases = $$(".preset-button").map((preset) => {
-          preset.click();
+        // The scenes saved on this device, as the page keeps them; the page is
+        // told of a change made behind its back the way another tab would tell it.
+        const STORE = "moulinet.scenes";
+        const savedScenes = () => JSON.parse(win.localStorage.getItem(STORE) ?? '{"scenes":[]}').scenes;
+        const keepScenes = (scenes) => {
+          win.localStorage.setItem(STORE, JSON.stringify({ version: 1, scenes }));
+          win.dispatchEvent(new win.StorageEvent("storage", { key: STORE }));
+        };
+        // The browser's confirm box: what it was asked, and what it answers.
+        const asked = [];
+        let answer = true;
+        win.confirm = (message) => {
+          asked.push(message);
+          return answer;
+        };
+
+        // Which mode is chosen, and which panels and controls it shows.
+        const panelName = (el) => [...el.classList].find((name) => name.startsWith("panel--")).slice(7);
+        const showing = () => ({
+          chosen: $$("[data-mode]").filter((b) => b.getAttribute("aria-pressed") === "true").map((b) => b.dataset.mode),
+          panels: $$("main section.panel").filter(visible).map(panelName),
+          controls: ["#play-button", ".speed", "#timeline", "#steps", "#timecode", "[data-toggle=ghosts]", "[data-toggle=trail]", "[data-toggle=ink]", "[data-toggle=loop]", "#camera"].filter((selector) => visible($(selector))),
+        });
+
+        // ---------- The practice library ----------
+
+        // Every scene, each of its steps, and its whole timeline.
+        seen.scenes = $$(".scene-button").map((card) => {
+          card.click();
           checkPaths();
           const summary = {
-            name: preset.textContent,
-            pressed: preset.getAttribute("aria-pressed"),
-            count: $("#step-count").textContent,
+            title: text("#scene-title"),
+            pressed: card.getAttribute("aria-pressed"),
+            card: card.querySelector(".scene-button__meta").textContent,
+            count: text("#step-count"),
             solo: $("#stage-panel").classList.contains("is-solo"),
-            canEditB: !$("#fencer-b").disabled,
             camera: $("#camera").value,
-            status: $("#phrase-status").textContent,
-            time: $("#timecode").textContent,
+            time: text("#timecode"),
           };
           for (const step of $$(".step-button")) {
             step.click();
@@ -64,37 +98,38 @@
             input(timeline, t);
             checkPaths();
           }
-          summary.scrubbedTo = $("#step-count").textContent;
+          summary.scrubbedTo = text("#step-count");
           return summary;
         });
 
+        // A built-in scene says what it shows, and has no event or link to give.
+        $$(".scene-button")[1].click();
+        seen.builtIn = {
+          title: text("#scene-title"),
+          kind: text("#scene-kind"),
+          event: text("#scene-event"),
+          eventNone: $("#scene-event").classList.contains("is-empty"),
+          reference: text("#scene-reference"),
+          links: $$("#scene-reference a").length,
+          note: text("#scene-note"),
+          edit: text("#scene-edit"),
+          deleteHidden: hidden("#scene-delete"),
+          savedEmpty: !hidden("#scenes-empty"),
+        };
+        seen.libraryShows = showing();
+
         // Stepping pauses on a step.
-        button("Advance, lunge, head cut").click();
+        $$(".scene-button")[0].click();
         button("Next step").click();
         button("Next step").click();
         button("Next step").click();
         button("Previous step").click();
         seen.stepped = {
-          count: $("#step-count").textContent,
-          label: $("#step-label").textContent,
+          count: text("#step-count"),
+          label: text("#step-label"),
           play: $("#play-button").getAttribute("aria-label"),
-          announced: $("#announcer").textContent,
+          announced: text("#announcer"),
         };
-
-        // Fencer B on that step: a pose from the library, two sliders, a reset.
-        button("Edit fencer B").click();
-        $$(".pose-button").find((b) => b.textContent.endsWith("parry3")).click();
-        seen.posed = {
-          line: stepLine(2),
-          pressed: $$(".pose-button[aria-pressed=true]").map((b) => b.textContent),
-          editing: $("#edit-title").textContent,
-        };
-        input($("#joint-blade"), 100);
-        input($("#joint-x"), 200);
-        seen.adjusted = { line: stepLine(2), said: $("#joint-blade").getAttribute("aria-valuetext") };
-        button("Reset this step's adjustments").click();
-        seen.reset = stepLine(2);
-        checkPaths();
 
         // The view: toggles, camera, speed, play and pause.
         const toggles = ["Motion ghosts", "Blade path", "Ink texture", "Loop"];
@@ -109,7 +144,7 @@
         seen.inkFilter = $("#ink").getAttribute("filter");
         const floor = $("#floor").getAttribute("d");
         input($("#camera"), -40);
-        seen.camera = { shown: $("#camera-value").textContent, floorTurned: $("#floor").getAttribute("d") !== floor };
+        seen.camera = { shown: text("#camera-value"), floorTurned: $("#floor").getAttribute("d") !== floor };
         checkPaths();
         button("¼×").click();
         seen.speed = $$("[data-speed]").map((b) => b.getAttribute("aria-pressed"));
@@ -118,32 +153,392 @@
         button("Pause").click();
         seen.paused = $("#play-button").getAttribute("aria-label");
 
-        // Phrase text: broken, then with a pose the library lacks, then solo.
-        const text = $("#phrase-text");
-        input(text, '{"steps": [');
-        seen.broken = {
-          status: $("#phrase-status").textContent,
-          isError: $("#phrase-status").classList.contains("phrase-status--error"),
-          kept: text.value,
-          count: $("#step-count").textContent,
+        // ---------- The base postures ----------
+
+        button("Base postures").click();
+        seen.baseShows = showing();
+        seen.baseStage = {
+          label: text("#step-label"),
+          count: text("#step-count"),
+          solo: $("#stage-panel").classList.contains("is-solo"),
+          // One fencer: B and the legend are not drawn, and A is.
+          bodyA: display("#body-a"),
+          bodyB: display("#body-b"),
+          bladeB: display("#blade-b"),
+          legend: display(".legend"),
+          // The postures stand still, so there is no motion to show, whatever the toggles say.
+          ghostsHidden: $("#ghosts").classList.contains("hidden"),
+          trailsHidden: $("#trails").classList.contains("hidden"),
+          ghostToggle: $("[data-toggle=ghosts]").getAttribute("aria-pressed"),
+          camera: $("#camera").value,
+          prev: $("#prev-button").getAttribute("aria-label"),
+          next: $("#next-button").getAttribute("aria-label"),
         };
-        input(text, '{"camera": 90, "steps": [{"label": "Feint", "hold": 200, "A": {"pose": "flunge", "x": 20}}, {"label": "<b>Cut</b>", "ms": 300, "A": {"pose": "riposte"}}]}');
+
+        // Every posture, by its button: what is said, and that it draws.
+        seen.postures = $$(".base-button").map((posture) => {
+          posture.click();
+          checkPaths();
+          return {
+            name: text("#base-name"),
+            group: text("#base-group"),
+            key: text("#base-key"),
+            text: text("#base-text"),
+            points: $$("#base-points .fact").map((fact) => [fact.querySelector("dt").textContent, fact.querySelector("dd").textContent]),
+            label: text("#step-label"),
+            count: text("#step-count"),
+            pressed: $$(".base-button[aria-pressed=true]").length,
+            pressedIs: $$(".base-button").indexOf($(".base-button[aria-pressed=true]")),
+          };
+        });
+        seen.groups = $$("#base-list .list-group__title").map((title) => title.textContent);
+
+        // The arrows go from posture to posture, and stop at the ends.
+        $$(".base-button")[0].click();
+        button("Previous posture").click();
+        const atStart = text("#step-count");
+        button("Next posture").click();
+        button("Next posture").click();
+        seen.arrows = { atStart, third: text("#step-label"), announced: text("#announcer") };
+        $$(".base-button").at(-1).click();
+        button("Next posture").click();
+        seen.arrows.atEnd = text("#step-count");
+        // Ink and camera still work here.
+        input($("#camera"), -30);
+        const bodyFloor = $("#floor").getAttribute("d");
+        input($("#camera"), 10);
+        seen.arrows.cameraTurned = $("#floor").getAttribute("d") !== bodyFloor;
+        button("Ink texture").click();
+        seen.arrows.inkOff = $("#ink").getAttribute("filter");
+        button("Ink texture").click();
+
+        // Leaving and coming back finds the same posture.
+        $$(".base-button")[4].click();
+        button("Creator").click();
+        button("Base postures").click();
+        seen.baseKept = { count: text("#step-count"), label: text("#base-name") };
+
+        // ---------- The Creator ----------
+
+        // A copy of a scene from the library, with every control of the Creator.
+        button("Practice library").click();
+        $$(".scene-button")[0].click();
+        // The button that changes the mode is hidden by it, so the focus has to go somewhere.
+        $("#scene-edit").focus();
+        $("#scene-edit").click();
+        seen.copied = {
+          showing: showing(),
+          name: $("#meta-name").value,
+          note: $("#meta-note").value.slice(0, 24),
+          event: $("#meta-event").value,
+          save: text("#scene-save"),
+          copyHidden: hidden("#scene-save-copy"),
+          status: text("#phrase-status"),
+          count: text("#step-count"),
+          asked: asked.length,
+          focus: doc.activeElement?.dataset.mode,
+        };
+
+        // Fencer B on step 3: a pose from the library, two sliders, a reset.
+        $$(".step-button")[2].click();
+        button("Edit fencer B").click();
+        $$(".pose-button").find((b) => b.textContent.endsWith("parry3")).click();
+        seen.posed = {
+          line: stepLine(2),
+          pressed: $$(".pose-button[aria-pressed=true]").map((b) => b.textContent),
+          editing: text("#edit-title"),
+        };
+        input($("#joint-blade"), 100);
+        input($("#joint-x"), 200);
+        seen.adjusted = { line: stepLine(2), said: $("#joint-blade").getAttribute("aria-valuetext") };
+        button("Reset this step's adjustments").click();
+        seen.reset = stepLine(2);
+        checkPaths();
+
+        // Phrase text: broken, then with a pose the library lacks, then solo.
+        const phraseText = $("#phrase-text");
+        input(phraseText, '{"steps": [');
+        seen.broken = {
+          status: text("#phrase-status"),
+          isError: $("#phrase-status").classList.contains("phrase-status--error"),
+          kept: phraseText.value,
+          count: text("#step-count"),
+        };
+        input(phraseText, '{"camera": 90, "steps": [{"label": "Feint", "hold": 200, "A": {"pose": "flunge", "x": 20}}, {"label": "<b>Cut</b>", "ms": 300, "A": {"pose": "riposte"}}]}');
         seen.unknown = {
-          status: $("#phrase-status").textContent,
+          status: text("#phrase-status"),
           isWarning: $("#phrase-status").classList.contains("phrase-status--warn"),
-          count: $("#step-count").textContent,
+          count: text("#step-count"),
           camera: $("#camera").value,
           labels: $$(".step-button").map((b) => b.textContent),
           markup: $$("#steps b").length,
         };
-        input(text, '{"solo": true, "steps": [{"label": "Alone", "A": {"pose": "extend"}}]}');
+        input(phraseText, '{"solo": true, "steps": [{"label": "Alone", "A": {"pose": "extend"}}]}');
         button("Edit fencer B").click();
         seen.solo = {
           solo: $("#stage-panel").classList.contains("is-solo"),
           canEditB: !$("#fencer-b").disabled,
-          editing: $("#edit-title").textContent,
-          status: $("#phrase-status").textContent,
+          editing: text("#edit-title"),
+          status: text("#phrase-status"),
+          soloBox: $("#meta-solo").checked,
         };
+        checkPaths();
+
+        // A new scene asks first, because this one has changes that are not saved.
+        answer = false;
+        button("New scene").click();
+        seen.keptOnNo = { name: $("#meta-name").value, text: phraseText.value.slice(0, 16), asked: asked.length };
+        answer = true;
+        button("New scene").click();
+        seen.fresh = {
+          asked: asked.length,
+          status: text("#phrase-status"),
+          name: $("#meta-name").value,
+          text: lines().join(""),
+          save: text("#scene-save"),
+          copyHidden: hidden("#scene-save-copy"),
+          count: text("#step-count"),
+          solo: $("#stage-panel").classList.contains("is-solo"),
+          soloBox: $("#meta-solo").checked,
+        };
+        // ...and a scene nobody has changed is replaced without asking.
+        button("New scene").click();
+        seen.freshAgain = { asked: asked.length };
+
+        // The scene's own words go into the data, in their place, and back.
+        input($("#meta-note"), "Arm first.");
+        input($("#meta-reference"), "https://example.com/watch?v=abc");
+        input($("#meta-event"), "Club night, October");
+        input($("#meta-name"), "Lunge to the head");
+        seen.words = { head: lines().slice(0, 7), status: text("#save-status") };
+        input($("#meta-name"), "   ");
+        seen.nameBlanked = { line: lines()[1], field: $("#meta-name").value };
+        input($("#meta-name"), "Lunge to the head");
+
+        // What cannot be saved says why, and saves nothing.
+        input($("#meta-name"), "");
+        $("#scene-save").click();
+        seen.noName = { status: text("#save-status"), isError: $("#save-status").classList.contains("phrase-status--error"), focus: doc.activeElement?.id, saved: savedScenes().length };
+        input($("#meta-name"), "Lunge to the head");
+        input($("#meta-reference"), "javascript:alert(1)");
+        seen.badLink = { hint: text("#reference-hint"), hintIsError: $("#reference-hint").classList.contains("field__hint--error") };
+        $("#scene-save").click();
+        seen.badLinkSave = { status: text("#save-status"), focus: doc.activeElement?.id, saved: savedScenes().length };
+        input($("#meta-reference"), "https://example.com/watch?v=abc");
+        seen.goodLink = { hint: text("#reference-hint") };
+        input(phraseText, '{"steps": [');
+        $("#scene-save").click();
+        seen.brokenSave = { status: text("#save-status"), saved: savedScenes().length };
+        input(phraseText, `{"name": "Lunge to the head", "event": "Club night, October", "reference": "https://example.com/watch?v=abc", "note": "Arm first.", "steps": [{"label": "En garde", "A": {"pose": "guard", "x": 0}, "B": {"pose": "guard", "x": 245}}]}`);
+
+        // The steps: add one, name it, time it, pose it; the first has no move time.
+        seen.firstStep = {
+          moveOff: $("#step-ms").disabled,
+          hint: text("#step-hint"),
+          removeOff: $("#step-remove").disabled,
+          placeholder: $("#step-name").getAttribute("placeholder"),
+          label: $("#step-name").value,
+          hold: $("#step-hold").value,
+        };
+        $("#step-add").click();
+        seen.added = {
+          count: text("#step-count"),
+          line: stepLine(1),
+          label: $("#step-name").value,
+          placeholder: $("#step-name").getAttribute("placeholder"),
+          moveOff: $("#step-ms").disabled,
+          move: $("#step-ms").value,
+          hold: $("#step-hold").value,
+          hint: text("#step-hint"),
+          removeOff: $("#step-remove").disabled,
+          paused: $("#play-button").getAttribute("aria-label"),
+        };
+        input($("#step-name"), "Lunge");
+        input($("#step-ms"), "150");
+        input($("#step-hold"), "400");
+        choose($("#step-ease"), "snap");
+        $$(".pose-button").find((b) => b.textContent.endsWith("lungeHead")).click();
+        seen.timed = { line: stepLine(1), button: $$(".step-button")[1].textContent, ease: $("#step-ease").value, status: text("#phrase-status") };
+        input($("#step-ms"), "-20");
+        seen.negative = { field: $("#step-ms").value, line: stepLine(1) };
+        input($("#step-hold"), "");
+        input($("#step-ms"), "");
+        choose($("#step-ease"), "");
+        input($("#step-name"), "");
+        seen.cleared = { line: stepLine(1), label: $("#step-name").value, button: $$(".step-button")[1].textContent };
+        input($("#step-name"), "Lunge");
+        $$(".step-button")[0].click();
+        $("#step-add").click();
+        input($("#step-name"), "Between");
+        seen.between = { labels: $$(".step-button").map((b) => b.textContent), count: text("#step-count") };
+        $("#step-remove").click();
+        seen.removed = { labels: $$(".step-button").map((b) => b.textContent), count: text("#step-count"), editing: text("#edit-title") };
+        // One fencer only, and two again.
+        $("#meta-solo").click();
+        seen.alone = { line: lines()[5], solo: $("#stage-panel").classList.contains("is-solo"), bodyB: display("#body-b"), canEditB: !$("#fencer-b").disabled };
+        $("#meta-solo").click();
+        seen.together = { line: lines().some((line) => line.includes('"solo"')), solo: $("#stage-panel").classList.contains("is-solo"), bodyB: display("#body-b") };
+        checkPaths();
+
+        // The data is the scene: typing into it fills in the fields.
+        input(phraseText, '{"name": "From the data", "note": "Typed here", "steps": [{"label": "Only"}]}');
+        seen.typed = { name: $("#meta-name").value, event: $("#meta-event").value, note: $("#meta-note").value };
+        input(phraseText, `{"name": "Lunge to the head", "event": "Club night, October", "reference": "https://example.com/watch?v=abc", "note": "Arm first.", "steps": [{"label": "En garde", "hold": 600, "A": {"pose": "guard", "x": 0}, "B": {"pose": "guard", "x": 245}}, {"label": "Lunge", "ms": 150, "A": {"pose": "lungeHead", "x": 0}}]}`);
+
+        // Saving: it is kept, with the camera it is seen from, and the button says what it does next.
+        input($("#camera"), 33);
+        $("#scene-save").click();
+        const [first] = savedScenes();
+        seen.saved = {
+          status: text("#save-status"),
+          save: text("#scene-save"),
+          copyHidden: hidden("#scene-save-copy"),
+          count: savedScenes().length,
+          phrase: first.phrase,
+          text: lines().slice(0, 7),
+        };
+        input($("#meta-note"), "Arm first, then legs.");
+        seen.editedAfter = { status: text("#save-status") };
+        button("Save as a new copy").click();
+        seen.copy = { count: savedScenes().length, names: savedScenes().map((scene) => scene.phrase.name), notes: savedScenes().map((scene) => scene.phrase.note), ids: new Set(savedScenes().map((scene) => scene.id)).size };
+        $("#scene-save").click();
+        seen.again = { count: savedScenes().length };
+
+        // The browser says no.
+        const setItem = win.Storage.prototype.setItem;
+        win.Storage.prototype.setItem = () => {
+          throw new win.DOMException("full", "QuotaExceededError");
+        };
+        $("#scene-save").click();
+        seen.full = { status: text("#save-status"), isError: $("#save-status").classList.contains("phrase-status--error"), count: savedScenes().length };
+        win.Storage.prototype.setItem = setItem;
+
+        // Switching modes keeps what the Creator had.
+        input($("#meta-event"), "Kept while away");
+        $$(".step-button")[1].click();
+        button("Base postures").click();
+        button("Creator").click();
+        seen.kept = { event: $("#meta-event").value, count: text("#step-count"), showing: showing().panels };
+
+        // ---------- The library again, with scenes saved ----------
+
+        button("Practice library").click();
+        seen.listed = {
+          saved: $$("#scenes-saved .scene-button").map((card) => card.textContent),
+          builtIn: $$("#scenes-builtin .scene-button").length,
+          emptyHidden: hidden("#scenes-empty"),
+          pressed: $$(".scene-button[aria-pressed=true]").length,
+        };
+        const savedCards = $$("#scenes-saved .scene-button");
+        savedCards[0].click();
+        const link = $("#scene-reference a");
+        seen.savedDetail = {
+          title: text("#scene-title"),
+          kind: text("#scene-kind"),
+          event: text("#scene-event"),
+          eventNone: $("#scene-event").classList.contains("is-empty"),
+          note: text("#scene-note"),
+          linkText: link?.firstChild.textContent,
+          href: link?.getAttribute("href"),
+          target: link?.getAttribute("target"),
+          rel: link?.getAttribute("rel"),
+          said: link?.querySelector(".visually-hidden")?.textContent,
+          edit: text("#scene-edit"),
+          deleteHidden: hidden("#scene-delete"),
+          count: text("#step-count"),
+          camera: $("#camera").value,
+          saved: $$(".scene-button").indexOf(savedCards[0]),
+        };
+
+        // What is stored is not to be trusted: a link that is a script, and words that are markup.
+        keepScenes([
+          ...savedScenes(),
+          { id: "evil", phrase: { name: "<b>Evil</b>", event: "<img src=x onerror=alert(1)>", reference: "javascript:alert(1)", note: "<i>x</i>", steps: [{ label: "<u>Step</u>" }] } },
+          { id: "broken", phrase: { name: "No steps", steps: [] } },
+        ]);
+        const evil = $$("#scenes-saved .scene-button").find((card) => card.textContent.includes("Evil"));
+        evil.click();
+        seen.hostile = {
+          cards: $$("#scenes-saved .scene-button").length,
+          title: text("#scene-title"),
+          links: $$("#scene-reference a").length,
+          reference: text("#scene-reference"),
+          referenceNone: $("#scene-reference").classList.contains("is-empty"),
+          event: text("#scene-event"),
+          markup: $$("#scenes-saved b, #scenes-saved img, #scene-note i, #scene-title b, #steps u, #scene-event img").length,
+        };
+        checkPaths();
+
+        // Editing a scene that was saved: the same scene is saved over, and a scene with changes asks first.
+        // (The Creator still has the change typed while away, so this first one asks.)
+        savedCards[0].click();
+        const before = asked.length;
+        button("Edit in the Creator").click();
+        seen.editSaved = {
+          asked: asked.length - before,
+          name: $("#meta-name").value,
+          save: text("#scene-save"),
+          copyHidden: hidden("#scene-save-copy"),
+          showing: showing().chosen,
+        };
+        input($("#meta-note"), "Changed in the Creator");
+        button("Practice library").click();
+        $$("#scenes-saved .scene-button")[1].click();
+        answer = false;
+        button("Edit in the Creator").click();
+        seen.declined = { asked: asked.length - before, mode: showing().chosen, note: $("#meta-note").value, title: text("#scene-title") };
+        answer = true;
+        button("Edit in the Creator").click();
+        seen.accepted = { asked: asked.length - before, mode: showing().chosen, name: $("#meta-name").value, note: $("#meta-note").value };
+        $("#scene-save").click();
+        seen.overwrote = { count: savedScenes().length, status: text("#save-status") };
+        // Leaving the page asks only while something is unsaved.
+        const leaving = () => {
+          const event = new win.Event("beforeunload", { cancelable: true });
+          win.dispatchEvent(event);
+          return event.defaultPrevented;
+        };
+        const savedLeaving = leaving();
+        input($("#meta-note"), "Not saved yet");
+        const unsavedLeaving = leaving();
+        input($("#meta-note"), "Arm first.");
+        seen.leaving = { saved: savedLeaving, unsaved: unsavedLeaving, backToSaved: leaving() };
+        // Saved, so nothing is unsaved, and the next scene opens without asking.
+        button("Practice library").click();
+        $$("#scenes-saved .scene-button")[0].click();
+        const clean = asked.length;
+        button("Edit in the Creator").click();
+        seen.cleanEdit = { asked: asked.length - clean, mode: showing().chosen };
+
+        // Deleting asks first, and the page goes back to the first scene.
+        button("Practice library").click();
+        const target = $$("#scenes-saved .scene-button").find((card) => card.textContent.includes("Evil"));
+        target.click();
+        answer = false;
+        button("Delete scene").click();
+        seen.deleteDeclined = { cards: $$("#scenes-saved .scene-button").length, asked: asked.at(-1) };
+        answer = true;
+        $("#scene-delete").focus();
+        $("#scene-delete").click();
+        seen.deleted = {
+          cards: $$("#scenes-saved .scene-button").length,
+          stored: savedScenes().length,
+          title: text("#scene-title"),
+          focus: doc.activeElement?.dataset.mode,
+        };
+        for (const card of [...$$("#scenes-saved .scene-button")]) {
+          card.click();
+          button("Delete scene").click();
+        }
+        seen.allDeleted = { cards: $$("#scenes-saved .scene-button").length, stored: savedScenes().length, emptyShown: !hidden("#scenes-empty"), builtIn: $$("#scenes-builtin .scene-button").length };
+
+        // The page and its other tabs agree: a scene deleted elsewhere leaves this one's list.
+        keepScenes([{ id: "elsewhere", phrase: { name: "Saved in another tab", steps: [{ label: "x" }] } }]);
+        $$("#scenes-saved .scene-button")[0].click();
+        keepScenes([]);
+        seen.elsewhere = { cards: $$("#scenes-saved .scene-button").length, title: text("#scene-title") };
+
+        seen.asked = asked;
         checkPaths();
         seen.badPaths = badPaths;
       }

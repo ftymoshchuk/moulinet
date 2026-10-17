@@ -40,11 +40,16 @@ export const POSE_NAMES = {
 
 // A phrase is a list of steps. Each step moves into its poses over `ms`, then
 // holds them for `hold`; a fencer a step leaves out keeps the previous spec.
+//
+// These are the scenes the practice library starts with. A scene may also say
+// where it was noted, with an `event` and a `reference` link; these do not,
+// because there is no real bout behind them to point to.
 export const PRESETS = [
   {
-    name: "Advance, lunge, head cut",
+    id: "advance-lunge-head-cut",
     phrase: {
       name: "Advance, lunge, head cut",
+      note: "A advances, raises the blade, then lunges and cuts to the head while B holds the guard. Watch the order: the arm moves before the legs.",
       camera: 0,
       steps: [
         { label: "En garde", hold: 600, A: { pose: "guard", x: -30 }, B: { pose: "guard", x: 245 } },
@@ -59,9 +64,10 @@ export const PRESETS = [
     },
   },
   {
-    name: "Chest cut, parry 3",
+    id: "chest-cut-parry-3",
     phrase: {
       name: "Lunge to the chest, parry 3, riposte",
+      note: "A lunges to the chest and B takes parry 3, then ripostes to the head before both recover.",
       camera: 0,
       steps: [
         { label: "En garde", hold: 600, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 245 } },
@@ -72,9 +78,10 @@ export const PRESETS = [
     },
   },
   {
-    name: "Parry 5, riposte to head",
+    id: "head-attack-parry-5",
     phrase: {
       name: "Head attack, parry 5, riposte to head",
+      note: "A raises the blade and lunges at the head; B takes parry 5 and ripostes to the head, then both recover.",
       camera: 28,
       steps: [
         { label: "En garde", hold: 600, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 245 } },
@@ -86,9 +93,10 @@ export const PRESETS = [
     },
   },
   {
-    name: "Moulinet to head (solo)",
+    id: "moulinet-to-head",
     phrase: {
       name: "Moulinet to the head",
+      note: "One fencer alone. The blade drops forward past the arm, swings up behind and comes down over the top: the circular cut this page is named after.",
       camera: 25,
       solo: true,
       steps: [

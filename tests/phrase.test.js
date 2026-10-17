@@ -3,18 +3,26 @@ import { test } from "node:test";
 
 import { POSES, PRESETS } from "../site/js/library.js";
 import {
+  MAX_STEP_MS,
+  TEXT_KEYS,
   buildTimeline,
   clearAdjustments,
   clone,
   ease,
   editSpec,
+  insertStep,
   mixPoses,
+  newPhrase,
   parsePhrase,
   phraseToText,
   poseAt,
+  removeStep,
   resolvePose,
   setJoint,
+  setMeta,
   setPose,
+  setSolo,
+  setStepField,
 } from "../site/js/phrase.js";
 
 const spans = (timeline) => timeline.steps.map((step) => [step.start, step.holdStart, step.end]);
@@ -212,4 +220,180 @@ test("picking a pose or resetting drops the step's adjustments, and keeps its po
   const reset = { pose: "guard", x: 50, adj: { arm: 1 } };
   clearAdjustments(reset);
   assert.deepEqual(reset, { pose: "guard", x: 50 });
+});
+
+test("the name, event, reference and note come first in the text, then the camera and solo", () => {
+  const phrase = { steps: [{ label: "Only" }], extra: 1, solo: true, note: "n", camera: 5, reference: "r", name: "N", event: "e" };
+  assert.deepEqual(
+    phraseToText(phrase).split("\n").slice(1, 8).map((line) => line.trim().split(":")[0]),
+    ['"name"', '"event"', '"reference"', '"note"', '"camera"', '"solo"', '"extra"'],
+  );
+  assert.deepEqual(parsePhrase(phraseToText(phrase)), phrase, "the order is only how it is shown");
+});
+
+test("a new scene is a valid phrase: one step, both fencers in guard, no pose the library lacks", () => {
+  const phrase = newPhrase();
+  assert.deepEqual(parsePhrase(phraseToText(phrase)), phrase);
+  const timeline = buildTimeline(phrase);
+  assert.equal(timeline.steps.length, 1);
+  assert.deepEqual(timeline.unknown, []);
+  assert.deepEqual(timeline.steps[0].A, { ...POSES.guard, x: 0 });
+  assert.deepEqual(timeline.steps[0].B, { ...POSES.guard, x: 245 });
+  assert.notEqual(newPhrase().steps[0].A, phrase.steps[0].A, "each one is its own copy");
+});
+
+test("text keys are set, and removed by empty text or only spaces, and no other key is touched", () => {
+  const phrase = { name: "Old", steps: [{}] };
+  const before = clone(phrase);
+  assert.deepEqual(setMeta(phrase, "event", "Club night").event, "Club night");
+  assert.equal(setMeta(phrase, "name", "").name, undefined);
+  assert.equal("name" in setMeta(phrase, "name", "   "), false);
+  assert.equal("note" in setMeta(phrase, "note", undefined), false);
+  assert.equal(setMeta(phrase, "name", "Budapest ").name, "Budapest ", "a space typed at the end is kept");
+  assert.deepEqual(phrase, before, "the original phrase is left alone");
+  for (const key of ["steps", "camera", "solo", "__proto__", "constructor"]) assert.equal(setMeta(phrase, key, "x"), null, key);
+  assert.deepEqual(TEXT_KEYS, ["name", "event", "reference", "note"]);
+});
+
+test("solo is switched on and off, and nothing else changes", () => {
+  const phrase = { camera: 12, steps: [{ A: { pose: "guard" } }] };
+  assert.deepEqual(setSolo(phrase, true), { ...phrase, solo: true });
+  assert.deepEqual(setSolo(setSolo(phrase, true), false), phrase);
+  assert.deepEqual(phrase, { camera: 12, steps: [{ A: { pose: "guard" } }] });
+});
+
+// What a step shows is its fencers' whole poses, whether it says so or inherits them.
+const shown = (phrase) => buildTimeline(phrase).steps.map((step) => [step.A, step.B]);
+
+// The built-in scenes never need a step to lean on the one before for a pose it
+// was given there, so this one does: B is set in steps 2 and 4, A in 1 and 3.
+const LEANING = {
+  name: "Leaning",
+  steps: [
+    { A: { pose: "guard", x: -30 }, B: { pose: "guard", x: 200 } },
+    { ms: 100, B: { pose: "parry3", x: 200 } },
+    { ms: 100, A: { pose: "lungeChest", x: 0 } },
+    { ms: 100, B: { pose: "riposte", x: 220 } },
+    { ms: 100 },
+  ],
+};
+const SCENES = [...PRESETS.map(({ phrase }) => phrase), LEANING];
+
+test("a step added after step i stands as step i does, so nothing else on the page changes", () => {
+  for (const phrase of SCENES) {
+    const timeline = buildTimeline(phrase);
+    for (let i = 0; i < phrase.steps.length; i++) {
+      const added = insertStep(phrase, timeline, i);
+      assert.equal(added.index, i + 1);
+      const after = shown(added.phrase);
+      const before = shown(phrase);
+      assert.equal(after.length, before.length + 1);
+      assert.deepEqual(after.slice(0, i + 1), before.slice(0, i + 1), `${phrase.name}, after step ${i + 1}`);
+      assert.deepEqual(after[i + 1], before[i], "the new step is a copy of the one it follows");
+      assert.deepEqual(after.slice(i + 2), before.slice(i + 1), `${phrase.name}, steps after it`);
+    }
+  }
+});
+
+test("a new step moves quickly and holds briefly, has no label, and takes both fencers unless the scene is solo", () => {
+  const phrase = newPhrase();
+  const added = insertStep(phrase, buildTimeline(phrase), 0).phrase.steps[1];
+  assert.deepEqual(added, { ms: 300, hold: 200, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 245 } });
+  const solo = setSolo(phrase, true);
+  assert.deepEqual(Object.keys(insertStep(solo, buildTimeline(solo), 0).phrase.steps[1]), ["ms", "hold", "A"]);
+  const copy = insertStep(phrase, buildTimeline(phrase), 0).phrase;
+  copy.steps[1].A.x = 99;
+  assert.equal(phrase.steps[0].A.x, 0, "the copy shares nothing with the phrase");
+});
+
+test("a step cannot be added after one the phrase does not have", () => {
+  const phrase = newPhrase();
+  const timeline = buildTimeline(phrase);
+  for (const index of [-1, 1, 0.5, NaN, undefined]) assert.equal(insertStep(phrase, timeline, index), null, String(index));
+  assert.equal(insertStep({ steps: [] }, buildTimeline({ steps: [] }), 0), null);
+});
+
+test("taking out a step leaves every other as it was, even one that only inherited its poses from it", () => {
+  for (const phrase of SCENES) {
+    const before = shown(phrase);
+    const timeline = buildTimeline(phrase);
+    for (let i = 0; i < phrase.steps.length; i++) {
+      const removed = removeStep(phrase, timeline, i);
+      assert.deepEqual(shown(removed), [...before.slice(0, i), ...before.slice(i + 1)], `${phrase.name}, without step ${i + 1}`);
+    }
+  }
+});
+
+test("taking out a step copies poses onto the next one only where it needs them", () => {
+  const phrase = {
+    steps: [
+      { A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 245 } },
+      { ms: 100, A: { pose: "lungeChest", x: 0 }, B: { pose: "parry3", x: 245 } },
+      { ms: 100, A: { pose: "guard", x: 0 } },
+      { ms: 100, A: { pose: "prep", x: 0 } },
+    ],
+  };
+  const timeline = buildTimeline(phrase);
+  // Step 3 leaned on step 2 for B, so it takes B with it; its A is its own.
+  assert.deepEqual(removeStep(phrase, timeline, 1).steps[1], { ms: 100, A: { pose: "guard", x: 0 }, B: { pose: "parry3", x: 245 } });
+  // Step 4 inherits B from step 3, which is untouched, and A is its own: no copies.
+  assert.deepEqual(removeStep(phrase, timeline, 2).steps[2], phrase.steps[3]);
+  // Where the step before shows what the removed one did, there is nothing to copy.
+  const plain = { steps: [{ A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 245 } }, { ms: 50, A: { pose: "prep", x: 0 } }, { ms: 50, A: { pose: "guard", x: 0 } }] };
+  assert.deepEqual(removeStep(plain, buildTimeline(plain), 1).steps[1], plain.steps[2]);
+  assert.deepEqual(phrase, clone(phrase), "the original phrase is left alone");
+});
+
+test("taking out the first step makes the next the start, with the poses the first had", () => {
+  const phrase = {
+    steps: [
+      { label: "First", A: { pose: "guard", x: -30 }, B: { pose: "guard", x: 200 } },
+      { label: "Second", ms: 100, A: { pose: "prep", x: -30 } },
+    ],
+  };
+  const removed = removeStep(phrase, buildTimeline(phrase), 0);
+  assert.deepEqual(removed.steps, [{ label: "Second", ms: 100, A: { pose: "prep", x: -30 }, B: { pose: "guard", x: 200 } }]);
+  // A start that is what every phrase starts as needs nothing copied, solo or not.
+  const solo = { solo: true, steps: [{ A: { pose: "guard", x: 0 } }, { ms: 50, A: { pose: "prep", x: 0 } }] };
+  assert.deepEqual(removeStep(solo, buildTimeline(solo), 0).steps, [{ ms: 50, A: { pose: "prep", x: 0 } }]);
+});
+
+test("the only step cannot be taken out, nor one that is not there", () => {
+  const phrase = newPhrase();
+  assert.equal(removeStep(phrase, buildTimeline(phrase), 0), null);
+  const two = insertStep(phrase, buildTimeline(phrase), 0).phrase;
+  for (const index of [-1, 2, 0.5]) assert.equal(removeStep(two, buildTimeline(two), index), null, String(index));
+});
+
+test("a step's label, timing and ease are set, and removed by empty text; the step keeps its keys in order", () => {
+  const phrase = { steps: [{ A: { pose: "guard" }, hold: 5 }, { ease: "snap", ms: 90, label: "Two" }] };
+  const before = clone(phrase);
+  let next = setStepField(phrase, 0, "label", "En garde");
+  next = setStepField(next, 0, "ms", "120");
+  next = setStepField(next, 0, "ease", "linear");
+  assert.deepEqual(Object.keys(next.steps[0]), ["label", "ms", "hold", "ease", "A"]);
+  assert.deepEqual(next.steps[0], { label: "En garde", ms: 120, hold: 5, ease: "linear", A: { pose: "guard" } });
+  next = setStepField(next, 0, "label", "  ");
+  next = setStepField(next, 0, "hold", "");
+  next = setStepField(next, 0, "ease", "smooth");
+  assert.deepEqual(next.steps[0], { ms: 120, A: { pose: "guard" } });
+  assert.deepEqual(setStepField(phrase, 1, "ease", "").steps[1], { ms: 90, label: "Two" });
+  assert.deepEqual(phrase, before, "the original phrase is left alone");
+});
+
+test("times are whole milliseconds, no longer than the page allows, and a time that is not one changes nothing", () => {
+  const phrase = { steps: [{}, {}] };
+  assert.equal(setStepField(phrase, 1, "ms", "250.6").steps[1].ms, 251);
+  assert.equal(setStepField(phrase, 1, "hold", "0").steps[1].hold, 0);
+  assert.equal(setStepField(phrase, 1, "hold", 1e9).steps[1].hold, MAX_STEP_MS);
+  assert.equal(setStepField(phrase, 1, "ms", "1e3").steps[1].ms, 1000);
+  for (const bad of ["-5", "soon", "Infinity", "NaN"]) assert.equal(setStepField(phrase, 1, "ms", bad), null, bad);
+});
+
+test("a setting that is not a step's, and a step that is not there, change nothing", () => {
+  const phrase = { steps: [{}] };
+  for (const key of ["A", "steps", "__proto__", "x"]) assert.equal(setStepField(phrase, 0, key, "1"), null, key);
+  for (const index of [-1, 1, 0.5]) assert.equal(setStepField(phrase, index, "label", "x"), null, String(index));
+  assert.equal(setStepField({ steps: {} }, 0, "label", "x"), null);
+  assert.deepEqual(setStepField({ steps: [7] }, 0, "label", "x").steps, [{ label: "x" }], "a step that is not an object becomes one");
 });
