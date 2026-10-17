@@ -3,7 +3,7 @@
 // The body is worked out in centimetres, y up, facing +x with the back foot at
 // 0; a projector then places it on the piste and turns it for the camera,
 // which swings around a point on the piste. Out come SVG units, y down.
-import { bladePart, headPart, legPart, rearArm, swordArm, trunk } from "./body.js";
+import { bladePart, headPart, legPart, rearArm, swordArm, torsoFrame, trunk } from "./body.js";
 import { groundStrokes } from "./folds.js";
 import { handParts } from "./parts.js";
 import { poseAt } from "./phrase.js";
@@ -15,6 +15,8 @@ const RAD = Math.PI / 180;
 // Thigh and shin, hip to ankle (cm).
 const THIGH = 44;
 const SHIN = 46;
+// Half the width between the shoulder joints (cm).
+const SHOULDER = 19;
 
 function fmt(point) {
   return `${point[0].toFixed(1)} ${point[1].toFixed(1)}`;
@@ -44,21 +46,26 @@ export function skeleton(p) {
   const u = [Math.sin(p.lean * RAD), Math.cos(p.lean * RAD)];
   const f = [u[1], -u[0]];
   const T = (a, b) => [hip[0] + u[0] * a + f[0] * b, hip[1] + u[1] * a + f[1] * b];
-  const sh = T(52, 0);
+  // The shoulders are turned toward the camera by `turn`: the sword shoulder, on
+  // the far side, and the rear one, on the near side, swing apart, and each arm
+  // lies in a plane of its own, at its shoulder's distance from the camera.
+  const across = SHOULDER * Math.cos(p.turn * RAD);
+  const back = SHOULDER * Math.sin(p.turn * RAD);
+  const sh = [...T(52, 0), -across];
   const nk = T(58, 0);
   const hd = T(72, 1);
-  const el = [sh[0] + 30 * Math.cos(p.arm * RAD), sh[1] + 30 * Math.sin(p.arm * RAD)];
-  const hn = [el[0] + 27 * Math.cos(p.fore * RAD), el[1] + 27 * Math.sin(p.fore * RAD)];
+  const el = [sh[0] + 30 * Math.cos(p.arm * RAD), sh[1] + 30 * Math.sin(p.arm * RAD), sh[2]];
+  const hn = [el[0] + 27 * Math.cos(p.fore * RAD), el[1] + 27 * Math.sin(p.fore * RAD), sh[2]];
   const bp = p.blade * RAD;
   const by = p.yaw * RAD;
   const bd = [Math.cos(bp) * Math.cos(by), Math.sin(bp) * Math.cos(by), Math.sin(by)];
-  const at = (k) => [hn[0] + k * bd[0], hn[1] + k * bd[1], k * bd[2]];
+  const at = (k) => [hn[0] + k * bd[0], hn[1] + k * bd[1], hn[2] + k * bd[2]];
   const ra = (p.rArm - p.lean) * RAD;
   const rf = (p.rFore - p.lean) * RAD;
-  const rs = T(51, -3);
-  const re = [rs[0] + 28 * Math.cos(ra), rs[1] + 28 * Math.sin(ra)];
-  const rh = [re[0] + 25 * Math.cos(rf), re[1] + 25 * Math.sin(rf)];
-  return { hip, ankB, ankF, kB, kF, u, f, T, sh, nk, hd, el, hn, bp, at, tip: at(88), rs, re, rh, lean: p.lean };
+  const rs = [...T(48, -back), across];
+  const re = [rs[0] + 28 * Math.cos(ra), rs[1] + 28 * Math.sin(ra), rs[2]];
+  const rh = [re[0] + 25 * Math.cos(rf), re[1] + 25 * Math.sin(rf), rs[2]];
+  return { hip, ankB, ankF, kB, kF, u, f, T, sh, nk, hd, el, hn, bp, at, tip: at(88), rs, re, rh, lean: p.lean, turn: p.turn };
 }
 
 /**
@@ -68,7 +75,12 @@ export function skeleton(p) {
 export function projector(p, dir, camera) {
   const c = Math.cos(camera * RAD);
   const s = Math.sin(camera * RAD);
-  return (q) => [(p.x + dir * q[0] - PIVOT) * c + dir * (q[2] || 0) * s + PIVOT, -q[1]];
+  const W = (q) => [(p.x + dir * q[0] - PIVOT) * c + dir * (q[2] || 0) * s + PIVOT, -q[1]];
+  // For a shape worked out as the camera sees it, across the page and up: `u` is
+  // forward along the camera's way of looking, that is c * forward + s * toward the camera.
+  W.flat = ([u, y]) => [(p.x - PIVOT) * c + PIVOT + dir * u, -y];
+  W.camera = camera;
+  return W;
 }
 
 export function bladeTip(p, dir, camera) {
@@ -118,9 +130,10 @@ function draw(p, dir, camera, backView, older) {
   const J = skeleton(p);
   const W = projector(p, dir, camera);
   const hands = handParts();
-  const torso = trunk(J, W, older);
+  const frame = torsoFrame(J, W, older);
+  const torso = trunk(J, W, older, frame);
   const sword = swordArm(J, W, hands.fist);
-  const rear = rearArm(J, W, hands.hip);
+  const rear = rearArm(J, W, hands.hip, frame);
   // The hips and seat belong to the leg nearer the camera.
   const legF = legPart(J, W, J.ankF, J.kF, { front: true, seat: !backView, older });
   const legB = legPart(J, W, J.ankB, J.kB, { front: false, seat: backView, older });

@@ -235,3 +235,28 @@ const SHOE = {
 export function shoeParts() {
   return SHOE;
 }
+
+// The jersey as slices across the body, from the hem to the base of the neck.
+// Each is an ellipse: how far up the spine it is (cm above the hips), how far
+// forward of the spine its middle lies, and its half-depth and half-width. With
+// the shoulders turned toward the camera the slices make the broad shoulders
+// that taper to the waist, and the camera swings them round as it swings.
+const TORSO = [
+  [8, 0.4, 11.8, 15.2],
+  [17, 0.4, 11.6, 14.8],
+  [27, 0.8, 12.6, 16.4],
+  [37, 1.4, 13.4, 18.0],
+  [45, 1.4, 12.8, 19.4],
+  [51, 0.6, 10.6, 19.6],
+  [55, -0.2, 7.4, 14.6],
+  [58, -0.4, 5.6, 8.6],
+];
+
+/** The slices of the jersey; an older man carries more at the waist and has rounder shoulders. */
+export function torsoParts(older = false) {
+  if (!older) return TORSO;
+  return TORSO.map(([up, mid, depth, width]) => {
+    const belly = Math.max(0, Math.min(1, (40 - up) / 30));
+    return [up, mid + 1.6 * belly, depth + 1.4 * belly, width - (up > 48 ? 0.8 : 0)];
+  });
+}

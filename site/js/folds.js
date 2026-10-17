@@ -36,7 +36,7 @@ function stroke(W, points, width, swell) {
 }
 
 // How much heavier than first drawn every stroke is.
-const INK = 1.45;
+const INK = 1.05;
 
 /**
  * Long dry strokes down a baggy thigh from the hip toward the knee, spreading at
@@ -46,7 +46,7 @@ export function thighFolds(W, hip, knee, ref, seed = 1) {
   const f = along(hip, knee, ref);
   const r = wobble(seed);
   let d = "";
-  [11, 7.2, 3.6, 0.4, -3, -6, -9.4].forEach((c, i) => {
+  [10.4, 6.8, 3.4, 0.2, -3, -6, -8.8].forEach((c, i) => {
     const t0 = 0.04 + r() * 0.2;
     const t1 = 0.5 + r() * 0.4;
     const a = f.at(t0, c + (r() - 0.5) * 2);
@@ -91,30 +91,53 @@ export function sockWrinkles(W, from, ankle, ref, seed = 3) {
 }
 
 /**
- * The shadow under the hem of a jersey: a heavy band along the hem and a fan of
- * strokes below it, crowded toward the back. `T(a, b)` is a point of the torso's
- * frame.
+ * The creases of a jersey, each a thin stroke laid on its surface: under the
+ * sleeve, radiating from the armpit; across the chest; at the waist, where the
+ * body bends; and down the front edge, as the shading of the turn of the body.
+ * `at(up, v)` is a point of the jersey: `up` cm above the hips, and `v` across
+ * from the back, -1, to the front, 1. An older man has the folds of a belly.
  */
-export function hemShadow(W, T, seed = 4) {
+export function torsoFolds(at, seed = 4, older = false) {
   const r = wobble(seed);
-  let d = stroke(W, [T(9.4, -13.5), T(8.4, -2), T(9.2, 11.5)], 1.5, 0.45);
-  [[-12.6, 4.6], [-10.9, 3.2], [-8.4, 4.9], [-6.9, 3.4], [-3.8, 4.2], [-0.6, 3.0], [2.9, 4.4], [5.4, 3.0], [8.8, 3.8]].forEach(([b, len]) => {
-    const j = (r() - 0.5) * 1.2;
-    d += stroke(W, [T(9, b + j), T(9 - len * (0.8 + r() * 0.4), b + j + 1.4 + r())], 0.6 + r() * 0.4, 0.3);
+  const page = (q) => q;
+  // A stroke through points given as [up, v], bowed a little to one side.
+  const crease = (points, width = 0.5, bow = 0.5) => {
+    const [a, b] = [points[0], points[points.length - 1]];
+    const mid = points.length > 2 ? points[1] : [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + bow * 0.08];
+    return stroke(page, [at(...a), at(...mid), at(...b)], width + r() * 0.15, 0.4 + r() * 0.2);
+  };
+  let d = "";
+  // Under the sleeve, radiating from the armpit.
+  [[40.6, -0.5, 38.0, -0.18], [42.0, -0.46, 40.2, -0.04]].forEach(([u0, v0, u1, v1]) => {
+    d += crease([[u0, v0], [u1, v1]], 0.5);
   });
+  // Across the chest, the line under it.
+  d += crease([[39.4, 0.1], [38.4, 0.4], [39.8, 0.74]], 0.55);
+  // At the waist, where the jersey is gathered.
+  [[18.4, -0.5, 16.6, 0.6], [14.8, -0.62, 13.2, 0.72], [21.6, -0.3, 20.6, 0.5]].forEach(([u0, v0, u1, v1]) => {
+    d += crease([[u0, v0], [(u0 + u1) / 2 - 0.5, (v0 + v1) / 2], [u1, v1]], 0.5);
+  });
+  // Down the front edge, the turn of the body: short strokes in a loose row.
+  for (let up = 17; up < 48; up += 2.6 + r() * 1.6) {
+    const v = 0.84 + r() * 0.08;
+    d += crease([[up, v], [up - 1.0 - r() * 0.8, v - 0.2 - r() * 0.1]], 0.5);
+  }
+  if (older) {
+    // The weight of a belly: folds that hang across it, and the shadow below.
+    d += crease([[12.4, -0.1], [11.4, 0.5], [12.6, 0.96]], 0.8);
+    d += crease([[16.2, 0.2], [15.2, 0.62], [16.6, 0.94]], 0.6);
+  }
   return d;
 }
 
-/** Hatching down the front of the chest and belly, in uneven bunches, and the folds at the waist. */
-export function chestHatch(W, T, seed = 5) {
+/** A heavier line along the hem, where the jersey meets the waistband, and the wrinkles it drags in the cloth below. */
+export function waistband(at, seed = 5) {
   const r = wobble(seed);
-  let d = "";
-  [[19.2, 0.8], [22.6, 1.0], [24.2, 0.7], [28.8, 1.1], [30.2, 0.8], [35.0, 0.9], [38.8, 0.6]].forEach(([a, k]) => {
-    const j = (r() - 0.5) * 0.8;
-    d += stroke(W, [T(a + j, 16.4 - r() * 0.8), T(a + j - 1.2 - r() * 0.8, 16.2 - 5.4 * k - r() * 2)], 0.5 + r() * 0.35, 0.4);
-  });
-  d += stroke(W, [T(18, 15), T(15, 4), T(15.5, -6)], 0.5, 0.5);
-  d += stroke(W, [T(29, -16), T(26, -11), T(27, -6.4)], 0.5, 0.5);
+  const page = (q) => q;
+  let d = stroke(page, [at(9.6, -0.94), at(8.6, 0.0), at(9.8, 0.96)], 1.0, 0.5);
+  for (let v = -0.8; v < 0.9; v += 0.2 + r() * 0.12) {
+    d += stroke(page, [at(8.4, v), at(6.6 - r() * 1.2, v + 0.04)], 0.45, 0.35);
+  }
   return d;
 }
 

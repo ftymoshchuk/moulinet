@@ -3,9 +3,9 @@
 // `W`, which sets a point on the piste and turns it for the camera, and gives
 // back `{ g, d, k }`: the shapes that make the silhouette, the thin lines, and
 // the brush strokes.
-import { chestHatch, hemShadow, kneeFolds, sleeveFolds, sockWrinkles, thighFolds } from "./folds.js";
-import { add, blob, brush, dist, line, mul, perp, pt, rotate, sub, unit } from "./ink.js";
-import { headParts, shoeParts } from "./parts.js";
+import { kneeFolds, sleeveFolds, sockWrinkles, thighFolds, torsoFolds, waistband } from "./folds.js";
+import { add, blob, brush, dist, lerp, line, mul, perp, pt, ribbon, rotate, sub, unit } from "./ink.js";
+import { headParts, shoeParts, torsoParts } from "./parts.js";
 
 /**
  * A limb segment from `a` to `b`, as the points of a smooth shape: rounded at
@@ -36,6 +36,11 @@ export function segment(a, b, hi, lo, ref = [1, 0], caps = [1, 1]) {
   return points;
 }
 
+// A list of shapes as the shapes themselves, `g`, and the line of ink round them, `o`.
+function drawn(list, thin, thick) {
+  return { g: list.map((points) => blob(points)).join(""), o: list.map((points) => ribbon(points, thin, thick)).join("") };
+}
+
 /** A point of a frame: `o` plus `x` along `axis` and `y` to its left. */
 export function place(o, axis, x, y) {
   const n = perp(axis);
@@ -44,46 +49,86 @@ export function place(o, axis, x, y) {
 
 // ---------- The trunk ----------
 
-// The jersey from the side, in the torso's frame: [along the spine from the
-// hips, forward], from the hem up the front and down the back.
-const JERSEY = [
-  [9, 14.8],
-  [21, 16.0],
-  [33, 17.0],
-  [44, 16.6],
-  [52.5, 13.6],
-  [58.5, 6.6],
-  [60.5, -3.8],
-  [56.5, -11.4],
-  [49, -16.4],
-  [38, -17.8],
-  [24, -17.6],
-  [11, -16.2],
-  [7.6, -7.4],
-  [7.4, 3.6],
-];
+const RAD = Math.PI / 180;
+
+/**
+ * The jersey as the camera sees it. Each slice of `rows` is an ellipse across the
+ * body, with the chest facing along `f` and the shoulders along `l`, in three
+ * dimensions: the camera sees as far to the front and back as the ellipse
+ * reaches along its way of looking. Returns `slice(up)`, the front-most and
+ * back-most points of the slice `up` cm above the hips, as points of the page.
+ */
+function torsoSlices(J, W, rows) {
+  const lean = J.lean * RAD;
+  const turn = J.turn * RAD;
+  const look = W.camera * RAD;
+  const f = [Math.cos(turn) * Math.cos(lean), -Math.cos(turn) * Math.sin(lean), Math.sin(turn)];
+  const l = [-Math.sin(turn) * Math.cos(lean), Math.sin(turn) * Math.sin(lean), Math.cos(turn)];
+  const ce = Math.cos(look);
+  const se = Math.sin(look);
+  const fe = f[0] * ce + f[2] * se;
+  const le = l[0] * ce + l[2] * se;
+  // The shape of the slice at any height, between the rows or beyond them.
+  const shape = (up) => {
+    let i = 0;
+    while (i < rows.length - 2 && rows[i + 1][0] < up) i++;
+    const [a0, ...p0] = rows[i];
+    const [a1, ...p1] = rows[i + 1];
+    const k = (up - a0) / (a1 - a0);
+    return p0.map((v, j) => v + (p1[j] - v) * k);
+  };
+  return (up) => {
+    const [mid, depth, width] = shape(up);
+    const u = J.hip[0] * ce + (J.u[0] * up + f[0] * mid) * ce + f[2] * mid * se;
+    const y = J.hip[1] + J.u[1] * up + f[1] * mid;
+    const A = depth * fe;
+    const B = width * le;
+    const reach = Math.hypot(A, B);
+    const at = Math.atan2(B, A);
+    // The lean tips the slice, so its extremes are not at quite the same height.
+    const tip = depth * Math.cos(at) * f[1] + width * Math.sin(at) * l[1];
+    return { front: W.flat([u + reach, y + tip]), back: W.flat([u - reach, y - tip]) };
+  };
+}
+
+/**
+ * The jersey's shape as the camera sees it: its slices, and `across(up, v)`, a
+ * point on it `up` cm above the hips and across from the back, -1, to the front, 1.
+ */
+export function torsoFrame(J, W, older) {
+  const rows = torsoParts(older);
+  const slice = torsoSlices(J, W, rows);
+  const across = (up, v) => {
+    const { front, back } = slice(up);
+    return lerp(back, front, (v + 1) / 2);
+  };
+  return { rows, slice, across };
+}
 
 /**
  * The jersey, the neck and the roll collar. `T(a, b)` is a point of the torso's
  * frame, `older` gives a heavier man.
  */
-export function trunk(J, W, older) {
+export function trunk(J, W, older, frame = torsoFrame(J, W, older)) {
   const T = (a, b) => W(J.T(a, b));
-  const belly = older ? 1.8 : 0;
-  const shape = JERSEY.map(([a, b]) => T(a, a < 40 && b > 0 ? b + belly : b));
+  const { rows, slice, across } = frame;
+  // Up the front, down the back, with corners at the hem.
+  const front = rows.map(([up]) => slice(up).front);
+  const back = rows.map(([up]) => slice(up).back).reverse();
+  front[0] = [...front[0], 1];
+  back[back.length - 1] = [...back[back.length - 1], 1];
   const neck = segment(J.T(60, 0.2), J.T(71, 1.4), [4.8, 4.4], [5.6, 5.2], J.f);
   const collar = segment(J.T(57.5, 0.3), J.T(65.5, 0.9), [5.9, 5.6, 5.2], [6.9, 6.4, 6.0], J.f, [0.3, 0.3]);
-  const g = blob(shape) + blob(neck.map(W)) + blob(collar.map(W));
-  // The seams of the collar, and a fold of cloth where it meets the shoulder.
+  const shapes = drawn([[...front, ...back], neck.map(W), collar.map(W)]);
+  // The roll of the collar: its upper edge, a fold, its seam with the jersey; and the stitching along the hem.
   const d =
-    line([T(66.4, 2.4), T(63.0, 1.2), T(60.4, 0.6)]) +
-    line([T(66.0, -1.2), T(62.6, -0.6), T(60.2, -0.4)]) +
-    line([T(58.2, -6.6), T(57.6, -0.4), T(58.4, 5.4)]) +
-    line([T(64.6, -5.8), T(64.2, 0.2), T(65, 5.0)]) +
-    line([T(11.2, 14.8), T(10.4, 6), T(10, -4), T(10.8, -14.4)]);
+    line([T(66.6, -5.0), T(67.1, 0.3), T(66.0, 5.0)]) +
+    line([T(63.4, -5.4), T(63.9, 0.1), T(63.0, 5.3)]) +
+    line([T(59.8, -5.8), T(60.4, 0.2), T(59.4, 5.6)]) +
+    line([across(10.6, 0.9), across(10.2, 0.3), across(10, -0.3), across(10.4, -0.9)]);
   // The shadow the jaw throws on the neck.
   const jaw = brush([T(66.6, 4.2), T(65.2, 0.6), T(64.4, -3.6)].map(W), 1.5, 0.5);
-  return { g, d, k: hemShadow(W, J.T) + chestHatch(W, J.T) + jaw };
+  return { ...shapes, d, k: torsoFolds(across, 4, older) + waistband(across) + jaw };
 }
 
 // ---------- Arms ----------
@@ -93,6 +138,8 @@ export function trunk(J, W, older) {
  * grip. `fist` are the fist's points in the frame of the forearm.
  */
 export function swordArm(J, W, fist) {
+  // The arm lies in a plane, at its shoulder's distance from the camera.
+  const Wa = (q) => W([q[0], q[1], J.sh[2]]);
   const fu = unit(J.el, J.hn);
   const wrist = sub(J.hn, mul(fu, 11.5));
   const up = [0, 1];
@@ -100,22 +147,38 @@ export function swordArm(J, W, fist) {
   const fore = segment(J.el, wrist, [6.0, 5.4, 4.9, 4.5], [6.0, 5.4, 4.9, 4.5], up);
   // The gauntlet, flaring a little from the wrist, with its seam where it meets the fist.
   const cuff = segment(sub(J.hn, mul(fu, 15.5)), sub(J.hn, mul(fu, 9.8)), [5.0, 5.3, 5.6], [5.0, 5.3, 5.6], up, [0.2, 0.2]);
-  const hand = fist.shape.map(([x, y]) => W(place(J.hn, fu, x, y)));
-  const g = [upper, fore, cuff].map((s) => blob(s.map(W))).join("") + blob(hand);
-  const d = fist.lines.map((l) => line(l.map(([x, y]) => W(place(J.hn, fu, x, y))))).join("");
-  return { g, d, k: sleeveFolds(W, J.sh, J.el, sub(J.hn, mul(fu, 15.5)), 6) };
+  const hand = fist.shape.map(([x, y]) => Wa(place(J.hn, fu, x, y)));
+  const shapes = drawn([...[upper, fore, cuff].map((s) => s.map(Wa)), hand]);
+  const d = fist.lines.map((l) => line(l.map(([x, y]) => Wa(place(J.hn, fu, x, y))))).join("");
+  return { ...shapes, d, k: sleeveFolds(Wa, J.sh, J.el, sub(J.hn, mul(fu, 15.5)), 6) };
 }
 
-/** The rear arm, bent, with the hand on the hip. */
-export function rearArm(J, W, hand) {
+/**
+ * The rear arm, bent, with the hand on the hip. The sleeve begins on the jersey,
+ * at the top of the shoulder, so the shoulder is the jersey's own and not a
+ * tube set on it.
+ */
+export function rearArm(J, W, hand, frame = torsoFrame(J, W, false)) {
+  const Wa = (q) => W([q[0], q[1], J.rs[2]]);
   const qu = unit(J.re, J.rh);
   const up = [0, 1];
-  const upper = segment(J.rs, J.re, [6.6, 6.2, 5.8], [6.6, 6.2, 5.8], up);
-  const fore = segment(J.re, J.rh, [5.6, 5.0, 4.4], [5.6, 5.0, 4.4], up);
-  const palm = hand.shape.map(([x, y]) => W(place(J.rh, qu, x, y)));
-  const g = [upper, fore].map((s) => blob(s.map(W))).join("") + blob(palm);
-  const d = hand.lines.map((l) => line(l.map(([x, y]) => W(place(J.rh, qu, x, y))))).join("");
-  return { g, d, k: sleeveFolds(W, J.rs, J.re, J.rh, 8) };
+  const hi = [6.8, 7.4, 7.6, 7.0];
+  const lo = [6.0, 6.6, 7.0, 6.4];
+  const tube = segment(J.rs, J.re, hi, lo, up, [0, 1]);
+  const n = hi.length;
+  // Down the outer side of the arm, round the elbow, and back up the inner side...
+  const outline = tube.slice(1, 2 * n + 3).map(Wa);
+  // ...to where the sleeve is sewn to the jersey, up the armhole to the top of the shoulder.
+  const { across } = frame;
+  // Along the jersey's own edge the sleeve has no line, and the seam is a light one.
+  const on = (p) => [p[0], p[1], 0, 0];
+  const seam = (p) => [p[0], p[1], 0, 0.35];
+  const sleeve = [on(across(54.2, -0.97)), on(across(52.4, -1)), on(across(50.4, -1)), ...outline.slice(1), seam(across(43, -0.62)), seam(across(47, -0.86))];
+  const fore = segment(J.re, J.rh, [6.4, 5.5, 4.8, 4.3], [6.0, 5.2, 4.6, 4.2], up);
+  const palm = hand.shape.map(([x, y]) => Wa(place(J.rh, qu, x, y)));
+  const shapes = drawn([sleeve, fore.map(Wa), palm]);
+  const d = hand.lines.map((l) => line(l.map(([x, y]) => Wa(place(J.rh, qu, x, y))))).join("");
+  return { ...shapes, d, k: sleeveFolds(Wa, J.rs, J.re, J.rh, 8) };
 }
 
 // ---------- Legs ----------
@@ -154,13 +217,14 @@ function legShapes(J, ank, kn, { seat, tilt, length, parts, older }) {
   const lines = [];
   if (older) {
     // Loose trousers, gathered at the ankle in a cuff.
-    shapes.push(segment(top, kn, [13.2, 13.4, 11.8, 9.6], [12.6, 12.4, 10.8, 9.2], f));
-    shapes.push(segment(kn, add(ank, mul(su, -5)), [9.4, 8.8, 7.8, 6.8], [8.8, 8.2, 7.4, 6.4], f));
+    shapes.push(segment(top, kn, [11.8, 12.4, 12.8, 11.8], [11.4, 12.0, 12.2, 11.0], f));
+    shapes.push(segment(kn, add(ank, mul(su, -5)), [10.8, 10.0, 8.6, 7.0], [10.2, 9.6, 8.2, 6.8], f));
     shapes.push(segment(add(ank, mul(su, -7)), add(ank, mul(su, 1)), [7.4, 6.4, 6.6], [7.4, 6.4, 6.6], f, [0.2, 0.5]));
     lines.push(across(add(ank, mul(su, -7.4)), su, 7.4, 7.2, 0.8));
   } else {
-    shapes.push(segment(top, kn, [14.8, 15.4, 14.2, 11.6], [14.2, 14.4, 12.6, 10.2], f));
-    shapes.push(segment(kn, k(12), [12.0, 11.8, 10.4, 8.0], [9.6, 9.0, 8.0, 7.0], f));
+    // Knickerbockers: close at the hip and full at the knee, where the cloth hangs over the band.
+    shapes.push(segment(top, kn, [12.6, 13.0, 13.6, 13.8], [12.2, 12.6, 13.0, 12.8], f));
+    shapes.push(segment(kn, k(12), [14.4, 14.0, 12.2, 9.0], [12.6, 11.8, 9.8, 7.6], f));
     shapes.push(segment(k(10.5), add(ank, mul(su, 2)), [6.8, 6.8, 5.6, 4.4, 3.8], [6.6, 7.4, 5.8, 4.2, 3.7], f, [0.2, 0.4]));
     // The lower edge of the cloth over the band, and the band itself.
     lines.push(across(k(11.6), su, 9.4, 7.6, 1.8));
@@ -190,14 +254,14 @@ function lerp2(a, b) {
 // the top, fuller below it.
 function seatShape(J) {
   return [
-    [9, 13.8],
-    [3, 15.6],
-    [-5, 14.2],
-    [-11.5, 6],
-    [-11.5, -4],
-    [-5, -12.8],
-    [2, -16.8],
-    [9, -15.6],
+    [9, 12.6],
+    [3, 14.0],
+    [-5, 13.0],
+    [-11, 5.5],
+    [-11, -3.5],
+    [-5, -11.4],
+    [2, -13.6],
+    [9, -13.4],
   ].map(([a, b]) => J.T(a, b));
 }
 
@@ -218,7 +282,7 @@ export function legPart(J, W, ank, kn, { front, seat, older }) {
   const folds =
     thighFolds(W, J.hip, kn, ref, seed) + sockWrinkles(W, stocking, ank, ref, seed + 2) + (older ? "" : kneeFolds(W, kn, su, ref, seed + 1));
   return {
-    g: made.shapes.map((shape) => blob(set(shape))).join("") + blob(set(made.foot.shape)),
+    ...drawn([...made.shapes.map(set), set(made.foot.shape)]),
     d: [...made.lines, ...made.foot.lines].map((l) => line(set(l))).join(""),
     k: folds,
   };
@@ -245,7 +309,7 @@ export function headPart(J, W, older) {
   const mark = (m) => brush(m.slice(0, 3).map(H), m[3], 0.5);
   const face = parts.face;
   return {
-    g: blob(Hs(parts.skull)),
+    ...drawn([Hs(parts.skull)], 0.25, 0.9),
     hair: blob(Hs(parts.hair)),
     s: parts.streaks.map((streak) => brush(streak.map(H), 0.7, 0.5)).join(""),
     d: line(Hs(parts.ear)) + line(Hs(parts.earFold)) + line(Hs(face.cheek.slice(0, 3))),

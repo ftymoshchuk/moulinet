@@ -133,6 +133,40 @@ export function blob(points) {
   return curve(wound(points), true);
 }
 
+// The way the light comes, on the page: from above and to the left.
+const LIGHT = [-0.6, -0.8];
+
+/**
+ * The outline of a closed shape as a line of ink laid just outside it, with a
+ * weight that changes as it goes round: `thin` where the shape faces the light,
+ * `thick` where it turns away, as a pen presses harder on the shadow side, and a
+ * little uneven, as a hand is. It is the outer edge of the line, as a shape of ink
+ * that reaches over the whole shape; drawn first, with the shape filled over it,
+ * only the line itself shows.
+ */
+export function ribbon(points, thin = 0.3, thick = 1.5) {
+  const shape = wound(points);
+  const n = shape.length;
+  const outer = new Array(n);
+  for (let i = 0; i < n; i++) {
+    const a = shape[(i + n - 1) % n];
+    const b = shape[(i + 1) % n];
+    const dx = b[0] - a[0];
+    const dy = b[1] - a[1];
+    const l = Math.sqrt(dx * dx + dy * dy) || 1;
+    // Wound this way, the inside of the shape is on the left of the way round.
+    const nx = dy / l;
+    const ny = -dx / l;
+    const dark = 0.5 - 0.5 * (nx * LIGHT[0] + ny * LIGHT[1]);
+    const hand = 0.82 + 0.36 * (((i * 7 + n * 3) % 11) / 10);
+    const p = shape[i];
+    // A point may say how much of the line it keeps (a fourth item): none, where the edge is only where another shape begins.
+    const w = (thin + (thick - thin) * dark * dark * (3 - 2 * dark)) * hand * (p[3] ?? 1);
+    outer[i] = p[2] ? [p[0] + nx * w, p[1] + ny * w, 1] : [p[0] + nx * w, p[1] + ny * w];
+  }
+  return curve(outer);
+}
+
 // A point `t` of the way along a stroke through two or three points (a bend
 // through the middle one), more as straight pieces, and the direction it runs in.
 function strokeAt(points, t) {

@@ -636,16 +636,12 @@ textarea:focus-visible {
   --hair: var(--hair-grey);
 }
 
-/* Each layer is drawn twice: outlined, then filled again over the inner half
-   of its own outline, so overlapping parts read as one silhouette. */
+/* Each layer is drawn twice: the line of ink round every shape, then the shapes
+   filled over it, which hides the line where one part lies on another, so
+   overlapping parts read as one silhouette. */
 .figure__outline {
-  fill: var(--fencer);
-  stroke: var(--ink);
-  stroke-width: 1.7;
-}
-
-.figure__outline--head {
-  stroke-width: 0.8;
+  fill: var(--ink);
+  stroke: none;
 }
 
 .figure__fill {

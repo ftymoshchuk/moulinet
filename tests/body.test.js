@@ -146,12 +146,20 @@ test("the trunk is a jersey, a neck and a collar, with its seams and the shading
   const { J, W } = posed();
   const trunkOf = trunk(J, W, false);
   assert.equal(readPath(trunkOf.g).length, 3, "jersey, neck, collar");
-  assert.equal(readPath(trunkOf.d).length, 5, "five lines");
+  assert.equal(readPath(trunkOf.d).length, 4, "the collar's seams, and the stitching of the hem");
   assert.ok(readPath(trunkOf.k).length >= 15, "and plenty of shading");
-  const young = boxOf([readPath(trunkOf.g)[0]]);
-  const older = boxOf([readPath(trunk(J, W, true).g)[0]]);
-  near(older.maxX - young.maxX, 1.8, 0.3, "an older man carries more at the front");
-  near(older.minX, young.minX, 1e-9, "and nothing more behind");
+  // The belly of an older man shows low on the jersey, at the waist.
+  const waist = (trunkDrawn) => {
+    const points = readPath(trunkDrawn.g)[0].points;
+    const lowest = Math.max(...points.map((p) => p[1]));
+    const highest = Math.min(...points.map((p) => p[1]));
+    const low = points.filter((p) => p[1] > lowest - (lowest - highest) * 0.15);
+    return { front: Math.max(...low.map((p) => p[0])), back: Math.min(...low.map((p) => p[0])) };
+  };
+  const young = waist(trunkOf);
+  const older = waist(trunk(J, W, true));
+  assert.ok(older.front - young.front > 0.6, `an older man carries more at the front (${older.front - young.front})`);
+  near(older.back, young.back, 0.8, "and the back is not much changed");
 });
 
 test("the arms carry their hands: the fist is at the grip and the other hand on the hip", () => {

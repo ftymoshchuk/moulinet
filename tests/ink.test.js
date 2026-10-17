@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { along, chestHatch, groundStrokes, hemShadow, kneeFolds, sleeveFolds, sockWrinkles, thighFolds } from "../site/js/folds.js";
+import { along, groundStrokes, kneeFolds, sleeveFolds, sockWrinkles, thighFolds, torsoFolds, waistband } from "../site/js/folds.js";
 import { area, blob, brush, curve, dist, lerp, line, perp, rotate, unit, wound } from "../site/js/ink.js";
 import { boxOf, readPath } from "./path-data.js";
 
@@ -125,14 +125,16 @@ function folds(seed = 1) {
   const hip = [0, 84];
   const knee = [30, 50];
   const ankle = [40, 8];
-  const T = (a, b) => [a * 0.1 + b * 0.99, a * 0.99 - b * 0.1];
+  // A jersey 30 cm across, leaning a little: `up` its height, `v` from -1 at the back to 1 at the front.
+  const at = (up, v) => [up * 0.1 + v * 15, up * 0.99];
   const su = unit(knee, ankle);
   return {
     thigh: thighFolds(FLAT, hip, knee, [1, 0], seed),
     knee: kneeFolds(FLAT, knee, su, [1, 0], seed),
     sock: sockWrinkles(FLAT, lerp(knee, ankle, 0.2), ankle, [1, 0], seed),
-    hem: hemShadow(FLAT, T, seed),
-    chest: chestHatch(FLAT, T, seed),
+    torso: torsoFolds(at, seed),
+    belly: torsoFolds(at, seed, true),
+    waist: waistband(at, seed),
     sleeve: sleeveFolds(FLAT, [10, 120], [30, 100], [50, 110], seed),
     ground: groundStrokes(FLAT, ankle, true, seed),
   };
