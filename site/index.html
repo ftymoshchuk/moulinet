@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'" />
     <title>Sabre Motion Lab</title>
-    <meta name="description" content="Poses are numbers, phrases are keyframes. Pick a sabre phrase, slow it down, reshape any moment." />
+    <meta name="description" content="Poses are numbers, phrases are keyframes. Study the base postures, practise from the library, or build a scene of your own." />
     <meta property="og:title" content="Sabre Motion Lab" />
-    <meta property="og:description" content="Poses are numbers, phrases are keyframes. Pick a sabre phrase, slow it down, reshape any moment." />
+    <meta property="og:description" content="Poses are numbers, phrases are keyframes. Study the base postures, practise from the library, or build a scene of your own." />
     <meta name="theme-color" content="#101214" />
     <link rel="preload" href="fonts/big-shoulders-display-latin-variable.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="fonts/ibm-plex-sans-condensed-latin-400.woff2" as="font" type="font/woff2" crossorigin />
@@ -22,15 +22,23 @@
       <header class="masthead">
         <div class="masthead__title">
           <h1>Sabre Motion Lab</h1>
-          <p class="masthead__tagline">Poses are numbers, phrases are keyframes. Pick a phrase, slow it down, reshape any moment.</p>
+          <p class="masthead__tagline">Poses are numbers, phrases are keyframes. Study the base postures, practise from the library, or build a scene of your own.</p>
         </div>
-        <div id="presets" class="presets" role="group" aria-label="Phrases"></div>
+        <div class="modes" role="group" aria-label="Modes">
+          <button class="mode-button" type="button" data-mode="library" aria-pressed="true">Practice library</button>
+          <button class="mode-button" type="button" data-mode="base" aria-pressed="false">Base postures</button>
+          <button class="mode-button" type="button" data-mode="creator" aria-pressed="false">Creator</button>
+        </div>
       </header>
 
       <noscript>
         <p class="noscript">Sabre Motion Lab draws and plays its phrases with JavaScript. Turn it on to use the page.</p>
       </noscript>
 
+      <!--
+        One stage, three modes. A panel with data-modes is shown only in the
+        modes it lists; one without is shown in every mode.
+      -->
       <main id="main" class="workspace">
         <div class="workspace__main">
           <section id="stage-panel" class="panel panel--stage" aria-label="Stage">
@@ -42,7 +50,7 @@
               <div class="stage__meta">
                 <span class="legend"><span class="legend__dot legend__dot--a" aria-hidden="true"></span>A</span>
                 <span id="legend-b" class="legend fencer-b"><span class="legend__dot legend__dot--b" aria-hidden="true"></span>B</span>
-                <span id="timecode" class="mono stage__time"></span>
+                <span id="timecode" class="mono stage__time" data-modes="library creator"></span>
               </div>
             </div>
 
@@ -79,7 +87,7 @@
                 <button id="prev-button" class="icon-button" type="button" aria-label="Previous step">
                   <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" focusable="false" class="icon icon--outline"><path d="M18 6 L10 12 L18 18 Z" /><path d="M6 6 L6 18" /></svg>
                 </button>
-                <button id="play-button" class="play-button" type="button" aria-label="Pause">
+                <button id="play-button" class="play-button" type="button" aria-label="Pause" data-modes="library creator">
                   <svg id="pause-icon" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" focusable="false" class="icon icon--pause"><path d="M8 5 L8 19" /><path d="M16 5 L16 19" /></svg>
                   <svg id="play-icon" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" focusable="false" class="icon icon--play hidden"><path d="M8 5 L19 12 L8 19 Z" /></svg>
                 </button>
@@ -88,7 +96,7 @@
                 </button>
               </div>
 
-              <div class="speed" role="group" aria-labelledby="speed-label">
+              <div class="speed" role="group" aria-labelledby="speed-label" data-modes="library creator">
                 <span id="speed-label" class="control-label">Speed</span>
                 <div class="speed__options">
                   <button class="speed-button" type="button" data-speed="0.25" aria-pressed="false">¼×</button>
@@ -98,10 +106,10 @@
               </div>
 
               <div class="toggles">
-                <button class="toggle" type="button" data-toggle="ghosts" aria-pressed="true"><span class="toggle__dot" aria-hidden="true"></span>Motion ghosts</button>
-                <button class="toggle" type="button" data-toggle="trail" aria-pressed="true"><span class="toggle__dot" aria-hidden="true"></span>Blade path</button>
+                <button class="toggle" type="button" data-toggle="ghosts" aria-pressed="true" data-modes="library creator"><span class="toggle__dot" aria-hidden="true"></span>Motion ghosts</button>
+                <button class="toggle" type="button" data-toggle="trail" aria-pressed="true" data-modes="library creator"><span class="toggle__dot" aria-hidden="true"></span>Blade path</button>
                 <button class="toggle" type="button" data-toggle="ink" aria-pressed="true"><span class="toggle__dot" aria-hidden="true"></span>Ink texture</button>
-                <button class="toggle" type="button" data-toggle="loop" aria-pressed="true"><span class="toggle__dot" aria-hidden="true"></span>Loop</button>
+                <button class="toggle" type="button" data-toggle="loop" aria-pressed="true" data-modes="library creator"><span class="toggle__dot" aria-hidden="true"></span>Loop</button>
               </div>
 
               <div class="camera">
@@ -111,24 +119,149 @@
               </div>
             </div>
 
-            <input id="timeline" class="timeline" type="range" aria-label="Timeline" min="0" max="1" step="1" value="0" />
+            <input id="timeline" class="timeline" type="range" aria-label="Timeline" min="0" max="1" step="1" value="0" data-modes="library creator" />
 
-            <div id="steps" class="steps" role="group" aria-label="Steps"></div>
+            <div id="steps" class="steps" role="group" aria-label="Steps" data-modes="library creator"></div>
             <p id="announcer" class="visually-hidden" role="status"></p>
           </section>
 
-          <section class="panel panel--phrase" aria-labelledby="phrase-title">
+          <!-- Practice library: the scene on stage, and where it was noted. -->
+          <section class="panel panel--detail" data-modes="library" aria-labelledby="scene-title">
+            <div class="panel__head">
+              <h3 id="scene-title" class="panel__title"></h3>
+              <span id="scene-kind" class="tag"></span>
+            </div>
+            <dl class="facts">
+              <div class="fact">
+                <dt>Event</dt>
+                <dd id="scene-event"></dd>
+              </div>
+              <div class="fact">
+                <dt>Reference</dt>
+                <dd id="scene-reference"></dd>
+              </div>
+              <div class="fact">
+                <dt>Note</dt>
+                <dd id="scene-note"></dd>
+              </div>
+            </dl>
+            <div class="actions">
+              <button id="scene-edit" class="outline-button" type="button"></button>
+              <button id="scene-delete" class="outline-button outline-button--danger" type="button">Delete scene</button>
+            </div>
+          </section>
+
+          <!-- Base postures: the posture on stage, in words. -->
+          <section class="panel panel--detail hidden" data-modes="base" aria-labelledby="base-name">
+            <div class="panel__head">
+              <h3 id="base-name" class="panel__title"></h3>
+              <span id="base-group" class="tag"></span>
+            </div>
+            <p id="base-text" class="detail__text"></p>
+            <dl id="base-points" class="facts"></dl>
+            <p class="panel__intro">In a scene's data this posture is the pose <code id="base-key" class="mono"></code>.</p>
+          </section>
+
+          <!-- Creator: the scene as a whole, then its data. -->
+          <section class="panel panel--scene hidden" data-modes="creator" aria-labelledby="scene-form-title">
+            <div class="panel__head">
+              <h3 id="scene-form-title" class="panel__title">Scene</h3>
+              <span id="save-status" class="phrase-status" role="status"></span>
+            </div>
+            <p class="panel__intro">Name it, say where it was noted, and keep it in the practice library on this device.</p>
+            <div class="fields">
+              <div class="field">
+                <label class="field__label" for="meta-name">Name</label>
+                <input id="meta-name" class="field__input" type="text" maxlength="100" autocomplete="off" />
+              </div>
+              <div class="field">
+                <label class="field__label" for="meta-event">Event</label>
+                <input id="meta-event" class="field__input" type="text" maxlength="160" autocomplete="off" placeholder="Where it was noted" />
+              </div>
+              <div class="field field--wide">
+                <label class="field__label" for="meta-reference">Reference link</label>
+                <input id="meta-reference" class="field__input" type="text" inputmode="url" maxlength="2000" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://" aria-describedby="reference-hint" />
+                <p id="reference-hint" class="field__hint"></p>
+              </div>
+              <div class="field field--wide">
+                <label class="field__label" for="meta-note">Note</label>
+                <textarea id="meta-note" class="field__input field__input--note" rows="3" maxlength="1000"></textarea>
+              </div>
+            </div>
+            <label class="check">
+              <input id="meta-solo" type="checkbox" />
+              <span>One fencer only</span>
+            </label>
+            <div class="actions">
+              <button id="scene-save" class="primary-button" type="button">Save to library</button>
+              <button id="scene-save-copy" class="outline-button" type="button">Save as a new copy</button>
+              <button id="scene-new" class="outline-button" type="button">New scene</button>
+            </div>
+          </section>
+
+          <section class="panel panel--phrase hidden" data-modes="creator" aria-labelledby="phrase-title">
             <div class="panel__head">
               <h3 id="phrase-title" class="panel__title">Phrase data</h3>
               <span id="phrase-status" class="phrase-status" role="status"></span>
             </div>
-            <p id="phrase-help" class="panel__intro">The whole animation is this text: a label per step, timing in milliseconds, a pose name for each fencer, and any joint adjustments. Edit it here, or paste in a phrase.</p>
+            <p id="phrase-help" class="panel__intro">The whole scene is this text: its name and notes, a label per step, timing in milliseconds, a pose name for each fencer, and any joint adjustments. Edit it here, or paste in a phrase.</p>
             <textarea id="phrase-text" class="phrase-text" aria-labelledby="phrase-title" aria-describedby="phrase-help phrase-status" wrap="off" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
           </section>
         </div>
 
-        <aside class="workspace__side" aria-label="Adjust">
-          <section class="panel panel--adjust" aria-labelledby="adjust-title">
+        <aside class="workspace__side" aria-label="Panels for this mode">
+          <section class="panel panel--library" data-modes="library" aria-labelledby="library-title">
+            <h3 id="library-title" class="panel__title">Practice library</h3>
+            <p class="panel__intro">Scenes to practise from. Each can say where it was noted and link to a reference.</p>
+            <div class="list-group">
+              <h4 class="list-group__title">Built in</h4>
+              <div id="scenes-builtin" class="scene-list" role="group" aria-label="Built-in scenes"></div>
+            </div>
+            <div class="list-group">
+              <h4 class="list-group__title">Saved on this device</h4>
+              <div id="scenes-saved" class="scene-list" role="group" aria-label="Saved scenes"></div>
+              <p id="scenes-empty" class="panel__intro">Nothing saved yet. Make a scene in the Creator and save it, and it will be here.</p>
+            </div>
+          </section>
+
+          <section class="panel panel--bases hidden" data-modes="base" aria-labelledby="bases-title">
+            <h3 id="bases-title" class="panel__title">Base postures</h3>
+            <p class="panel__intro">One fencer, one posture at a time. Pick one here, or use the arrows under the stage. The camera turns the view.</p>
+            <div id="base-list" class="base-list"></div>
+          </section>
+
+          <section class="panel panel--step hidden" data-modes="creator" aria-labelledby="step-title">
+            <h3 id="step-title" class="panel__title">This step</h3>
+            <div class="fields">
+              <div class="field field--wide">
+                <label class="field__label" for="step-name">Label</label>
+                <input id="step-name" class="field__input" type="text" maxlength="100" autocomplete="off" />
+              </div>
+              <div class="field">
+                <label class="field__label" for="step-ms">Move into it (ms)</label>
+                <input id="step-ms" class="field__input field__input--number" type="number" min="0" max="10000" step="10" inputmode="numeric" aria-describedby="step-hint" />
+              </div>
+              <div class="field">
+                <label class="field__label" for="step-hold">Stay on it (ms)</label>
+                <input id="step-hold" class="field__input field__input--number" type="number" min="0" max="10000" step="10" inputmode="numeric" />
+              </div>
+              <div class="field field--wide">
+                <label class="field__label" for="step-ease">How it moves</label>
+                <select id="step-ease" class="field__input">
+                  <option value="">Smooth: eases in and out</option>
+                  <option value="snap">Snap: arrives fast and settles</option>
+                  <option value="linear">Linear: one steady speed</option>
+                </select>
+              </div>
+            </div>
+            <p id="step-hint" class="field__hint"></p>
+            <div class="actions">
+              <button id="step-add" class="outline-button" type="button">Add a step after this one</button>
+              <button id="step-remove" class="outline-button outline-button--danger" type="button">Remove this step</button>
+            </div>
+          </section>
+
+          <section class="panel panel--adjust hidden" data-modes="creator" aria-labelledby="adjust-title">
             <div class="adjust__head">
               <div class="adjust__heading">
                 <h3 id="adjust-title" class="panel__title">Adjust this moment</h3>
@@ -143,9 +276,9 @@
             <button id="reset-step" class="outline-button" type="button">Reset this step's adjustments</button>
           </section>
 
-          <section class="panel panel--poses" aria-labelledby="poses-title">
-            <h3 id="poses-title" class="panel__title">Pose library</h3>
-            <p class="panel__intro">Tap a pose to put it on the current step for the fencer you are editing.</p>
+          <section class="panel panel--poses hidden" data-modes="creator" aria-labelledby="poses-title">
+            <h3 id="poses-title" class="panel__title">Poses</h3>
+            <p class="panel__intro">Tap a pose to put it on the current step for the fencer you are editing. The Base postures describe each one.</p>
             <div id="poses" class="poses"></div>
           </section>
         </aside>

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { basePhrase } from "../site/js/bases.js";
 import { PIVOT, bladePaths, bladeTip, floorPath, inkFigure, knee, projector, skeleton, stickFigure } from "../site/js/figure.js";
 import { PRESETS } from "../site/js/library.js";
 import { buildTimeline, poseAt, resolvePose } from "../site/js/phrase.js";
@@ -17,8 +18,8 @@ function pathsOf(figure) {
   return out;
 }
 
-test("every phrase draws clean paths at every moment, from every camera angle", () => {
-  for (const { phrase } of PRESETS) {
+test("every phrase and every base posture draws clean paths at every moment, from every camera angle", () => {
+  for (const phrase of [...PRESETS.map((preset) => preset.phrase), basePhrase()]) {
     const timeline = buildTimeline(phrase);
     for (const camera of [-60, -25, 0, 28, 60]) {
       for (let t = 0; t <= timeline.duration; t += 37) {

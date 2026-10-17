@@ -110,6 +110,7 @@ body {
 h1,
 h2,
 h3,
+h4,
 p {
   margin: 0;
 }
@@ -140,6 +141,7 @@ input[type="range"] {
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
+select:focus-visible,
 textarea:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -222,7 +224,7 @@ textarea:focus-visible {
   text-wrap: pretty;
 }
 
-.presets {
+.modes {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -290,6 +292,14 @@ textarea:focus-visible {
   gap: 12px;
 }
 
+.panel--detail,
+.panel--scene,
+.panel--library,
+.panel--bases,
+.panel--step {
+  gap: 14px;
+}
+
 .panel__head {
   display: flex;
   flex-wrap: wrap;
@@ -304,6 +314,7 @@ textarea:focus-visible {
   font-size: 22px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  overflow-wrap: anywhere;
 }
 
 .panel__intro {
@@ -320,8 +331,8 @@ textarea:focus-visible {
 
 /* ---------- Buttons ---------- */
 
-/* Phrase presets, speeds and the fencer picker: amber when chosen. */
-.preset-button,
+/* The modes, speeds and the fencer picker: amber when chosen. */
+.mode-button,
 .speed-button,
 .fencer-button {
   border: 1px solid var(--line);
@@ -329,7 +340,7 @@ textarea:focus-visible {
   color: var(--text);
 }
 
-.preset-button[aria-pressed="true"],
+.mode-button[aria-pressed="true"],
 .speed-button[aria-pressed="true"],
 .fencer-button[aria-pressed="true"] {
   border-color: var(--accent);
@@ -337,9 +348,9 @@ textarea:focus-visible {
   color: var(--accent-ink);
 }
 
-.preset-button {
+.mode-button {
   min-height: 44px;
-  padding: 0 16px;
+  padding: 0 18px;
   border-radius: 999px;
   font-size: 15px;
   font-weight: 500;
@@ -367,10 +378,12 @@ textarea:focus-visible {
   opacity: 0.35;
 }
 
-/* Toggles, steps and poses: outlined in amber when on. */
+/* Toggles, steps, poses, scenes and postures: outlined in amber when on. */
 .toggle,
 .step-button,
-.pose-button {
+.pose-button,
+.scene-button,
+.base-button {
   border: 1px solid var(--line-quiet);
   background: transparent;
   color: var(--text);
@@ -385,7 +398,9 @@ textarea:focus-visible {
 
 .toggle[aria-pressed="true"],
 .step-button[aria-pressed="true"],
-.pose-button[aria-pressed="true"] {
+.pose-button[aria-pressed="true"],
+.scene-button[aria-pressed="true"],
+.base-button[aria-pressed="true"] {
   border-color: var(--accent);
   background: var(--selected);
 }
@@ -397,14 +412,16 @@ textarea:focus-visible {
   color: var(--text);
 }
 
-.preset-button:not([aria-pressed="true"]):hover,
+.mode-button:not([aria-pressed="true"]):hover,
 .speed-button:not([aria-pressed="true"]):hover,
 .fencer-button:not([aria-pressed="true"]):enabled:hover,
 .toggle:not([aria-pressed="true"]):hover,
 .step-button:not([aria-pressed="true"]):hover,
 .pose-button:not([aria-pressed="true"]):hover,
+.scene-button:not([aria-pressed="true"]):hover,
+.base-button:not([aria-pressed="true"]):hover,
 .icon-button:hover,
-.outline-button:hover {
+.outline-button:enabled:hover {
   border-color: var(--line-hover);
 }
 
@@ -498,6 +515,7 @@ textarea:focus-visible {
   line-height: 1.05;
   text-transform: uppercase;
   letter-spacing: 0.02em;
+  overflow-wrap: anywhere;
 }
 
 .stage__meta {
@@ -538,8 +556,10 @@ textarea:focus-visible {
   border-radius: 10px;
 }
 
-/* A phrase for one fencer hides everything of fencer B. */
-.panel--stage.is-solo .fencer-b {
+/* A phrase for one fencer hides everything of fencer B, and the legend that
+   tells two fencers apart. */
+.panel--stage.is-solo .fencer-b,
+.panel--stage.is-solo .legend {
   display: none;
 }
 
@@ -765,16 +785,20 @@ textarea:focus-visible {
   gap: 6px;
 }
 
-.step-button {
+.step-button,
+.base-button {
+  max-width: 100%;
   min-height: 44px;
   padding: 6px 12px;
   display: flex;
   align-items: center;
   gap: 8px;
   color: var(--text-quiet);
+  overflow-wrap: anywhere;
 }
 
-.step-button[aria-pressed="true"] {
+.step-button[aria-pressed="true"],
+.base-button[aria-pressed="true"] {
   color: var(--text);
 }
 
@@ -836,6 +860,7 @@ textarea:focus-visible {
   font-size: 14px;
   color: var(--muted);
   text-wrap: pretty;
+  overflow-wrap: anywhere;
 }
 
 .fencer-pick {
@@ -877,7 +902,7 @@ textarea:focus-visible {
   width: 100%;
 }
 
-/* ---------- Pose library ---------- */
+/* ---------- Poses ---------- */
 
 .poses {
   display: flex;
@@ -898,4 +923,264 @@ textarea:focus-visible {
   font-family: var(--font-mono);
   font-size: 11.5px;
   color: var(--muted);
+}
+
+/* ---------- Lists: the practice library and the base postures ---------- */
+
+.list-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.list-group__title {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.scene-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.scene-button {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+.scene-button__title {
+  font-size: 15px;
+  font-weight: 500;
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+}
+
+.scene-button__meta {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.scene-button__event {
+  font-size: 13px;
+  color: var(--text-quiet);
+  overflow-wrap: anywhere;
+}
+
+.base-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.base-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ---------- What is on stage, in words ---------- */
+
+.tag {
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.detail__text {
+  max-width: 70ch;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-soft);
+  text-wrap: pretty;
+}
+
+.facts {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fact {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 2px 16px;
+}
+
+.fact dt {
+  padding-top: 1px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.fact dd {
+  margin: 0;
+  max-width: 70ch;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--text-soft);
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+}
+
+.fact dd.is-empty {
+  color: var(--muted);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.outline-button--danger:enabled:hover {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.outline-button:disabled,
+.primary-button:disabled {
+  opacity: 0.4;
+}
+
+.primary-button {
+  height: 44px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.primary-button:enabled:hover {
+  background: var(--accent-hover);
+}
+
+/* ---------- Fields ---------- */
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.field--wide {
+  grid-column: 1 / -1;
+}
+
+.field__label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.field__input {
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 9px 12px;
+  background: var(--field);
+  color: var(--text-field);
+  border: 1px solid var(--field-line);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 15px;
+}
+
+.field__input::placeholder {
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.field__input:disabled {
+  opacity: 0.4;
+}
+
+.field__input--note {
+  min-height: 0;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.field__input--number {
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+.field__hint {
+  font-size: 13px;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+.field__hint:empty {
+  display: none;
+}
+
+.field__hint--error {
+  color: var(--error);
+}
+
+.check {
+  align-self: flex-start;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  color: var(--text-soft);
+  cursor: pointer;
+}
+
+.check input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+@media (max-width: 560px) {
+  /* Three modes share a row, however narrow it is. */
+  .modes {
+    width: 100%;
+    gap: 6px;
+  }
+
+  .mode-button {
+    flex: 1 1 auto;
+    padding: 0 8px;
+    font-size: 14px;
+  }
+
+  .panel--scene .fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fact {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

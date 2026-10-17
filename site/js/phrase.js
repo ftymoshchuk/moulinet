@@ -8,6 +8,16 @@ const START = { A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 245 } };
 const ANGLES = new Set(["lean", "arm", "fore", "blade", "yaw", "rArm", "rFore"]);
 // What a pose can hold. An adjustment to anything else is ignored.
 const POSE_KEYS = new Set(Object.keys(POSES.guard));
+// The text a scene carries about itself, and the order the data shows it in:
+// these, then the camera and solo, then the steps.
+export const TEXT_KEYS = ["name", "event", "reference", "note"];
+const HEAD_KEYS = [...TEXT_KEYS, "camera", "solo"];
+// A step's own keys, in the order its line shows them.
+const STEP_KEYS = ["label", "ms", "hold", "ease", "A", "B"];
+// The longest move or hold the controls will write, in milliseconds.
+export const MAX_STEP_MS = 10000;
+// How a step the page adds starts out: a quick move, a short pause.
+const NEW_STEP = { ms: 300, hold: 200 };
 
 export function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -119,10 +129,16 @@ export function poseAt(timeline, t) {
   return { A: step.A, B: step.B, index };
 }
 
-/** The phrase as the page shows it: one line per setting, one line per step. */
+/**
+ * The phrase as the page shows it: one line per setting, one line per step.
+ * The name, event, reference and note come first, then the camera and solo,
+ * then anything else, so a setting added later does not land after the steps.
+ */
 export function phraseToText(phrase) {
+  const rank = (key) => (HEAD_KEYS.includes(key) ? HEAD_KEYS.indexOf(key) : HEAD_KEYS.length);
   const head = Object.keys(phrase)
     .filter((key) => key !== "steps")
+    .sort((a, b) => rank(a) - rank(b))
     .map((key) => `  ${JSON.stringify(key)}: ${JSON.stringify(phrase[key])}`);
   const steps = (Array.isArray(phrase.steps) ? phrase.steps : []).map((step) => `    ${JSON.stringify(step)}`);
   return `{\n${head.join(",\n")}${head.length ? ",\n" : ""}  "steps": [\n${steps.join(",\n")}\n  ]\n}`;
@@ -173,4 +189,124 @@ export function setPose(spec, name) {
 
 export function clearAdjustments(spec) {
   delete spec.adj;
+}
+
+// Edits to the scene as a whole and to its steps, for the Creator. Each returns
+// a changed copy and leaves the phrase it was given alone, or null when it
+// cannot make the change.
+
+/** A scene with one step, both fencers in guard, to make something from. */
+export function newPhrase() {
+  return { camera: 0, steps: [{ label: "En garde", hold: 600, A: { ...START.A }, B: { ...START.B } }] };
+}
+
+/**
+ * `phrase` with one of its text keys (name, event, reference or note) set to
+ * `value`. Text that is empty or only spaces removes the key.
+ */
+export function setMeta(phrase, key, value) {
+  if (!TEXT_KEYS.includes(key)) return null;
+  const next = clone(phrase);
+  const text = String(value ?? "");
+  if (text.trim() === "") delete next[key];
+  else next[key] = text;
+  return next;
+}
+
+/** `phrase` for one fencer when `solo` is true, for two when it is not. */
+export function setSolo(phrase, solo) {
+  const next = clone(phrase);
+  if (solo) next.solo = true;
+  else delete next.solo;
+  return next;
+}
+
+function hasStep(phrase, timeline, index) {
+  return (
+    isPlainObject(phrase) && Array.isArray(phrase.steps) && Number.isInteger(index) && index >= 0 && index < phrase.steps.length && Boolean(timeline.steps[index])
+  );
+}
+
+// A step with its keys in the order its line shows them.
+function tidyStep(step) {
+  const out = {};
+  for (const key of STEP_KEYS) if (Object.hasOwn(step, key)) out[key] = step[key];
+  for (const key of Object.keys(step)) if (!Object.hasOwn(out, key)) out[key] = step[key];
+  return out;
+}
+
+/**
+ * `phrase` with a new step after step `index`, standing as that step does, and
+ * the new step's index. Null if the phrase has no such step.
+ */
+export function insertStep(phrase, timeline, index) {
+  if (!hasStep(phrase, timeline, index)) return null;
+  const source = timeline.steps[index];
+  const step = { ...NEW_STEP, A: clone(source.specA) };
+  if (!timeline.solo) step.B = clone(source.specB);
+  const next = clone(phrase);
+  next.steps.splice(index + 1, 0, tidyStep(step));
+  return { phrase: next, index: index + 1 };
+}
+
+/**
+ * `phrase` without step `index`. The step after it keeps the poses it showed,
+ * even where it only inherited them from the step that goes, so taking out one
+ * moment leaves every other as it was. Null if there is no such step or it is
+ * the only one.
+ */
+export function removeStep(phrase, timeline, index) {
+  if (!hasStep(phrase, timeline, index) || phrase.steps.length < 2) return null;
+  const next = clone(phrase);
+  next.steps.splice(index, 1);
+  const after = next.steps[index];
+  if (after !== undefined) {
+    const step = isPlainObject(after) ? after : {};
+    const gone = timeline.steps[index];
+    const before = timeline.steps[index - 1];
+    for (const fencer of ["A", "B"]) {
+      // Where the step would stand once the other is gone: as the step before
+      // had them, or, with none before, as every phrase starts.
+      const inherited = before ? before[`spec${fencer}`] : START[fencer];
+      const shown = gone[`spec${fencer}`];
+      if (!step[fencer] && JSON.stringify(inherited) !== JSON.stringify(shown)) step[fencer] = clone(shown);
+    }
+    next.steps[index] = tidyStep(step);
+  }
+  return next;
+}
+
+/**
+ * `phrase` with one setting of step `index` changed: its `label`, the `ms` it
+ * takes to move in, the `hold` after it, or its `ease`. Empty text removes a
+ * setting, and so does an ease the page does not offer. Null if there is no
+ * such step, or a time is not a number of milliseconds.
+ */
+export function setStepField(phrase, index, key, value) {
+  if (!isPlainObject(phrase) || !Array.isArray(phrase.steps) || !Number.isInteger(index) || index < 0 || index >= phrase.steps.length) {
+    return null;
+  }
+  const next = clone(phrase);
+  const step = isPlainObject(next.steps[index]) ? next.steps[index] : {};
+  const text = String(value ?? "");
+  const empty = text.trim() === "";
+  if (key === "label") {
+    if (empty) delete step.label;
+    else step.label = text;
+  } else if (key === "ms" || key === "hold") {
+    if (empty) {
+      delete step[key];
+    } else {
+      const ms = Number(text);
+      if (!Number.isFinite(ms) || ms < 0) return null;
+      step[key] = Math.min(MAX_STEP_MS, Math.round(ms));
+    }
+  } else if (key === "ease") {
+    if (text === "snap" || text === "linear") step.ease = text;
+    else delete step.ease;
+  } else {
+    return null;
+  }
+  next.steps[index] = tidyStep(step);
+  return next;
 }

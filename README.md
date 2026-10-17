@@ -1,40 +1,77 @@
 # Moulinet
 
-Sabre Motion Lab: sabre fencing drawn in pen and ink, in your browser. Pick a
-phrase, slow it down, step through it and reshape any moment. Every pose is a
-handful of numbers and every phrase a short list of keyframes, so a whole
+Sabre Motion Lab: sabre fencing drawn in pen and ink, in your browser. Study
+the base postures, practise from a library of scenes, or make a scene of your
+own: slow it down, step through it and reshape any moment. Every pose is a
+handful of numbers and every scene a short list of keyframes, so a whole
 animation is a few lines of text you can edit, keep and share.
 
 **Open it at <https://ftymoshchuk.github.io/moulinet/>.** It runs entirely in
 your browser: no account, no server, and nothing you type leaves the page.
+Scenes you save stay in your browser's own storage, on that device.
 
 The name comes from the *moulinet*, the sabre's circular cut: the blade drops
 forward past the arm, swings up behind and comes down over the top. It is one
-of the four phrases built in.
+of the four scenes built in.
 
-## What it does
-- **Four phrases to start from:** an advance, lunge and head cut; a chest cut
-  parried in 3 and riposted; a head attack parried in 5 and riposted to the
-  head; and the moulinet, solo.
+## Three modes
+One stage, three ways to use it. Choose the mode at the top of the page.
+
+**Practice library.** Scenes to practise from, each with the event it was noted
+at and a link to a reference, such as a video of the bout. Pick a scene and it
+plays; the four built in are an advance, lunge and head cut; a chest cut
+parried in 3 and riposted; a head attack parried in 5 and riposted to the head;
+and the moulinet, solo. The built-in scenes have no event or link, because
+there is no real bout behind them. Scenes you save in the Creator are listed
+below them, with whatever you noted, and a link opens in a new tab.
+
+**Base postures.** One fencer, never a pair, in one posture at a time, with the
+posture described in words: what it is for, and the parts worth looking at.
+Pick a posture from the list, or use the arrows under the stage. The eleven
+postures are the poses of the library, in the order they are learned: the
+guard; the two halves of an advance; the arm extended and the blade up; the
+lunge in flight, to the head and to the chest; parries 3 and 5; and the
+riposte.
+
+**Creator.** Make a scene of your own. Start from a blank one with **New
+scene**, or from any scene in the library with **Edit a copy**. Add and remove
+steps, name them, time them, give each fencer a pose and reshape it, then name
+the scene, say where it was noted, add a reference link and keep it with
+**Save to library**. A scene can be for one fencer or two. It asks before it
+replaces a scene with changes that are not saved, and before you leave the
+page with one.
+
+All three share the stage, and its **camera**, which turns the view up to 60°
+either way to see a blade come toward you or swing away. The library and the
+Creator, which play scenes, add:
 - **Playback** at ¼, ½ or full speed, a step at a time, or scrubbed along the
   timeline, looped or once through.
 - **Motion ghosts and blade paths** show how each moment was reached: four
   fading stick figures trail the fencers, and dotted lines trace both blade
-  tips through the whole phrase.
-- **Camera:** turn the view up to 60° either way, to see a blade come toward
-  you or swing away.
+  tips through the whole scene.
+
+The base postures stand still, so they have neither.
+
+In the Creator there is more:
+- **This step:** its label, how long it takes to move into it and to stay on
+  it, and whether it moves smoothly, snaps or keeps one speed.
 - **Adjust this moment:** ten sliders reshape either fencer on the current
   step, from where they stand on the piste to the angle and turn of the blade.
-- **Pose library:** eleven named poses to put on any step.
-- **Phrase data:** the whole animation as text. Edit it in place or paste a
-  phrase in; it applies as you type, and says why when it can't.
+- **Poses:** eleven named poses to put on any step.
+- **Phrase data:** the whole scene as text. Edit it in place or paste one in;
+  it applies as you type, and says why when it can't. The fields above it and
+  the text are the same thing, and follow each other.
 
 ## Writing a phrase
-A phrase is JSON. **Phrase data** shows the one on stage, a step per line:
+A scene is a phrase: JSON, with a few words about where it comes from. **Phrase
+data** shows the one on stage, a step per line:
 
 ```json
 {
   "name": "Advance, lunge, head cut",
+  "event": "Club night, October",
+  "reference": "https://example.com/watch?v=abc",
+  "note": "The arm moves before the legs.",
   "camera": 0,
   "steps": [
     {"label": "En garde", "hold": 600, "A": {"pose": "guard", "x": -30}, "B": {"pose": "guard", "x": 245}},
@@ -44,9 +81,14 @@ A phrase is JSON. **Phrase data** shows the one on stage, a step per line:
 }
 ```
 
-- `name`: a title for the phrase, for you; the page does not show it.
+- `name`: the scene's title in the library.
+- `event`: where it was noted, in your own words: the competition and round, say.
+- `reference`: a link to where you can see it. Only `http` and `https`
+  addresses become links; anything else is shown as not a link.
+- `note`: whatever else is worth saying.
 - `camera`: the view in degrees from side on, -60 to 60. A pasted phrase with
-  a new angle turns the view to it.
+  a new angle turns the view to it, and saving a scene keeps the angle it was
+  seen from.
 - `solo`: `true` for one fencer. B leaves the stage, and every edit goes to A.
 - `steps`: the keyframes, in order, at least one.
 
@@ -54,7 +96,7 @@ Each step:
 
 | Key | What it does |
 |---|---|
-| `label` | The step's name on the stage and on its button. |
+| `label` | The step's name on the stage and on its button. A step without one is called "Step" and its number. |
 | `ms` | Milliseconds to move into this step from the one before. The first step is where the phrase starts, so its `ms` is ignored. |
 | `hold` | Milliseconds to stay on the step before the next move. |
 | `ease` | How the move runs: `"snap"` arrives fast and settles, `"linear"` keeps one speed; anything else eases in and out. |
@@ -84,7 +126,8 @@ points at the opponent and 90 straight up.
 | `yaw` | Blade turned toward the camera |
 | `rArm`, `rFore` | Rear arm, hand on the hip |
 
-The poses. Each fills in what it leaves out from the guard.
+The poses. Each fills in what it leaves out from the guard. The **Base
+postures** describe each one in words.
 
 | Name | Pose |
 |---|---|
@@ -117,12 +160,14 @@ disk does not work, because browsers load JavaScript modules only over HTTP.
 npm test
 ```
 There is nothing to install: the tests use Node's own test runner. They cover
-the timeline and its maths, the drawing (every phrase at every moment from
-five camera angles, checked for broken path data), and the published files
-(only relative links to files that exist, no outside requests, every element
-the script needs). Two more run in a real browser: headless Chrome or
-Chromium loads the page, then a driver page works every control and checks
-the result. They need Chrome or Chromium on your `PATH`, or `CHROME_BIN`
+the timeline and its maths, the edits the Creator makes to a scene, the saved
+scenes and the check that a reference link is a web address, the base postures,
+the drawing (every phrase and posture at every moment from five camera angles,
+checked for broken path data), and the published files (only relative links to
+files that exist, no outside requests, every element the scripts need). Seven
+more run in a real browser: headless Chrome or Chromium loads the page, then a
+driver page works every control of every mode, with hostile input among it, and
+checks the result. They need Chrome or Chromium on your `PATH`, or `CHROME_BIN`
 pointing at one, and are skipped without it.
 
 CI runs the same on every pull request, with the runner's Chrome and the
@@ -136,10 +181,12 @@ the site stays as it was.
 
 Project layout:
 - `site/index.html` and `site/css/styles.css`: the page
-- `site/js/app.js`: the controls, and drawing each frame
+- `site/js/app.js`: the modes, the controls, and drawing each frame
 - `site/js/phrase.js`: phrases as data: timeline, in-betweens, text, edits
 - `site/js/figure.js`: the pen-and-ink fencers, as SVG path data
-- `site/js/library.js`: the poses, the built-in phrases and the sliders
+- `site/js/library.js`: the poses, the built-in scenes and the sliders
+- `site/js/bases.js`: the base postures, in words
+- `site/js/scenes.js`: reference links, and the scenes saved on this device
 - `site/fonts/`: Big Shoulders Display and IBM Plex, with their licences
 - `scripts/serve.js`: the local server; `scripts/protect-repo.sh`: repository settings
 - `tests/`
