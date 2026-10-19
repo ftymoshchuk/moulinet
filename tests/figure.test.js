@@ -115,6 +115,36 @@ test("the leg behind bends back at the knee, as the plates draw it, and the leg 
   assert.ok(Math.abs(straight - 90) < 1.5, "the rear leg is straight in the lunge");
 });
 
+test("in the guard each knee is over its own foot, as in the plates, and so is the front knee in the lunge", () => {
+  // How far in front of its ankle each knee is: the front leg's, and the back leg's.
+  const over = (name) => {
+    const J = skeleton(resolvePose({ pose: name }));
+    return [J.kF[0] - J.ankF[0], J.kB[0] - J.ankB[0]];
+  };
+  const [front, back] = over("guard");
+  assert.ok(Math.abs(front) < 1 && Math.abs(back) < 1, `the shins stand upright in the guard (${front}, ${back})`);
+  const guard = skeleton(resolvePose({ pose: "guard" }));
+  assert.ok(Math.abs(guard.kF[1] - guard.kB[1]) < 0.5, "and the knees are at the same height");
+  // The poses that move the weight from there keep the knees over the feet to within a few centimetres.
+  for (const name of ["prep", "extend", "parry3", "parry5"]) {
+    const [f, b] = over(name);
+    assert.ok(Math.abs(f) < 3.5 && Math.abs(b) < 3.5, `${name}: the knees stay over the feet (${f}, ${b})`);
+  }
+  for (const name of ["lungeHead", "lungeChest"]) assert.ok(Math.abs(over(name)[0]) < 0.5, `${name}: the front knee is over the front ankle`);
+});
+
+test("an advance lands the front foot where the next guard has it, so no foot slides when the back foot follows", () => {
+  const { steps } = buildTimeline(PRESETS[0].phrase);
+  const step = (text) => steps.find((s) => s.label.includes(text));
+  const front = (s) => s.A.x + s.A.footF;
+  const [guard, lifted, landed, followed] = [steps[0], step("front foot lifts"), step("front foot lands"), step("back foot follows")];
+  assert.ok(front(guard) < front(lifted) && front(lifted) < front(landed), "the front foot goes forward");
+  assert.equal(front(landed), front(followed), "and stays where it landed while the back foot comes up to it");
+  // The leg that lands is straight, as a foot comes down on its heel.
+  const J = skeleton(landed.A);
+  assert.ok(Math.hypot(J.hip[0] - J.ankF[0], J.hip[1] - J.ankF[1]) >= 89.95, "on a straight leg");
+});
+
 test("the sword arm is set on the shoulder turned away, at the front of the chest, and is as long as an arm", () => {
   const side = skeleton(resolvePose({ pose: "guard", adj: { turn: 0 } }));
   const turned = skeleton(resolvePose({ pose: "guard", adj: { turn: 58 } }));

@@ -88,9 +88,10 @@ shoulders and narrow at the waist, and the camera swings it as it swings the
 piste. The sleeve of the arm on your side begins on the jersey itself, and the
 other arm lies behind it, set on the shoulder at the front of the chest and as
 long as an arm. The knee of the leg behind bends back, which gives the guard
-its wide stance. The foot in front points at the opponent, and the foot behind
-is turned across, its toe at you, so that the two make an L, as the stance is
-taught. That shoe is a few domes standing on the floor, which the camera turns
+its wide stance, and each knee is over its own foot, so the shins stand upright
+under the slanting thighs. The foot in front points at the opponent, and the
+foot behind is turned across, its toe at you, so that the two make an L, as the
+stance is taught. That shoe is a few domes standing on the floor, which the camera turns
 with the piste, so it is seen end on, from a quarter or from the side as the
 camera moves.
 

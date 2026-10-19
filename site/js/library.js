@@ -11,18 +11,24 @@
 //   blade         the sabre; yaw turns it toward the camera
 //   rArm, rFore   rear arm, hand on the hip
 // A pose fills in whatever it leaves out from the guard.
+//
+// In the guard each knee is over its own foot, as in the plates: the shins stand
+// upright. A thigh is 44 cm and the knee is 54 cm up (a shin and the ankle), so
+// with the hips at 78 each thigh reaches 37 cm across, and hips halfway between
+// the feet, 74 cm apart, have both knees over both ankles. The poses that move
+// the weight from there keep the knees within a few centimetres of that.
 export const POSES = {
-  guard: { hipX: 38, hipY: 80, footF: 80, liftF: 0, liftB: 0, lean: 3, turn: 58, arm: -34, fore: 16, blade: 34, yaw: 0, rArm: -134, rFore: -32 },
-  advLift: { hipX: 47, hipY: 81, footF: 106, liftF: 9 },
-  advLand: { hipX: 52, hipY: 77, footF: 110 },
-  prep: { hipX: 41, lean: 4, arm: 15, fore: 30, blade: 85 },
+  guard: { hipX: 37, hipY: 78, footF: 74, liftF: 0, liftB: 0, lean: 3, turn: 58, arm: -34, fore: 16, blade: 34, yaw: 0, rArm: -134, rFore: -32 },
+  advLift: { hipX: 41, hipY: 81, footF: 100, liftF: 9 },
+  advLand: { hipX: 46, hipY: 77, footF: 104 },
+  prep: { hipX: 40, lean: 4, arm: 15, fore: 30, blade: 85 },
   lungeFly: { hipX: 57, hipY: 70, footF: 114, liftF: 8, lean: 12, arm: 25, fore: 25, blade: 45 },
   lungeHead: { hipX: 77, hipY: 54.6, footF: 121, lean: 25, arm: 38, fore: 28, blade: 14 },
   lungeChest: { hipX: 77, hipY: 54.6, footF: 121, lean: 24, arm: 8, fore: 6, blade: 8 },
-  parry3: { hipX: 35, hipY: 79, lean: -3, arm: -70, fore: 15, blade: 95 },
-  parry5: { hipX: 35, hipY: 79, lean: -4, arm: 35, fore: 60, blade: 8, yaw: 72 },
+  parry3: { hipX: 35, hipY: 77, lean: -3, arm: -70, fore: 15, blade: 95 },
+  parry5: { hipX: 35, hipY: 77, lean: -4, arm: 35, fore: 60, blade: 8, yaw: 72 },
   riposte: { hipX: 49, hipY: 76, footF: 94, lean: 14, arm: 0, fore: 0, blade: -6 },
-  extend: { hipX: 39, lean: 4, arm: 4, fore: 4, blade: 14 },
+  extend: { hipX: 38, lean: 4, arm: 4, fore: 4, blade: 14 },
 };
 
 export const POSE_NAMES = {
