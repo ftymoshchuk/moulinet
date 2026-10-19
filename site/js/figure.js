@@ -20,6 +20,8 @@ const UPPER_ARM = 31;
 const FOREARM = 31;
 // Half the width between the shoulder joints (cm).
 const SHOULDER = 19;
+// How far the knee of the leg behind is turned from bending straight back toward the camera (degrees): over the back foot, which points at the camera.
+const KNEE_OUT = 40;
 
 function fmt(point) {
   return `${point[0].toFixed(1)} ${point[1].toFixed(1)}`;
@@ -38,12 +40,31 @@ export function knee(hx, hy, ax, ay, side = 1) {
   return [hx + THIGH * Math.cos(towardAnkle + side * bend), hy + THIGH * Math.sin(towardAnkle + side * bend)];
 }
 
+/**
+ * The knee of the leg behind, as [x, y, z] with z toward the camera. It bends
+ * back, and is turned out toward the camera about the line from hip to ankle,
+ * over the foot, which points that way: seen side on, the leg is shorter and the
+ * knee a little forward and low, as in the plates, though thigh and shin are the
+ * same lengths. A leg that is straight has nowhere to turn.
+ */
+export function kneeBehind(hx, hy, ax, ay) {
+  const [kx, ky] = knee(hx, hy, ax, ay, -1);
+  const d = Math.hypot(ax - hx, ay - hy);
+  if (d < 1) return [kx, ky, 0];
+  const [ux, uy] = [(ax - hx) / d, (ay - hy) / d];
+  // Where the knee is on the line from hip to ankle, and how far it is off it.
+  const along = (kx - hx) * ux + (ky - hy) * uy;
+  const [ox, oy] = [kx - hx - along * ux, ky - hy - along * uy];
+  const turn = KNEE_OUT * RAD;
+  return [hx + along * ux + ox * Math.cos(turn), hy + along * uy + oy * Math.cos(turn), Math.hypot(ox, oy) * Math.sin(turn)];
+}
+
 /** Every joint of a pose, plus `at(k)`: the point k cm along the blade from the hand. */
 export function skeleton(p) {
   const hip = [p.hipX, p.hipY];
   const ankB = [0, 8 + Math.max(0, p.liftB)];
   const ankF = [p.footF, 8 + Math.max(0, p.liftF)];
-  const kB = knee(hip[0], hip[1], ankB[0], ankB[1], -1);
+  const kB = kneeBehind(hip[0], hip[1], ankB[0], ankB[1]);
   const kF = knee(hip[0], hip[1], ankF[0], ankF[1]);
   // Up the torso, and forward across it.
   const u = [Math.sin(p.lean * RAD), Math.cos(p.lean * RAD)];

@@ -457,9 +457,12 @@ function shoeInFront(ank, set) {
  * strokes of its folds. The foot in front points at the opponent, seen from the
  * side, and is turned up at the toe when it is lifted from the floor, as one
  * lands on its heel. The foot behind is turned across, its toe at the camera, so
- * that the two feet make an L.
+ * that the two feet make an L, and its knee, a point with a depth, is turned out
+ * toward the camera over it.
  */
-export function legPart(J, W, ank, kn, { front, seat, older }) {
+export function legPart(J, W, ank, knee, { front, seat, older }) {
+  // A knee that is nearer the camera is across the page as far as the camera turns that depth into: on the piste, that much further along.
+  const kn = knee.length > 2 ? [knee[0] + knee[2] * Math.tan(W.camera * RAD), knee[1]] : knee;
   const made = legShapes(J, ank, kn, { seat, older });
   const set = (points) =>
     points.map((q) => {

@@ -87,13 +87,14 @@ of slices of the body, set round by the pose's `turn`, so it is broad at the
 shoulders and narrow at the waist, and the camera swings it as it swings the
 piste. The sleeve of the arm on your side begins on the jersey itself, and the
 other arm lies behind it, set on the shoulder at the front of the chest and as
-long as an arm. The knee of the leg behind bends back, which gives the guard
-its wide stance, and each knee is over its own foot, so the shins stand upright
-under the slanting thighs. The foot in front points at the opponent, and the
-foot behind is turned across, its toe at you, so that the two make an L, as the
-stance is taught. That shoe is a few domes standing on the floor, which the camera turns
+long as an arm. The foot in front points at the opponent, and the foot behind
+is turned across, its toe at you, so that the two make an L, as the stance is
+taught. That shoe is a few domes standing on the floor, which the camera turns
 with the piste, so it is seen end on, from a quarter or from the side as the
-camera moves.
+camera moves. Each knee is over its own foot: the front shin stands upright, and
+the knee of the leg behind bends back and is turned out toward you, over the
+foot, so side on its shin leans a little forward and the leg is seen shorter, as
+the plates draw it. Together they give the guard its wide stance.
 
 A young fencer wears knickerbockers and long stockings, an older one loose
 trousers gathered at the ankle, a belly and narrower shoulders. The strokes are

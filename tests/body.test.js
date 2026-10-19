@@ -256,6 +256,24 @@ test("the legs: the foot behind is turned across, the seat belongs to one leg, a
   assert.ok(shoeOf(high)[1] < 24, "though only so far");
 });
 
+test("a knee turned toward the camera is drawn where the camera sees it, and the leg is drawn to that knee", () => {
+  const pose = resolvePose({ pose: "guard" });
+  const J = skeleton(pose);
+  const [x, y, z] = J.kB;
+  assert.ok(z > 5, "the knee behind has a depth");
+  for (const camera of [-60, -25, 0, 25, 60]) {
+    const W = projector(pose, 1, camera);
+    // On the piste, a knee that is nearer the camera is as much further along as the camera turns its depth into.
+    const along = x + z * Math.tan((camera * Math.PI) / 180);
+    near(W([x, y, z])[0], W([along, y])[0], 1e-9, `${camera}°: where the camera sees the knee`);
+    const turned = legPart(J, W, J.ankB, J.kB, { front: false, seat: false, older: false });
+    const placed = legPart(J, W, J.ankB, [along, y], { front: false, seat: false, older: false });
+    assert.deepEqual(turned, placed, `${camera}°: and the leg is drawn to it`);
+  }
+  const flat = legPart(J, projector(pose, 1, 30), J.ankB, [x, y], { front: false, seat: false, older: false });
+  assert.notEqual(flat.g, legPart(J, projector(pose, 1, 30), J.ankB, J.kB, { front: false, seat: false, older: false }).g, "seen from a quarter, it is not where a knee in the plane of the piste would be");
+});
+
 test("an older man is in loose trousers, with no pouch of cloth at the knee", () => {
   const { J, W } = posed();
   const young = legPart(J, W, J.ankF, J.kF, { front: true, seat: false, older: false });

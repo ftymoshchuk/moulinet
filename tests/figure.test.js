@@ -115,22 +115,45 @@ test("the leg behind bends back at the knee, as the plates draw it, and the leg 
   assert.ok(Math.abs(straight - 90) < 1.5, "the rear leg is straight in the lunge");
 });
 
-test("in the guard each knee is over its own foot, as in the plates, and so is the front knee in the lunge", () => {
-  // How far in front of its ankle each knee is: the front leg's, and the back leg's.
+test("in the guard each knee is over its own foot: the front shin is upright, the knee behind is turned out over the foot behind", () => {
+  // How far in front of its ankle each knee is on the page: the front leg's, and the back leg's.
   const over = (name) => {
     const J = skeleton(resolvePose({ pose: name }));
     return [J.kF[0] - J.ankF[0], J.kB[0] - J.ankB[0]];
   };
   const [front, back] = over("guard");
-  assert.ok(Math.abs(front) < 1 && Math.abs(back) < 1, `the shins stand upright in the guard (${front}, ${back})`);
-  const guard = skeleton(resolvePose({ pose: "guard" }));
-  assert.ok(Math.abs(guard.kF[1] - guard.kB[1]) < 0.5, "and the knees are at the same height");
+  assert.ok(Math.abs(front) < 2, `the front shin is upright in the guard (${front})`);
+  // The knee behind is turned toward the camera, over a foot that points there, so side on its shin leans a little, as the plates have it.
+  const lean = (back / (skeleton(resolvePose({ pose: "guard" })).kB[1] - 8)) * (180 / Math.PI);
+  assert.ok(lean > 4 && lean < 11, `the shin behind leans a few degrees (${lean})`);
   // The poses that move the weight from there keep the knees over the feet to within a few centimetres.
   for (const name of ["prep", "extend", "parry3", "parry5"]) {
     const [f, b] = over(name);
-    assert.ok(Math.abs(f) < 3.5 && Math.abs(b) < 3.5, `${name}: the knees stay over the feet (${f}, ${b})`);
+    assert.ok(Math.abs(f) < 5 && b > 2 && b < 10, `${name}: the knees stay over the feet (${f}, ${b})`);
   }
   for (const name of ["lungeHead", "lungeChest"]) assert.ok(Math.abs(over(name)[0]) < 0.5, `${name}: the front knee is over the front ankle`);
+});
+
+test("the knee behind is turned out toward the camera over the foot, with thigh and shin as long as ever", () => {
+  for (const name of ["guard", "parry3", "advLift", "lungeFly", "riposte"]) {
+    const J = skeleton(resolvePose({ pose: name }));
+    const [kx, ky, kz] = J.kB;
+    const hip = J.hip;
+    assert.ok(Math.abs(Math.hypot(kx - hip[0], ky - hip[1], kz) - 44) < 1e-9, `${name}: the thigh is 44 cm`);
+    assert.ok(Math.abs(Math.hypot(kx - J.ankB[0], ky - J.ankB[1], kz) - 46) < 1e-9, `${name}: and the shin 46`);
+    assert.ok(kz > 5, `${name}: toward the camera, over a foot that points there`);
+    // Turned out, the leg is seen shorter than its bones, and the knee is not as far back as it bends.
+    const bent = knee(hip[0], hip[1], J.ankB[0], J.ankB[1], -1);
+    assert.ok(Math.hypot(kx - hip[0], ky - hip[1]) < 44 - 0.5, `${name}: the thigh is seen foreshortened`);
+    const side = (k) => (J.ankB[0] - hip[0]) * (k[1] - hip[1]) - (J.ankB[1] - hip[1]) * (k[0] - hip[0]);
+    assert.ok(side([kx, ky]) * side(bent) > 0 && Math.abs(side([kx, ky])) < Math.abs(side(bent)), `${name}: still bending back, but not as far as it would side on`);
+  }
+  // A leg that is straight has nowhere to turn; one that is nearly so turns very little.
+  const straight = skeleton(resolvePose({ pose: "lungeChest" })).kB;
+  assert.ok(Math.abs(straight[2]) < 0.5, "the back leg in a lunge is straight, and its knee faces no way");
+  // The same drawing for a foot lifted off the floor.
+  const lifted = skeleton(resolvePose({ pose: "guard", adj: { liftB: 12 } })).kB;
+  assert.ok(lifted[2] > 5 && lifted.every(Number.isFinite));
 });
 
 test("an advance lands the front foot where the next guard has it, so no foot slides when the back foot follows", () => {
