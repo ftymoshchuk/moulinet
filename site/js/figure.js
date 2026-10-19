@@ -3,7 +3,7 @@
 // The body is worked out in centimetres, y up, facing +x with the back foot at
 // 0; a projector then places it on the piste and turns it for the camera,
 // which swings around a point on the piste. Out come SVG units, y down.
-import { bladePart, headPart, legPart, rearArm, swordArm, torsoFrame, trunk } from "./body.js";
+import { bladePart, footSpan, headPart, legPart, rearArm, swordArm, torsoFrame, trunk } from "./body.js";
 import { groundStrokes } from "./folds.js";
 import { handParts } from "./parts.js";
 import { poseAt } from "./phrase.js";
@@ -143,10 +143,10 @@ function draw(p, dir, camera, backView, older) {
   const legF = legPart(J, W, J.ankF, J.kF, { front: true, seat: !backView, older });
   const legB = legPart(J, W, J.ankB, J.kB, { front: false, seat: backView, older });
 
-  // Strokes on the floor under each planted foot, shorter as it lifts.
+  // Strokes on the floor under each planted foot, shorter as it lifts. The foot behind is turned across, so they go all round it.
   const ground = (ank, front) => {
     const lift = ank[1] - 8;
-    return lift > 5 ? "" : groundStrokes(W, ank, front, front ? 7 : 9, 1 - lift / 6);
+    return lift > 5 ? "" : groundStrokes(W, ank, front, front ? 7 : 9, 1 - lift / 6, front ? undefined : footSpan(W));
   };
 
   // Draw order: what the camera sees first goes last.

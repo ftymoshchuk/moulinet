@@ -6,7 +6,7 @@ import { DEFAULT_FRAME, PIVOT, bladePaths, bladeTip, floorPath, frameOf, inkFigu
 import { area } from "../site/js/ink.js";
 import { POSES, PRESETS } from "../site/js/library.js";
 import { buildTimeline, poseAt, resolvePose } from "../site/js/phrase.js";
-import { allPaths, readPath } from "./path-data.js";
+import { allPaths, boxOf, readPath } from "./path-data.js";
 
 const BAD_NUMBER = /NaN|Infinity|undefined/;
 
@@ -51,6 +51,27 @@ test("the sword arm is drawn behind the body from the back, in front of it other
   const front = inkFigure(pose, 1, 0);
   assert.equal(back.l1.g, front.l6.g);
   assert.equal(back.l6.g, front.l1.g);
+});
+
+test("the feet make an L: the foot in front points at the opponent, the foot behind at the camera", () => {
+  for (const [dir, options] of [[1, { backView: true }], [-1, { backView: true, older: true }]]) {
+    for (const name of ["guard", "lungeChest", "parry3"]) {
+      const pose = resolvePose({ pose: name });
+      const figure = inkFigure(pose, dir, 0, options);
+      // From the back, the leg in front is drawn first and the leg behind over it.
+      const feet = [figure.l2, figure.l3].map((leg) => boxOf([readPath(leg.g).at(-1)]));
+      const [front, back] = feet.map((box) => box.maxX - box.minX);
+      assert.ok(front > 25, `${name}: the shoe in front is seen from the side, the length of a foot (${front})`);
+      assert.ok(back < front * 0.6, `${name}: and the shoe behind is seen end on (${back})`);
+      // The strokes on the floor under it go either side of it.
+      const floor = readPath(figure.ground);
+      assert.equal(floor.length, 6);
+      const under = boxOf(floor.slice(3));
+      const J = skeleton(pose);
+      const ankle = projector(pose, dir, 0)(J.ankB)[0];
+      assert.ok(under.minX < ankle - 8 && under.maxX > ankle + 8, `${name}: the strokes under the foot behind are round it`);
+    }
+  }
 });
 
 test("a foot lifted clear of the floor leaves no hatching", () => {
