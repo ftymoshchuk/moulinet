@@ -258,3 +258,15 @@ test("the strokes on the floor lie on it, and are shorter as the foot lifts", ()
   const back = boxOf(readPath(groundStrokes(FLAT, [50, 8], false, 7, 1)));
   assert.ok(back.maxX < planted.maxX, "shorter behind the front foot's");
 });
+
+test("the strokes under a foot turned across go all round it, and draw in as it lifts", () => {
+  const span = [-6, 8];
+  const planted = boxOf(readPath(groundStrokes(FLAT, [50, 8], false, 9, 1, span)));
+  assert.equal(readPath(groundStrokes(FLAT, [50, 8], false, 9, 1, span)).length, 3, "three strokes, as under any foot");
+  assert.ok(planted.maxY < 3 && planted.minY > -6, "on and just below the floor line");
+  assert.ok(planted.minX < 50 + span[0] - 4 && planted.maxX > 50 + span[1] + 4, "past the foot at both ends");
+  near((planted.minX + planted.maxX) / 2, 50 + (span[0] + span[1]) / 2, 5, "round it, and not trailing off toward the opponent");
+  const rising = boxOf(readPath(groundStrokes(FLAT, [50, 8], false, 9, 0.4, span)));
+  assert.ok(rising.minX > planted.minX && rising.maxX < planted.maxX, "shorter at both ends as the foot lifts");
+  assert.deepEqual(groundStrokes(FLAT, [50, 8], false, 9, 1, span), groundStrokes(FLAT, [50, 8], false, 9, 1, span), "and the same every time");
+});

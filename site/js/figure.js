@@ -3,7 +3,7 @@
 // The body is worked out in centimetres, y up, facing +x with the back foot at
 // 0; a projector then places it on the piste and turns it for the camera,
 // which swings around a point on the piste. Out come SVG units, y down.
-import { bladePart, headPart, legPart, rearArm, swordArm, torsoFrame, trunk } from "./body.js";
+import { bladePart, footSpan, headPart, legPart, rearArm, swordArm, torsoFrame, trunk } from "./body.js";
 import { groundStrokes } from "./folds.js";
 import { handParts } from "./parts.js";
 import { poseAt } from "./phrase.js";
@@ -20,6 +20,8 @@ const UPPER_ARM = 31;
 const FOREARM = 31;
 // Half the width between the shoulder joints (cm).
 const SHOULDER = 19;
+// How far the knee of the leg behind is turned from bending straight back toward the camera (degrees): over the back foot, which points at the camera.
+const KNEE_OUT = 40;
 
 function fmt(point) {
   return `${point[0].toFixed(1)} ${point[1].toFixed(1)}`;
@@ -38,12 +40,31 @@ export function knee(hx, hy, ax, ay, side = 1) {
   return [hx + THIGH * Math.cos(towardAnkle + side * bend), hy + THIGH * Math.sin(towardAnkle + side * bend)];
 }
 
+/**
+ * The knee of the leg behind, as [x, y, z] with z toward the camera. It bends
+ * back, and is turned out toward the camera about the line from hip to ankle,
+ * over the foot, which points that way: seen side on, the leg is shorter and the
+ * knee a little forward and low, as in the plates, though thigh and shin are the
+ * same lengths. A leg that is straight has nowhere to turn.
+ */
+export function kneeBehind(hx, hy, ax, ay) {
+  const [kx, ky] = knee(hx, hy, ax, ay, -1);
+  const d = Math.hypot(ax - hx, ay - hy);
+  if (d < 1) return [kx, ky, 0];
+  const [ux, uy] = [(ax - hx) / d, (ay - hy) / d];
+  // Where the knee is on the line from hip to ankle, and how far it is off it.
+  const along = (kx - hx) * ux + (ky - hy) * uy;
+  const [ox, oy] = [kx - hx - along * ux, ky - hy - along * uy];
+  const turn = KNEE_OUT * RAD;
+  return [hx + along * ux + ox * Math.cos(turn), hy + along * uy + oy * Math.cos(turn), Math.hypot(ox, oy) * Math.sin(turn)];
+}
+
 /** Every joint of a pose, plus `at(k)`: the point k cm along the blade from the hand. */
 export function skeleton(p) {
   const hip = [p.hipX, p.hipY];
   const ankB = [0, 8 + Math.max(0, p.liftB)];
   const ankF = [p.footF, 8 + Math.max(0, p.liftF)];
-  const kB = knee(hip[0], hip[1], ankB[0], ankB[1], -1);
+  const kB = kneeBehind(hip[0], hip[1], ankB[0], ankB[1]);
   const kF = knee(hip[0], hip[1], ankF[0], ankF[1]);
   // Up the torso, and forward across it.
   const u = [Math.sin(p.lean * RAD), Math.cos(p.lean * RAD)];
@@ -143,10 +164,10 @@ function draw(p, dir, camera, backView, older) {
   const legF = legPart(J, W, J.ankF, J.kF, { front: true, seat: !backView, older });
   const legB = legPart(J, W, J.ankB, J.kB, { front: false, seat: backView, older });
 
-  // Strokes on the floor under each planted foot, shorter as it lifts.
+  // Strokes on the floor under each planted foot, shorter as it lifts. The foot behind is turned across, so they go all round it.
   const ground = (ank, front) => {
     const lift = ank[1] - 8;
-    return lift > 5 ? "" : groundStrokes(W, ank, front, front ? 7 : 9, 1 - lift / 6);
+    return lift > 5 ? "" : groundStrokes(W, ank, front, front ? 7 : 9, 1 - lift / 6, front ? undefined : footSpan(W));
   };
 
   // Draw order: what the camera sees first goes last.

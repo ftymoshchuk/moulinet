@@ -5,7 +5,7 @@
 // the brush strokes.
 import { crotchFolds, cuffGathers, kneeFolds, kneePuckers, sleeveFolds, sockWrinkles, thighFolds, torsoFolds, waistband } from "./folds.js";
 import { add, blob, brush, dist, lerp, line, mul, perp, pt, ribbon, rotate, solid, sub, unit } from "./ink.js";
-import { headParts, shoeParts, torsoParts } from "./parts.js";
+import { headParts, shoeAcrossParts, shoeParts, torsoParts } from "./parts.js";
 
 /**
  * A limb segment from `a` to `b`, as the points of a smooth shape: rounded at
@@ -195,15 +195,14 @@ export function rearArm(J, W, hand, frame = torsoFrame(J, W, false)) {
 // ---------- Legs ----------
 
 /**
- * A shoe set on the ankle `ank`: turned up at the toe by `tilt` degrees (a foot
- * lifted from the floor lands on its heel), and `length` of the way to its full
- * length forward, since a foot turned across is seen short. The points of the
- * shape, the thin lines on it, in centimetres.
+ * A shoe seen from the side, set on the ankle `ank` and turned up at the toe by
+ * `tilt` degrees (a foot lifted from the floor lands on its heel). The points of
+ * the shape, the thin lines on it, in centimetres.
  */
-export function shoe(ank, tilt, length, parts) {
+export function shoe(ank, tilt, parts) {
   // A point that keeps only part of its line (a fourth item) keeps that on the way.
   const set = ([x, y, corner, weight]) => {
-    const r = rotate([x > 0 ? x * length : x, y], tilt);
+    const r = rotate([x, y], tilt);
     const q = [ank[0] + r[0], ank[1] + r[1]];
     return weight === undefined ? q : [q[0], q[1], corner, weight];
   };
@@ -215,14 +214,166 @@ export function shoe(ank, tilt, length, parts) {
   };
 }
 
+// How closely the shoe follows the highest of its domes where they meet: the higher, the closer.
+const BLEND = 8;
+// How many stretches the outline over the top of the shoe is made of.
+const OUTLINE = 14;
+// How high above the floor the cloth of loose trousers comes down over the shoe: an ankle's height, less a centimetre.
+const HEM = 7;
+
+/**
+ * The shoe of the foot behind, which is turned across the piste with its toe at
+ * the camera, as it is seen on the page. The way it is turned from straight at
+ * the camera is `turn` in parts.js, and the camera turns it on from there.
+ *
+ * Each dome of the shoe is a superellipsoid standing on the floor. A level
+ * camera sees one as half a superellipse of the same squareness: as high as the
+ * dome, and as wide as its footprint reaches across the page, which is the
+ * support of the footprint, `(|wide a|^q + |half b|^q)^(1/q)` for the dual
+ * exponent `q` of its squareness, where `a` and `b` are how far across the page
+ * a step across the foot and a step along it go. The shoe is the soft union of
+ * those, on a sole a little wider than it.
+ *
+ * Returns, in page units, the shapes, the thin lines on them and the strokes of
+ * shade: the same as the shoe seen from the side, once it is set on the page.
+ * An older man's loose trousers hang over the top of the shoe, so its collar and
+ * the laces that lie under the cloth are left out.
+ */
+export function shoeAcross(ank, W, older = false, parts = shoeAcrossParts()) {
+  const { domes, left, right, at, page, side, faces, ce } = acrossFrame(ank, W, parts);
+  const { height, edge, bow } = parts.sole;
+  const middle = (left + right) / 2;
+  // Over the top of the shoe, sampled closely where it turns down at either end.
+  const over = (x) => domes.reduce((sum, d) => sum + d.seen(x) ** BLEND, 0) ** (1 / BLEND);
+  const outline = [[left, 0, 0, 0.5]];
+  for (let i = 1; i < OUTLINE; i++) {
+    const x = middle - ((right - left) / 2) * Math.cos((Math.PI * i) / OUTLINE);
+    outline.push([x, over(x)]);
+  }
+  // The toe is nearer than the heel, so the underside of the sole bows down.
+  outline.push([right, 0, 0, 0.5], [middle, -bow, 0, 0.5]);
+  // The sole is a slab a little wider than the shoe, with its corners rounded.
+  const [from, to] = [left - edge, right + edge];
+  const slab = [
+    [from + 0.5, -bow / 2, 0, 0.5],
+    [middle, -bow, 0, 0.5],
+    [to - 0.5, -bow / 2, 0, 0.5],
+    [to, 0.4],
+    [to, height - 0.2],
+    [to - 0.3, height],
+    [from + 0.3, height],
+    [from, height - 0.2],
+    [from, 0.4],
+  ];
+
+  // The edge of the sole, across the front of the shoe.
+  const welt = page([[left + 0.4, height], [middle, height - bow / 2], [right - 0.4, height]]);
+  // The edge of the shoe where the stocking goes into it, as wide as the stocking looks. An older man's trousers hang over it.
+  const { wide, ends, middle: dip } = parts.collar;
+  const collar = older ? [] : [page([[-wide * ce, ends], [0, dip], [wide * ce, ends]])];
+  // The laces cross the instep where it is highest along the middle of the foot, and those under the cloth are not seen.
+  const ridge = (along) => domes.reduce((sum, d) => sum + d.along(along) ** BLEND, 0) ** (1 / BLEND);
+  const laces = parts.laces.flatMap((along) => {
+    const top = ridge(along) - 0.6;
+    return older && top > HEM ? [] : [[[-1.9, along, top], [0, along, top + 0.7], [1.9, along, top]].map((q) => at(...q))];
+  });
+  // The seam of the toe cap goes over the toe box, and is lost where the box turns away.
+  const toe = parts.domes[2];
+  const seen = visibleRun(archOver(toe, parts.seam, 9).map(([a, h]) => [a, h, faces(toe, a, parts.seam)]));
+  const seam = seen.length > 1 ? [seen.map(([a, h]) => at(a, parts.seam, h))] : [];
+  // The shade falls on the side of the shoe that is away from the light, which is the right of the page.
+  const hatch = parts.hatch.flatMap(([which, across, along, length]) => {
+    const dome = parts.domes[which];
+    const a = side * across;
+    const top = skin(dome, a, along) - 0.5;
+    return top > length && faces(dome, a, along) ? [[at(a, along, top), at(a, along, top - length)]] : [];
+  });
+  return { shapes: [page(outline), page(slab)], lines: [...collar, welt, ...seam, ...laces], ink: [], hatch };
+}
+
+/**
+ * How far either side of the foot behind, on the piste, its sole reaches from
+ * the ankle: so the strokes on the floor go all round it, however the camera
+ * turns it.
+ */
+export function footSpan(W, parts = shoeAcrossParts()) {
+  const { left, right } = acrossFrame([0, 8], W, parts);
+  // (The camera does not turn beyond 60°, but a span must not run away if it did.)
+  const squeeze = Math.max(0.25, Math.cos(W.camera * RAD));
+  return [(left - parts.sole.edge) / squeeze, (right + parts.sole.edge) / squeeze];
+}
+
+// How high the skin of a dome is above a place on the floor: how far across and along the foot.
+function skin([mid, half, wide, high, square], across, along) {
+  return high * Math.max(0, 1 - Math.abs(across / wide) ** square - Math.abs((along - mid) / half) ** square) ** (1 / square);
+}
+
+// The longest run of points the camera can see, of points that say so as their third item.
+function visibleRun(points) {
+  let best = [];
+  let run = [];
+  for (const point of points) {
+    run = point[2] ? [...run, point] : [];
+    if (run.length > best.length) best = run;
+  }
+  return best;
+}
+
+// The arc over the top of a dome, from one side to the other, where a plane across the foot cuts it: points of [across, up].
+function archOver([mid, half, wide, high, square], along, n) {
+  const scale = Math.max(0, 1 - Math.abs((along - mid) / half) ** square) ** (1 / square);
+  return Array.from({ length: n }, (_, i) => {
+    const t = 0.28 + (i / (n - 1)) * (Math.PI - 0.56);
+    return [wide * scale * Math.sign(Math.cos(t)) * Math.abs(Math.cos(t)) ** (2 / square), high * scale * Math.abs(Math.sin(t)) ** (2 / square)];
+  });
+}
+
+// The foot behind as the camera sees it, which its shoe and the strokes on the floor round it are set from.
+function acrossFrame(ank, W, parts) {
+  const look = W.camera * RAD;
+  const ce = Math.cos(look);
+  const se = Math.sin(look);
+  const turn = parts.turn * RAD;
+  // How far across the page a step across the foot goes, and a step along it toward the toe.
+  const sideways = Math.cos(turn) * ce + Math.sin(turn) * se;
+  const lengthways = -Math.sin(turn) * ce + Math.cos(turn) * se;
+  const floor = ank[1] - 8;
+  const domes = parts.domes.map(([mid, half, wide, high, square]) => {
+    const dual = square / (square - 1);
+    const centre = mid * lengthways;
+    const reach = (Math.abs(wide * sideways) ** dual + Math.abs(half * lengthways) ** dual) ** (1 / dual);
+    const rise = (u) => high * Math.max(0, 1 - Math.abs(u) ** square) ** (1 / square);
+    return { from: centre - reach, to: centre + reach, seen: (x) => rise((x - centre) / reach), along: (l) => rise((l - mid) / half) };
+  });
+  // Across the page from the ankle, as far as the camera sees along the piste.
+  const set = (x, h) => W.flat([ank[0] * ce + x, floor + h]);
+  return {
+    domes,
+    // Whether the camera sees the skin of a dome at a place across it and along it: the way the skin leans there against the way the camera looks.
+    faces: ([mid, half, wide, , square], a, l) => {
+      const lean = (u, size) => (Math.sign(u) * Math.abs(u / size) ** (square - 1)) / size;
+      return lean(a, wide) * -lengthways + lean(l - mid, half) * sideways > 0;
+    },
+    left: Math.min(...domes.map((d) => d.from)),
+    right: Math.max(...domes.map((d) => d.to)),
+    // A point of the shoe as [across, along, up from the floor], on the page.
+    at: (a, l, h) => set(a * sideways + l * lengthways, h),
+    // Points across the page and up from the floor, as points of the page, keeping what a point says of its line.
+    page: (shape) => shape.map(([x, h, ...rest]) => [...set(x, h), ...rest]),
+    // The right of the page, where the shade falls, as the way across the foot: +1 for a fencer facing right, -1 for one facing left.
+    side: Math.sign(W([1, 0])[0] - W([0, 0])[0]),
+    ce,
+  };
+}
+
 /**
  * One leg in knickerbockers: the baggy thigh, the pouch of cloth that hangs
- * over the band below the knee, the long stocking with its calf, and the shoe.
- * `seat` also gives the leg the hips and seat, for the leg nearer the camera.
- * Returns the silhouette's points and the lines drawn inside it, as point lists
- * of the piste.
+ * over the band below the knee, and the long stocking with its calf. `seat`
+ * also gives the leg the hips and seat, for the leg nearer the camera. Returns
+ * the silhouette's points and the lines drawn inside it, as point lists of the
+ * piste.
  */
-function legShapes(J, ank, kn, { seat, tilt, length, parts, older }) {
+function legShapes(J, ank, kn, { seat, older }) {
   const f = [1, 0];
   const tu = unit(J.hip, kn);
   const su = unit(kn, ank);
@@ -252,8 +403,7 @@ function legShapes(J, ank, kn, { seat, tilt, length, parts, older }) {
     lines.push(across(k(14.2), su, 6.3, 6.3, 2.6));
   }
   if (seat) shapes.push(seatShape(J, older));
-  const foot = shoe(ank, tilt, length, parts);
-  return { shapes, foot, lines };
+  return { shapes, lines };
 }
 
 // How far out a shape's edge is `t` of the way along it, for the half-widths given at evenly spaced stations.
@@ -295,20 +445,31 @@ function seatShape(J, older) {
   ].map(([a, b]) => J.T(a, b * ease));
 }
 
+// The shoe of the foot in front, seen from the side and set on the page by `set`. A foot lifted from the floor lands on its heel, so the toe is turned up.
+function shoeInFront(ank, set) {
+  const tilt = Math.min(30, Math.max(0, (ank[1] - 8) * 2.1));
+  const profile = shoe(ank, tilt, shoeParts());
+  return { shapes: [set(profile.shape)], lines: profile.lines.map(set), ink: profile.ink.map(set), hatch: profile.hatch.map(set) };
+}
+
 /**
  * A leg, ready to draw: its silhouette, the thin lines on it, and the brush
- * strokes of its folds. A foot lifted from the floor is turned up at the toe, as
- * one lands on its heel, and the foot behind is turned across, so it is seen
- * short.
+ * strokes of its folds. The foot in front points at the opponent, seen from the
+ * side, and is turned up at the toe when it is lifted from the floor, as one
+ * lands on its heel. The foot behind is turned across, its toe at the camera, so
+ * that the two feet make an L, and its knee, a point with a depth, is turned out
+ * toward the camera over it.
  */
-export function legPart(J, W, ank, kn, { front, seat, older }) {
-  const tilt = front ? Math.min(30, Math.max(0, (ank[1] - 8) * 2.1)) : 0;
-  const made = legShapes(J, ank, kn, { seat, tilt, length: front ? 1 : 0.62, parts: shoeParts(), older });
+export function legPart(J, W, ank, knee, { front, seat, older }) {
+  // A knee that is nearer the camera is across the page as far as the camera turns that depth into: on the piste, that much further along.
+  const kn = knee.length > 2 ? [knee[0] + knee[2] * Math.tan(W.camera * RAD), knee[1]] : knee;
+  const made = legShapes(J, ank, kn, { seat, older });
   const set = (points) =>
     points.map((q) => {
       const o = W(q);
       return q.length > 3 ? [o[0], o[1], q[2], q[3]] : o;
     });
+  const foot = front ? shoeInFront(ank, set) : shoeAcross(ank, W, older);
   const su = unit(kn, ank);
   const seed = front ? 11 : 21;
   const ref = [1, 0];
@@ -317,10 +478,10 @@ export function legPart(J, W, ank, kn, { front, seat, older }) {
     ? thighFolds(W, J.hip, kn, ref, seed, [6.2, 1.4, -3.4]) + crotchFolds(W, J.hip, kn, ref, seed) + kneePuckers(W, kn, su, ref, seed + 1) + cuffGathers(W, ank, su, ref, seed + 2)
     : thighFolds(W, J.hip, kn, ref, seed) + sockWrinkles(W, stocking, ank, ref, seed + 2) + kneeFolds(W, kn, su, ref, seed + 1);
   // The leather is dark where the sole and heel are, and hatched where the shoe turns away from the light.
-  const leather = made.foot.ink.map((shape) => solid(set(shape))).join("") + made.foot.hatch.map((stroke) => brush(set(stroke), 0.5, 0.4)).join("");
+  const leather = foot.ink.map((shape) => solid(shape)).join("") + foot.hatch.map((stroke) => brush(stroke, 0.5, 0.4)).join("");
   return {
-    ...drawn([...made.shapes.map(set), set(made.foot.shape)]),
-    d: [...made.lines, ...made.foot.lines].map((l) => line(set(l))).join(""),
+    ...drawn([...made.shapes.map(set), ...foot.shapes]),
+    d: [...made.lines.map(set), ...foot.lines].map((l) => line(l)).join(""),
     k: folds + leather,
   };
 }

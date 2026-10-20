@@ -204,10 +204,24 @@ export function sleeveFolds(W, shoulder, elbow, wrist, seed = 6) {
   return d;
 }
 
-/** The strokes on the floor under a foot: long, light, and shorter on the far side. */
-export function groundStrokes(W, ankle, front, seed = 7, k = 1) {
+/**
+ * The strokes on the floor under a foot: long, light, and shorter on the far
+ * side. A foot turned across, `span` being how far either side of the ankle it
+ * reaches, has them all round it instead.
+ */
+export function groundStrokes(W, ankle, front, seed = 7, k = 1, span) {
   const r = wobble(seed);
   const x = ankle[0];
+  if (span) {
+    const middle = x + (span[0] + span[1]) / 2;
+    const half = (span[1] - span[0]) / 2;
+    const [a, b, c] = [9 + r() * 3, 4, -1 - r() * 3].map((margin) => (half + margin) * k);
+    return [
+      stroke(W, [[middle - a, -1.3], [middle + a * 0.1, -1.6], [middle + a + 3 + r() * 4, -1.1]], 1.0, 0.4),
+      stroke(W, [[middle - b, -3.0], [middle, -3.2], [middle + b, -2.9]], 0.8, 0.45),
+      stroke(W, [[middle - c, -4.5], [middle + c * 0.1, -4.6], [middle + c - 2, -4.3]], 0.6, 0.5),
+    ].join("");
+  }
   const reach = (front ? 24 : 15) * k;
   return [
     stroke(W, [[x - 17 - r() * 3, -1.3], [x + reach * 0.6, -1.6], [x + reach + 6 + r() * 4, -1.1]], 1.0, 0.4),

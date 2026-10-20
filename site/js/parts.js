@@ -250,6 +250,47 @@ export function shoeParts() {
   return SHOE;
 }
 
+// The shoe of the foot behind, which is turned across the piste so that its toe
+// points at the camera: with the foot in front it makes the L of the stance. It
+// is not an outline but a few domes standing on the floor, which body.js turns
+// with the camera and sets on the page, so that the same shoe is seen from the
+// front, from a quarter and from the side. A point of it is [across, along, up]:
+// how far to the side of the foot's middle line, how far along the foot from the
+// ankle toward the toe, and how high above the floor, in centimetres.
+const SHOE_ACROSS = {
+  // Each dome: where its middle is along the foot, its half-length, its half-width,
+  // its height, and how square it is (2 is an ellipse, and more is squarer).
+  domes: [
+    [-2.2, 4.8, 3.9, 10.0, 3.0], // the heel and the ankle, which the stocking runs into
+    [0.8, 8.0, 4.9, 8.6, 1.9], // the instep, where the laces run
+    [12.4, 9.0, 5.3, 5.2, 2.3], // the toe box
+  ],
+  // The sole is a slab under the shoe, a little wider than it, and bowed down at the toe.
+  sole: { height: 1.2, edge: 0.4, bow: 0.35 },
+  // How far the toe is turned back from pointing straight at the camera.
+  turn: 14,
+  // The edge of the shoe where the stocking goes into it, across the front of the ankle: how wide it is, and how high it is at either end and in the middle.
+  collar: { wide: 3.7, ends: 9.9, middle: 9.4 },
+  // Where the laces cross: how far along the foot.
+  laces: [1.8, 3.4, 5.0, 6.6],
+  // The seam of the toe cap, as how far along the foot it crosses the toe box.
+  seam: 17.6,
+  // Strokes of shade on the side that turns from the light, each hanging from the
+  // skin of a dome: which dome, how far across it and how far along the foot it
+  // is, and how long.
+  hatch: [
+    [2, 4.3, 11.2, 2.3],
+    [2, 3.3, 13.8, 2.3],
+    [2, 2.2, 16.2, 2.0],
+    [1, 3.9, 3.8, 2.2],
+    [1, 3.4, 5.8, 2.0],
+  ],
+};
+
+export function shoeAcrossParts() {
+  return SHOE_ACROSS;
+}
+
 // The jersey as slices across the body, from the hem to the base of the neck.
 // Each is an ellipse: how far up the spine it is (cm above the hips), how far
 // forward of the spine its middle lies, and its half-depth and half-width. With

@@ -87,8 +87,14 @@ of slices of the body, set round by the pose's `turn`, so it is broad at the
 shoulders and narrow at the waist, and the camera swings it as it swings the
 piste. The sleeve of the arm on your side begins on the jersey itself, and the
 other arm lies behind it, set on the shoulder at the front of the chest and as
-long as an arm. The knee of the leg behind bends back, which gives the guard
-its wide stance.
+long as an arm. The foot in front points at the opponent, and the foot behind
+is turned across, its toe at you, so that the two make an L, as the stance is
+taught. That shoe is a few domes standing on the floor, which the camera turns
+with the piste, so it is seen end on, from a quarter or from the side as the
+camera moves. Each knee is over its own foot: the front shin stands upright, and
+the knee of the leg behind bends back and is turned out toward you, over the
+foot, so side on its shin leans a little forward and the leg is seen shorter, as
+the plates draw it. Together they give the guard its wide stance.
 
 A young fencer wears knickerbockers and long stockings, an older one loose
 trousers gathered at the ankle, a belly and narrower shoulders. The strokes are
@@ -227,7 +233,7 @@ Project layout:
 - `site/js/phrase.js`: phrases as data: timeline, in-betweens, text, edits
 - `site/js/figure.js`: a pose's skeleton, the camera, where the stage looks, and the fencer drawn from them
 - `site/js/body.js`: the parts of a fencer: jersey, arms, legs, head and sabre
-- `site/js/parts.js`: the head, hands, shoe and the slices of the jersey, drawn by hand, as points
+- `site/js/parts.js`: the head, hands, shoes and the slices of the jersey, drawn by hand: as points, and the shoe behind as a few domes
 - `site/js/folds.js`: the ink work: cloth folds, creases, hems, stockings, floor strokes
 - `site/js/ink.js`: pen and ink as SVG path data: curves, outlines and tapered brush strokes
 - `site/js/library.js`: the poses, the built-in scenes and the sliders

@@ -6,7 +6,7 @@ import { DEFAULT_FRAME, PIVOT, bladePaths, bladeTip, floorPath, frameOf, inkFigu
 import { area } from "../site/js/ink.js";
 import { POSES, PRESETS } from "../site/js/library.js";
 import { buildTimeline, poseAt, resolvePose } from "../site/js/phrase.js";
-import { allPaths, readPath } from "./path-data.js";
+import { allPaths, boxOf, readPath } from "./path-data.js";
 
 const BAD_NUMBER = /NaN|Infinity|undefined/;
 
@@ -53,6 +53,27 @@ test("the sword arm is drawn behind the body from the back, in front of it other
   assert.equal(back.l6.g, front.l1.g);
 });
 
+test("the feet make an L: the foot in front points at the opponent, the foot behind at the camera", () => {
+  for (const [dir, options] of [[1, { backView: true }], [-1, { backView: true, older: true }]]) {
+    for (const name of ["guard", "lungeChest", "parry3"]) {
+      const pose = resolvePose({ pose: name });
+      const figure = inkFigure(pose, dir, 0, options);
+      // From the back, the leg in front is drawn first and the leg behind over it.
+      const feet = [figure.l2, figure.l3].map((leg) => boxOf([readPath(leg.g).at(-1)]));
+      const [front, back] = feet.map((box) => box.maxX - box.minX);
+      assert.ok(front > 25, `${name}: the shoe in front is seen from the side, the length of a foot (${front})`);
+      assert.ok(back < front * 0.6, `${name}: and the shoe behind is seen end on (${back})`);
+      // The strokes on the floor under it go either side of it.
+      const floor = readPath(figure.ground);
+      assert.equal(floor.length, 6);
+      const under = boxOf(floor.slice(3));
+      const J = skeleton(pose);
+      const ankle = projector(pose, dir, 0)(J.ankB)[0];
+      assert.ok(under.minX < ankle - 8 && under.maxX > ankle + 8, `${name}: the strokes under the foot behind are round it`);
+    }
+  }
+});
+
 test("a foot lifted clear of the floor leaves no hatching", () => {
   const planted = inkFigure(resolvePose({ pose: "guard" }), 1, 0).ground;
   const lifted = inkFigure(resolvePose({ pose: "guard", adj: { liftF: 20, liftB: 20 } }), 1, 0).ground;
@@ -92,6 +113,59 @@ test("the leg behind bends back at the knee, as the plates draw it, and the leg 
   const lunge = skeleton(resolvePose({ pose: "lungeChest" }));
   const straight = Math.hypot(lunge.hip[0] - lunge.ankB[0], lunge.hip[1] - lunge.ankB[1]);
   assert.ok(Math.abs(straight - 90) < 1.5, "the rear leg is straight in the lunge");
+});
+
+test("in the guard each knee is over its own foot: the front shin is upright, the knee behind is turned out over the foot behind", () => {
+  // How far in front of its ankle each knee is on the page: the front leg's, and the back leg's.
+  const over = (name) => {
+    const J = skeleton(resolvePose({ pose: name }));
+    return [J.kF[0] - J.ankF[0], J.kB[0] - J.ankB[0]];
+  };
+  const [front, back] = over("guard");
+  assert.ok(Math.abs(front) < 2, `the front shin is upright in the guard (${front})`);
+  // The knee behind is turned toward the camera, over a foot that points there, so side on its shin leans a little, as the plates have it.
+  const lean = (back / (skeleton(resolvePose({ pose: "guard" })).kB[1] - 8)) * (180 / Math.PI);
+  assert.ok(lean > 4 && lean < 11, `the shin behind leans a few degrees (${lean})`);
+  // The poses that move the weight from there keep the knees over the feet to within a few centimetres.
+  for (const name of ["prep", "extend", "parry3", "parry5"]) {
+    const [f, b] = over(name);
+    assert.ok(Math.abs(f) < 5 && b > 2 && b < 10, `${name}: the knees stay over the feet (${f}, ${b})`);
+  }
+  for (const name of ["lungeHead", "lungeChest"]) assert.ok(Math.abs(over(name)[0]) < 0.5, `${name}: the front knee is over the front ankle`);
+});
+
+test("the knee behind is turned out toward the camera over the foot, with thigh and shin as long as ever", () => {
+  for (const name of ["guard", "parry3", "advLift", "lungeFly", "riposte"]) {
+    const J = skeleton(resolvePose({ pose: name }));
+    const [kx, ky, kz] = J.kB;
+    const hip = J.hip;
+    assert.ok(Math.abs(Math.hypot(kx - hip[0], ky - hip[1], kz) - 44) < 1e-9, `${name}: the thigh is 44 cm`);
+    assert.ok(Math.abs(Math.hypot(kx - J.ankB[0], ky - J.ankB[1], kz) - 46) < 1e-9, `${name}: and the shin 46`);
+    assert.ok(kz > 5, `${name}: toward the camera, over a foot that points there`);
+    // Turned out, the leg is seen shorter than its bones, and the knee is not as far back as it bends.
+    const bent = knee(hip[0], hip[1], J.ankB[0], J.ankB[1], -1);
+    assert.ok(Math.hypot(kx - hip[0], ky - hip[1]) < 44 - 0.5, `${name}: the thigh is seen foreshortened`);
+    const side = (k) => (J.ankB[0] - hip[0]) * (k[1] - hip[1]) - (J.ankB[1] - hip[1]) * (k[0] - hip[0]);
+    assert.ok(side([kx, ky]) * side(bent) > 0 && Math.abs(side([kx, ky])) < Math.abs(side(bent)), `${name}: still bending back, but not as far as it would side on`);
+  }
+  // A leg that is straight has nowhere to turn; one that is nearly so turns very little.
+  const straight = skeleton(resolvePose({ pose: "lungeChest" })).kB;
+  assert.ok(Math.abs(straight[2]) < 0.5, "the back leg in a lunge is straight, and its knee faces no way");
+  // The same drawing for a foot lifted off the floor.
+  const lifted = skeleton(resolvePose({ pose: "guard", adj: { liftB: 12 } })).kB;
+  assert.ok(lifted[2] > 5 && lifted.every(Number.isFinite));
+});
+
+test("an advance lands the front foot where the next guard has it, so no foot slides when the back foot follows", () => {
+  const { steps } = buildTimeline(PRESETS[0].phrase);
+  const step = (text) => steps.find((s) => s.label.includes(text));
+  const front = (s) => s.A.x + s.A.footF;
+  const [guard, lifted, landed, followed] = [steps[0], step("front foot lifts"), step("front foot lands"), step("back foot follows")];
+  assert.ok(front(guard) < front(lifted) && front(lifted) < front(landed), "the front foot goes forward");
+  assert.equal(front(landed), front(followed), "and stays where it landed while the back foot comes up to it");
+  // The leg that lands is straight, as a foot comes down on its heel.
+  const J = skeleton(landed.A);
+  assert.ok(Math.hypot(J.hip[0] - J.ankF[0], J.hip[1] - J.ankF[1]) >= 89.95, "on a straight leg");
 });
 
 test("the sword arm is set on the shoulder turned away, at the front of the chest, and is as long as an arm", () => {
