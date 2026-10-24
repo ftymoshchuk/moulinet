@@ -13,8 +13,10 @@ import { delimiter, join } from "node:path";
 import { test } from "node:test";
 import { promisify } from "node:util";
 
-import { BASES, BASE_GROUPS } from "../site/js/bases.js";
+import { BASES, BASE_BLADE, BASE_GROUPS, basePhrase } from "../site/js/bases.js";
+import { frameOf } from "../site/js/figure.js";
 import { POSE_NAMES, PRESETS } from "../site/js/library.js";
+import { buildTimeline } from "../site/js/phrase.js";
 import { siteHandler } from "../scripts/serve.js";
 
 const run = promisify(execFile);
@@ -166,6 +168,19 @@ test("in a browser, the practice library plays each scene and says what it is", 
   assert.deepEqual(seen.speed, ["true", "false", "false"]);
   assert.equal(seen.playing, "Pause");
   assert.equal(seen.paused, "Play");
+});
+
+test("in a browser, a scene is looked at with its whole blades in view, and the postures with most of the blade", { skip, timeout: 120_000 }, async () => {
+  const { seen } = await drive();
+  // Worked out in the browser as in Node, to the tenth it is rounded to.
+  const lookedAt = (actual, expected, what) => {
+    const got = actual.split(" ").map(Number);
+    assert.equal(got.length, 4, `${what}: ${actual}`);
+    got.forEach((value, i) => assert.ok(Math.abs(value - expected[i]) <= 0.1 + 1e-9, `${what}: the stage looks at ${actual}, not ${expected.join(" ")}`));
+  };
+  assert.equal(seen.sceneViews.length, PRESETS.length);
+  PRESETS.forEach(({ phrase }, i) => lookedAt(seen.sceneViews[i], frameOf(buildTimeline(phrase)), phrase.name));
+  lookedAt(seen.baseView, frameOf(buildTimeline(basePhrase()), BASE_BLADE), "the postures");
 });
 
 test("in a browser, the base postures show one fencer, not a pair, and describe each posture", { skip, timeout: 120_000 }, async () => {

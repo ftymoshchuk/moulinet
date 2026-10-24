@@ -22,6 +22,8 @@ const FOREARM = 31;
 const SHOULDER = 19;
 // How far the knee of the leg behind is turned from bending straight back toward the camera (degrees): over the back foot, which points at the camera.
 const KNEE_OUT = 40;
+// The sabre, from the hand to the point (cm).
+const BLADE = 88;
 
 function fmt(point) {
   return `${point[0].toFixed(1)} ${point[1].toFixed(1)}`;
@@ -91,7 +93,7 @@ export function skeleton(p) {
   const rs = [...T(48, -back), across];
   const re = [rs[0] + 28 * Math.cos(ra), rs[1] + 28 * Math.sin(ra), rs[2]];
   const rh = [re[0] + 25 * Math.cos(rf), re[1] + 25 * Math.sin(rf), rs[2]];
-  return { hip, ankB, ankF, kB, kF, u, f, T, sh, nk, hd, el, hn, bp, at, tip: at(88), rs, re, rh, lean: p.lean, turn: p.turn };
+  return { hip, ankB, ankF, kB, kF, u, f, T, sh, nk, hd, el, hn, bp, at, tip: at(BLADE), rs, re, rh, lean: p.lean, turn: p.turn };
 }
 
 /**
@@ -193,9 +195,12 @@ const FRAME_SHAPE = DEFAULT_FRAME[2] / DEFAULT_FRAME[3];
  * Where the stage should look so that the fencers fill it: the box round everyone
  * at every moment of the phrase, seen side on, with room round it, in the shape of
  * the default view and no closer than a third of the way in. The camera does not
- * change it, so turning the camera never zooms.
+ * change it, so turning the camera never zooms. The box holds the blade as far
+ * along as `blade` cm from the hand, all of it unless told less: a blade held up
+ * or reaching far then no longer sets the view for the body, and its point may
+ * run off the edge.
  */
-export function frameOf(timeline) {
+export function frameOf(timeline, blade = BLADE) {
   let minX = Infinity;
   let maxX = -Infinity;
   let minY = Infinity;
@@ -216,7 +221,7 @@ export function frameOf(timeline) {
       const J = skeleton(p);
       const W = projector(p, dir, 0);
       const feet = [-8, 24].flatMap((reach) => [[J.ankB[0] + reach, 0], [J.ankF[0] + reach, 0]]);
-      const body = [[J.hd[0], J.hd[1] + 14], J.hn, J.tip, J.kF, J.kB, J.re, J.rs, [J.hip[0] - 16, J.hip[1]], [J.hip[0] + 16, J.hip[1]]];
+      const body = [[J.hd[0], J.hd[1] + 14], J.hn, J.at(blade), J.kF, J.kB, J.re, J.rs, [J.hip[0] - 16, J.hip[1]], [J.hip[0] + 16, J.hip[1]]];
       for (const q of [...feet, ...body]) take(W(q));
     }
   }

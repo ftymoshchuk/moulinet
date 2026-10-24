@@ -76,10 +76,13 @@
 
         // ---------- The practice library ----------
 
-        // Every scene, each of its steps, and its whole timeline.
+        // Every scene, each of its steps, and its whole timeline. Where the stage looks is
+        // noted as each scene opens, and again for the postures.
+        seen.sceneViews = [];
         seen.scenes = $$(".scene-button").map((card) => {
           card.click();
           checkPaths();
+          seen.sceneViews.push($("#stage").getAttribute("viewBox"));
           const summary = {
             title: text("#scene-title"),
             pressed: card.getAttribute("aria-pressed"),
@@ -176,6 +179,7 @@
           prev: $("#prev-button").getAttribute("aria-label"),
           next: $("#next-button").getAttribute("aria-label"),
         };
+        seen.baseView = $("#stage").getAttribute("viewBox");
 
         // Every posture, by its button: what is said, and that it draws.
         seen.postures = $$(".base-button").map((posture) => {
