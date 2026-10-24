@@ -72,6 +72,17 @@ export function area(points) {
   return a;
 }
 
+/** Whether a point is inside a polygon. */
+export function inside(points, [x, y]) {
+  let hit = false;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+    const [xi, yi] = points[i];
+    const [xj, yj] = points[j];
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) hit = !hit;
+  }
+  return hit;
+}
+
 /** The points wound one way, whichever way they came, so shapes drawn together merge as one. */
 export function wound(points) {
   return area(points) < 0 ? points.slice().reverse() : points;
@@ -152,7 +163,7 @@ const LIGHT = [-0.6, -0.8];
  * that reaches over the whole shape; drawn first, with the shape filled over it,
  * only the line itself shows.
  */
-export function ribbon(points, thin = 0.22, thick = 0.8) {
+export function ribbon(points, thin = 0.3, thick = 1.1) {
   const shape = wound(points);
   const n = shape.length;
   const outer = new Array(n);

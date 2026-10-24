@@ -82,6 +82,8 @@
   --fencer-b: #e0dacd;
   --fencer-b-trousers: #cdc6b5;
   --fencer-b-face: #ebe6da;
+  --steel: #eceae4;
+  --steel-shade: #dfdbd2;
   --trail-a: #9a3a27;
   --trail-b: #2f4f7f;
 
@@ -660,14 +662,9 @@ textarea:focus-visible {
   fill: var(--fencer-b-face);
 }
 
+/* The hair, drawn in strokes of the pen. */
 .figure__hair {
   fill: var(--hair);
-  stroke: none;
-}
-
-/* Strokes of paper left in the hair. */
-.figure__shine {
-  fill: var(--paper);
   stroke: none;
 }
 
@@ -684,21 +681,30 @@ textarea:focus-visible {
   stroke-linecap: round;
 }
 
-.blade__steel {
+/* The sabre: a blade of ink, and the bell guard in light steel with a line of
+   ink round it, shaded inside. */
+.blade__steel,
+.blade__outline,
+.blade__shade {
   fill: var(--ink);
   stroke: none;
 }
 
 .blade__guard {
-  fill: var(--ink);
-  stroke: var(--ink);
-  stroke-width: 0.8;
+  fill: var(--steel);
+  stroke: none;
 }
 
-.blade__bow {
+.blade__inside {
+  fill: var(--steel-shade);
+  stroke: none;
+}
+
+.blade__rim {
   fill: none;
   stroke: var(--ink);
-  stroke-width: 0.9;
+  stroke-width: 0.35;
+  stroke-linecap: round;
 }
 
 .trails {

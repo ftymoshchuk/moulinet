@@ -3,12 +3,13 @@
 // A pose is a handful of numbers for one fencer, seen side on, facing the
 // opponent, with the back foot at 0. Lengths are centimetres and angles are
 // degrees, where 0 points at the opponent and 90 straight up:
-//   hipX, hipY    hips forward of the back foot, and their height
+//   hipX, hipY    the middle of the hips, forward of the back foot, and its height
 //   footF         front foot reach; liftF and liftB lift a foot off the floor
 //   toeBack       how far the toe of the foot behind is turned back from pointing
 //                 straight at the camera: 0 makes an exact L with the foot in front
 //   kneeOut       how far the knee of the leg behind is turned out toward the camera
-//                 from bending straight back: 0 is flat, in the plane of the piste
+//                 from bending straight back with the hips as far forward as in the
+//                 guard, and further as they sit back over the foot: 0 is flat
 //   lean          torso lean, forward positive
 //   turn          how far the shoulders are turned toward the camera, 0 side on
 //   arm, fore     sword arm: upper arm and forearm
@@ -16,25 +17,38 @@
 //   rArm, rFore   rear arm, hand on the hip
 // A pose fills in whatever it leaves out from the guard.
 //
-// In the guard each knee is over its own foot, as in the plates. The front shin
-// stands upright, a thigh being 44 cm and the knee 54 cm up: with the hips at 76,
-// the front knee is where the thigh reaches, 37 cm on, over the front foot. The
-// knee of the leg behind is turned out toward the camera over its foot, which
-// points that way, so side on its shin leans a few degrees forward, as the
-// plates draw it. The poses that move the weight from there keep the knees over
-// the feet to within a few centimetres.
+// The guard is the plates' classic stance: wide, the feet 84 cm apart, and both
+// knees bent, each over its own foot, so both shins stand upright. Each leg starts
+// from a hip of its own, the front one 6 cm forward of the middle of the hips and
+// the back one 6 cm behind it. A thigh being 44 cm and the knee 54 cm up, with the
+// hips at 77 the front knee is where the thigh reaches, 37 cm on from its hip,
+// over the front foot. The knee of the leg behind is turned out toward the camera
+// over its foot, which points that way: a little in the guard, so side on it is
+// seen bent back over the foot, as the plates draw it, and further as the weight
+// sits back over that foot. The poses that move the weight from there keep the
+// knees over the feet to within a few centimetres. In the lunges the leg behind
+// is straight from its hip to its foot, and the body stays nearly upright over the
+// front leg. The parries with the weight back keep the feet where the guard has
+// them and sit back over the bent back leg, the front leg straight, as the plates
+// draw them seen from the front. Face protection stands up, the front foot drawn
+// back toward the back foot, the hand low in front of the chest and the blade
+// slanting forward across the line to the face, as the plate of an outside face
+// cut draws it.
 export const POSES = {
-  guard: { hipX: 40, hipY: 76, footF: 77, liftF: 0, liftB: 0, lean: 3, turn: 58, arm: -34, fore: 16, blade: 34, yaw: 0, rArm: -134, rFore: -32, toeBack: 14, kneeOut: 40 },
-  advLift: { hipX: 44, hipY: 81, footF: 103, liftF: 9 },
-  advLand: { hipX: 49, hipY: 77, footF: 107 },
-  prep: { hipX: 42, lean: 4, arm: 15, fore: 30, blade: 85 },
-  lungeFly: { hipX: 57, hipY: 70, footF: 114, liftF: 8, lean: 12, arm: 25, fore: 25, blade: 45 },
-  lungeHead: { hipX: 77, hipY: 54.6, footF: 121, lean: 25, arm: 38, fore: 28, blade: 14 },
-  lungeChest: { hipX: 77, hipY: 54.6, footF: 121, lean: 24, arm: 8, fore: 6, blade: 8 },
-  parry3: { hipX: 38, hipY: 75, lean: -3, arm: -70, fore: 15, blade: 95 },
-  parry5: { hipX: 38, hipY: 75, lean: -4, arm: 35, fore: 60, blade: 8, yaw: 72 },
-  riposte: { hipX: 49, hipY: 76, footF: 94, lean: 14, arm: 0, fore: 0, blade: -6 },
-  extend: { hipX: 41, lean: 4, arm: 4, fore: 4, blade: 14 },
+  guard: { hipX: 41, hipY: 77, footF: 84, liftF: 0, liftB: 0, lean: 0, turn: 58, arm: -24, fore: -4, blade: 34, yaw: 0, rArm: -140, rFore: -28, toeBack: 14, kneeOut: 40 },
+  advLift: { hipX: 44, hipY: 79, footF: 103, liftF: 4 },
+  advLand: { hipX: 52.5, hipY: 79, footF: 114 },
+  prep: { hipX: 42, lean: 1, arm: 15, fore: 30, blade: 85 },
+  lungeFly: { hipX: 60, hipY: 70, footF: 124, liftF: 5, lean: 6, arm: 16, fore: 16, blade: 30 },
+  lungeHead: { hipX: 83.1, hipY: 54.6, footF: 133, lean: 6, arm: 18, fore: 16, blade: 20 },
+  lungeChest: { hipX: 83.1, hipY: 54.6, footF: 133, lean: 15, arm: 2, fore: 2, blade: 10 },
+  parry3: { hipX: 38, hipY: 78, lean: -3, arm: -110, fore: -4, blade: 95 },
+  parry3Back: { hipX: 24, hipY: 80, lean: -6, arm: -110, fore: -4, blade: 95 },
+  faceParry: { hipX: 30, hipY: 82, footF: 56, lean: 0, arm: -97, fore: 8, blade: 53 },
+  parry5: { hipX: 38, hipY: 78, lean: -4, arm: 20, fore: 112, blade: 6, yaw: 70 },
+  parry5Back: { hipX: 24, hipY: 80, lean: -7, arm: 20, fore: 112, blade: 6, yaw: 70 },
+  riposte: { hipX: 50, hipY: 77, footF: 100, lean: 8, arm: 0, fore: 0, blade: -6 },
+  extend: { hipX: 42, lean: 1, arm: 4, fore: 4, blade: 14 },
 };
 
 export const POSE_NAMES = {
@@ -46,7 +60,10 @@ export const POSE_NAMES = {
   lungeHead: "Lunge, head cut",
   lungeChest: "Lunge, chest cut",
   parry3: "Parry 3",
+  parry3Back: "Parry 3, weight back",
+  faceParry: "Face protection",
   parry5: "Parry 5",
+  parry5Back: "Parry 5, weight back",
   riposte: "Riposte, head",
   extend: "Arm extended",
 };
@@ -99,9 +116,23 @@ export const PRESETS = [
       steps: [
         { label: "En garde", hold: 600, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 310 } },
         { label: "A raises the blade", ms: 220, hold: 40, A: { pose: "prep", x: 0 } },
-        { label: "A lunges to the head, B takes parry 5", ms: 260, hold: 500, ease: "snap", A: { pose: "lungeHead", x: 0, adj: { arm: 50, fore: 40, blade: 30 } }, B: { pose: "parry5", x: 310 } },
-        { label: "B ripostes to the head", ms: 200, hold: 700, ease: "snap", A: { pose: "lungeHead", x: 0, adj: { blade: 48, arm: 30 } }, B: { pose: "riposte", x: 310 } },
+        { label: "A lunges to the head, B takes parry 5", ms: 260, hold: 500, ease: "snap", A: { pose: "lungeHead", x: 0, adj: { arm: 28, fore: 24, blade: 42 } }, B: { pose: "parry5", x: 310 } },
+        { label: "B ripostes to the head", ms: 200, hold: 700, ease: "snap", A: { pose: "lungeHead", x: 0, adj: { arm: 26, fore: 20, blade: 52 } }, B: { pose: "riposte", x: 310 } },
         { label: "Both recover", ms: 420, hold: 500, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 310 } },
+      ],
+    },
+  },
+  {
+    id: "outside-face-cut-face-protection",
+    phrase: {
+      name: "Outside face cut, face protection",
+      note: "A extends the arm and lunges with a cut at the outside of B's face. B takes face protection: the hand low in front, the front foot drawn back, and the blade slanting forward, so the cut lands on the forte, well in front of the face. Then both recover.",
+      camera: 0,
+      steps: [
+        { label: "En garde", hold: 600, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 306 } },
+        { label: "A extends the arm", ms: 220, hold: 60, A: { pose: "extend", x: 0 } },
+        { label: "A cuts at the face, B takes face protection", ms: 260, hold: 700, ease: "snap", A: { pose: "lungeHead", x: 0, adj: { arm: 8, fore: 10, blade: 22 } }, B: { pose: "faceParry", x: 306 } },
+        { label: "Both recover", ms: 420, hold: 500, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 306 } },
       ],
     },
   },
@@ -137,7 +168,7 @@ export const JOINTS = [
   { key: "kneeOut", label: "Back knee turned out", min: 0, max: 90, unit: "°" },
   { key: "lean", label: "Torso lean", min: -25, max: 35, unit: "°" },
   { key: "turn", label: "Shoulder turn toward camera", min: 0, max: 90, unit: "°" },
-  { key: "arm", label: "Upper arm", min: -90, max: 120, unit: "°" },
+  { key: "arm", label: "Upper arm", min: -120, max: 120, unit: "°" },
   { key: "fore", label: "Forearm", min: -100, max: 130, unit: "°" },
   { key: "blade", label: "Blade angle", min: -180, max: 180, unit: "°" },
   { key: "yaw", label: "Blade turn toward camera", min: -85, max: 85, unit: "°" },

@@ -26,11 +26,11 @@ export const BASES = [
     group: "Stance",
     text: "The ready position every action starts from and returns to. The knees are bent and the weight is shared between both legs, so a step, a parry or a lunge can begin without first shifting your weight.",
     points: [
-      ["Feet", "The front foot points at the opponent. The back foot sits behind it, turned across to face you, so that the two feet make an L, a little more than a shoulder's width apart."],
-      ["Legs", "Both knees bent, each over its own foot: the front shin stands upright, and the back knee is turned out toward you, over the back foot. The torso is upright and the weight shared evenly."],
-      ["Sword arm", "Bent, the hand ahead of the body and a little below shoulder height."],
+      ["Feet", "The front foot points at the opponent. The back foot sits well behind it, turned across to face you, so that the two feet make an L, about as far apart as a leg is long."],
+      ["Legs", "Both knees bent, each over its own foot, so both shins stand upright; the back knee is turned out toward you a little, over the back foot. The torso is upright and the weight shared evenly."],
+      ["Sword arm", "Nearly straight, reaching forward, the hand at the height of the chest."],
       ["Blade", "Angled up and forward, in tierce: it covers the high outside line."],
-      ["Rear arm", "Bent and held back, out of the way. Here the hand rests on the hip."],
+      ["Rear arm", "Bent, the elbow out behind, and the hand resting on the hip at the belt."],
     ],
   },
   {
@@ -92,7 +92,7 @@ export const BASES = [
       ["Front leg", "Bent, the knee over the front foot, the foot flat."],
       ["Back leg", "Straight, the back foot flat."],
       ["Sword arm", "Raised and extended, taking the blade up to head height."],
-      ["Torso", "Leans forward over the front leg, with the rear arm held back."],
+      ["Torso", "Nearly upright over the front leg, the head up and the rear arm held back."],
     ],
   },
   {
@@ -117,6 +117,28 @@ export const BASES = [
     ],
   },
   {
+    pose: "parry3Back",
+    group: "Defence",
+    text: "Tierce taken with the weight drawn back, as the old plates draw it. The hips sit back over the back foot, the back knee bends to take the weight and the front leg straightens, so the body is further from the cut while the blade closes the line.",
+    points: [
+      ["Legs", "The back knee bent and turned out over the back foot, carrying the weight; the front leg straight, its foot flat where it was in guard."],
+      ["Hips", "Back over the back foot."],
+      ["Torso", "Upright, or a little back, behind the blade."],
+      ["Blade", "As in tierce: near vertical in front of the body, the point up."],
+    ],
+  },
+  {
+    pose: "faceParry",
+    group: "Defence",
+    text: "Face protection, against a cut at the outside of the face. The hand stays low in front of the chest and the blade slants forward and up, so the cut is met on the forte, well in front of the face, as the old plates draw it.",
+    points: [
+      ["Sword arm", "The elbow down by the side and the hand in front of the chest."],
+      ["Blade", "Slanting forward and up, about halfway between level and upright, across the line to the face."],
+      ["Legs", "Standing up, the front foot drawn back toward the back foot, the body upright behind the blade."],
+      ["Covers", "The face, on the side of the sword arm."],
+    ],
+  },
+  {
     pose: "parry5",
     group: "Defence",
     text: "Quinte, the parry for the head. The blade lies across above the head, so a cut coming down lands on the blade.",
@@ -125,6 +147,17 @@ export const BASES = [
       ["Blade", "Roughly level and turned across, like a roof over the head."],
       ["Body", "A little back and under the blade. The legs stay in guard."],
       ["Covers", "The head."],
+    ],
+  },
+  {
+    pose: "parry5Back",
+    group: "Defence",
+    text: "Quinte with the weight drawn back. The body sits back over the bent back leg and the front leg straightens, so the head is further from the cut, and the blade lies across above it.",
+    points: [
+      ["Legs", "As in tierce with the weight back: the back knee bent over the back foot, the front leg straight."],
+      ["Sword arm", "Raised, the hand just above the head, the elbow bent."],
+      ["Blade", "Level and turned across, like a roof over the head."],
+      ["Covers", "The head, with the body drawn back out of reach."],
     ],
   },
   {

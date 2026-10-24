@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { along, crotchFolds, cuffGathers, groundStrokes, kneeFolds, kneePuckers, sleeveFolds, sockWrinkles, thighFolds, torsoFolds, waistband } from "../site/js/folds.js";
-import { area, blob, brush, curve, dist, lerp, line, perp, ribbon, rotate, solid, unit, wound } from "../site/js/ink.js";
+import { along, crotchFan, crotchFolds, cuffGathers, groundStrokes, kneeFolds, kneePuckers, sleeveFolds, sockWrinkles, thighFolds, torsoFolds, waistband } from "../site/js/folds.js";
+import { area, blob, brush, curve, dist, inside, lerp, line, perp, ribbon, rotate, solid, unit, wound } from "../site/js/ink.js";
 import { boxOf, readPath } from "./path-data.js";
 
 // Path data is written to a tenth of a unit, so a point is that close to where it was given.
@@ -186,6 +186,18 @@ test("the vector helpers", () => {
   assert.equal(area([[0, 0], [1, 0], [1, 1], [0, 1]]), 2, "twice the area, signed");
 });
 
+test("a point is inside a polygon or not, however the polygon is wound", () => {
+  const square = [[0, 0], [10, 0], [10, 10], [0, 10]];
+  for (const shape of [square, square.slice().reverse()]) {
+    assert.ok(inside(shape, [5, 5]));
+    assert.ok(!inside(shape, [15, 5]) && !inside(shape, [5, -1]));
+  }
+  // A notch is outside.
+  const notched = [[0, 0], [10, 0], [10, 10], [5, 4], [0, 10]];
+  assert.ok(!inside(notched, [5, 8]));
+  assert.ok(inside(notched, [5, 2]));
+});
+
 // ---------- The strokes laid on a figure ----------
 
 const FLAT = (q) => [q[0], q[1]];
@@ -204,6 +216,7 @@ function folds(seed = 1) {
     sock: sockWrinkles(FLAT, lerp(knee, ankle, 0.2), ankle, [1, 0], seed),
     cuff: cuffGathers(FLAT, ankle, su, [1, 0], seed),
     crotch: crotchFolds(FLAT, hip, knee, [1, 0], seed),
+    fan: crotchFan(FLAT, [20, 60], [0, 1], [1, 0], seed),
     puckers: kneePuckers(FLAT, knee, su, [1, 0], seed),
     torso: torsoFolds(at, seed),
     belly: torsoFolds(at, seed, true),
