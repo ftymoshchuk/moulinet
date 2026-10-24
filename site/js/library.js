@@ -12,33 +12,34 @@
 //   rArm, rFore   rear arm, hand on the hip
 // A pose fills in whatever it leaves out from the guard.
 //
-// The stance is the plates': upright and not deep, the knees a little bent. In
-// the guard each knee is over its own foot. Each leg starts from a hip of its
-// own, the front one 6 cm forward of the middle of the hips and the back one 6 cm
-// behind it. The front shin stands upright, a thigh being 44 cm and the knee 54
-// cm up: with the hips at 83, the front knee is where the thigh reaches, 33 cm on
-// from its hip, over the front foot. The knee of the leg behind is turned out
-// toward the camera over its foot, which points that way, so side on that leg is
-// seen nearly straight, as the plates draw it. The poses that move the weight
-// from there keep the knees over the feet to within a few centimetres. In the
-// lunges the leg behind is straight from its hip to its foot, and the body stays
-// nearly upright over the front leg. The parries with the weight back keep the
-// feet where the guard has them and sit back over the bent back leg, the front
-// leg straight, as the plates draw them seen from the front.
+// The guard is the plates' classic stance: wide, the feet 84 cm apart, and both
+// knees bent, each over its own foot, so both shins stand upright. Each leg starts
+// from a hip of its own, the front one 6 cm forward of the middle of the hips and
+// the back one 6 cm behind it. A thigh being 44 cm and the knee 54 cm up, with the
+// hips at 77 the front knee is where the thigh reaches, 37 cm on from its hip,
+// over the front foot. The knee of the leg behind is turned out toward the camera
+// over its foot, which points that way: a little in the guard, so side on it is
+// seen bent back over the foot, as the plates draw it, and further as the weight
+// sits back over that foot. The poses that move the weight from there keep the
+// knees over the feet to within a few centimetres. In the lunges the leg behind
+// is straight from its hip to its foot, and the body stays nearly upright over the
+// front leg. The parries with the weight back keep the feet where the guard has
+// them and sit back over the bent back leg, the front leg straight, as the plates
+// draw them seen from the front.
 export const POSES = {
-  guard: { hipX: 34, hipY: 83, footF: 73, liftF: 0, liftB: 0, lean: 0, turn: 58, arm: -36, fore: 8, blade: 34, yaw: 0, rArm: -124, rFore: -28 },
-  advLift: { hipX: 37, hipY: 84, footF: 92, liftF: 4 },
-  advLand: { hipX: 45, hipY: 82, footF: 103 },
-  prep: { hipX: 36, lean: 1, arm: 15, fore: 30, blade: 85 },
+  guard: { hipX: 41, hipY: 77, footF: 84, liftF: 0, liftB: 0, lean: 0, turn: 58, arm: -24, fore: -4, blade: 34, yaw: 0, rArm: -140, rFore: -28 },
+  advLift: { hipX: 44, hipY: 79, footF: 103, liftF: 4 },
+  advLand: { hipX: 52.5, hipY: 79, footF: 114 },
+  prep: { hipX: 42, lean: 1, arm: 15, fore: 30, blade: 85 },
   lungeFly: { hipX: 60, hipY: 70, footF: 124, liftF: 5, lean: 6, arm: 16, fore: 16, blade: 30 },
   lungeHead: { hipX: 83.1, hipY: 54.6, footF: 133, lean: 6, arm: 18, fore: 16, blade: 20 },
   lungeChest: { hipX: 83.1, hipY: 54.6, footF: 133, lean: 15, arm: 2, fore: 2, blade: 10 },
-  parry3: { hipX: 32, hipY: 82, lean: -3, arm: -110, fore: -4, blade: 95 },
-  parry5: { hipX: 32, hipY: 82, lean: -4, arm: 20, fore: 112, blade: 6, yaw: 70 },
-  parry3Back: { hipX: 16, hipY: 82, lean: -6, arm: -110, fore: -4, blade: 95 },
-  parry5Back: { hipX: 16, hipY: 82, lean: -7, arm: 20, fore: 112, blade: 6, yaw: 70 },
-  riposte: { hipX: 43, hipY: 82, footF: 90, lean: 8, arm: 0, fore: 0, blade: -6 },
-  extend: { hipX: 35, lean: 1, arm: 4, fore: 4, blade: 14 },
+  parry3: { hipX: 38, hipY: 78, lean: -3, arm: -110, fore: -4, blade: 95 },
+  parry5: { hipX: 38, hipY: 78, lean: -4, arm: 20, fore: 112, blade: 6, yaw: 70 },
+  parry3Back: { hipX: 24, hipY: 80, lean: -6, arm: -110, fore: -4, blade: 95 },
+  parry5Back: { hipX: 24, hipY: 80, lean: -7, arm: 20, fore: 112, blade: 6, yaw: 70 },
+  riposte: { hipX: 50, hipY: 77, footF: 100, lean: 8, arm: 0, fore: 0, blade: -6 },
+  extend: { hipX: 42, lean: 1, arm: 4, fore: 4, blade: 14 },
 };
 
 export const POSE_NAMES = {

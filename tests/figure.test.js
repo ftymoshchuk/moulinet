@@ -43,9 +43,9 @@ test("an ink figure has every layer, each with a silhouette and detail lines", (
   }
   assert.match(figure.head.g, /^M.*Z$/);
   assert.match(figure.head.hair, /^M.*z$/, "the hair, in strokes");
-  assert.match(figure.blade.k, /^M.*Z$/);
-  assert.match(figure.blade.g, /^M.*Z$/);
-  assert.match(figure.blade.d, /^M/);
+  assert.match(figure.blade.back + figure.blade.front, /^M.*Z$/, "the blade");
+  assert.match(figure.blade.g, /^M.*Z$/, "the guard");
+  assert.match(figure.blade.o, /^M.*Z$/, "and its line of ink");
   assert.match(figure.ground, /^M/, "both feet are planted in guard");
 });
 
@@ -164,19 +164,20 @@ test("in the guard each knee is over its own foot: the front shin is upright, th
   };
   const [front, back] = over("guard");
   assert.ok(Math.abs(front) < 2, `the front shin is upright in the guard (${front})`);
-  // The knee behind is turned toward the camera, over a foot that points there, so side on the leg behind is seen nearly
-  // straight, as the plates draw it: its shin leans forward a little, and thigh and shin are near the line from hip to foot.
+  // The knee behind is over the back foot too, so both shins stand upright, as the classic stance has them, and side on
+  // the leg behind is seen bent at the knee, its thigh sloping back from the hip.
   const J = skeleton(resolvePose({ pose: "guard" }));
   const degrees = (dx, dy) => (Math.atan2(dx, dy) * 180) / Math.PI;
   const shin = degrees(back, J.kB[1] - 8);
   const thigh = degrees(J.hipB[0] - J.kB[0], J.hipB[1] - J.kB[1]);
-  const leg = degrees(J.hipB[0] - J.ankB[0], J.hipB[1] - J.ankB[1]);
-  assert.ok(shin > 5 && shin < 20, `the shin behind leans forward a little (${shin})`);
-  assert.ok(Math.abs(thigh - leg) < 12 && Math.abs(shin - leg) < 12, `and the leg is seen nearly straight (${thigh}, ${shin}, ${leg})`);
+  assert.ok(Math.abs(shin) < 6, `the shin behind stands upright (${shin})`);
+  assert.ok(thigh > 30, `and the thigh behind slopes back from the hip to the knee (${thigh})`);
+  // A wide stance: the feet nearly as far apart as a leg is long.
+  assert.ok(J.ankF[0] - J.ankB[0] > 80, `the feet are ${J.ankF[0] - J.ankB[0]} cm apart`);
   // The poses that move the weight from there keep the knees over the feet to within a few centimetres.
   for (const name of ["prep", "extend", "parry3", "parry5"]) {
     const [f, b] = over(name);
-    assert.ok(Math.abs(f) < 5 && b > 2 && b < 14, `${name}: the knees stay over the feet (${f}, ${b})`);
+    assert.ok(Math.abs(f) < 5 && Math.abs(b) < 5, `${name}: the knees stay over the feet (${f}, ${b})`);
   }
   for (const name of ["lungeHead", "lungeChest"]) assert.ok(Math.abs(over(name)[0]) < 0.5, `${name}: the front knee is over the front ankle`);
 });
@@ -376,11 +377,11 @@ test("the shapes of a figure are wound one way and its strokes another, so shape
     for (const name of ["guard", "lungeChest", "parry5"]) {
       const figure = inkFigure(resolvePose({ pose: name }), dir, 25, options);
       const where = `${name}, facing ${dir}, ${JSON.stringify(options)}`;
-      const shapes = [figure.l1.g, figure.l2.g, figure.l3.g, figure.l4.g, figure.l6.g, figure.head.g].flatMap(readPath);
+      const shapes = [figure.l1.g, figure.l2.g, figure.l3.g, figure.l4.g, figure.l6.g, figure.head.g, figure.blade.g, figure.blade.inside.g, figure.blade.fist.g, figure.blade.wall].filter(Boolean).flatMap(readPath);
       assert.ok(shapes.length > 10);
       assert.ok(shapes.every((shape) => shape.closed && area(shape.points) > 0), `silhouettes, ${where}`);
       // (The hair is drawn in strokes of the pen, so it is wound as they are.)
-      for (const layer of [figure.l1.k, figure.l2.k, figure.l3.k, figure.l4.k, figure.l6.k, figure.head.k, figure.head.hair, figure.ground].filter(Boolean)) {
+      for (const layer of [figure.l1.k, figure.l2.k, figure.l3.k, figure.l4.k, figure.l6.k, figure.head.k, figure.head.hair, figure.ground, figure.blade.k, figure.blade.inside.k].filter(Boolean)) {
         const ways = new Set(readPath(layer).map((stroke) => Math.sign(area(stroke.points))));
         assert.equal(ways.size, 1, `strokes, ${where}`);
         assert.ok(!ways.has(0));

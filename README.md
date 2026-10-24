@@ -95,12 +95,19 @@ of the trousers, rather than from one point. The foot in front points at the
 opponent, and the foot behind is turned across, its toe at you, so that the two
 make an L, as the stance is taught. That shoe is a few domes standing on the
 floor, which the camera turns with the piste, so it is seen end on, from a
-quarter or from the side as the camera moves. Each knee is over its own foot:
-the front shin stands upright, and the knee of the leg behind is turned out
-toward you, over the foot, so side on that leg is seen nearly straight, as the
-plates draw it. The stance is the plates' too: upright and not deep, the knees
-a little bent. In the lunge the back leg is straight and the body stays nearly
-upright over the front leg.
+quarter or from the side as the camera moves. The guard is the plates' classic
+stance: wide, both knees bent, each over its own foot, so both shins stand
+upright. The knee of the leg behind is turned out toward you, over the foot: a
+little in the guard, so side on it is seen bent back over the foot, as the
+plates draw it, and further as the weight sits back over that foot. In the
+lunge the back leg is straight and the body stays nearly upright over the front
+leg.
+
+The sabre's guard is a steel bell over the front of the fist, light, with a line
+of ink round it, as the plates draw it, and worked out in three dimensions: from
+the side the plates draw, you look a little into it, and see the fist in it, the
+cup shaded inside and its near lip over the fingers; turned the other way, its
+dome faces you and the blade comes out of it toward you.
 
 The head is drawn as the plates draw it: a long skull and a short, square face,
 carried forward on a thick neck. The neck takes only part of the body's lean

@@ -4,7 +4,7 @@
 // back `{ g, d, k }`: the shapes that make the silhouette, the thin lines, and
 // the brush strokes.
 import { crotchFan, crotchFolds, cuffGathers, kneeFolds, kneePuckers, sleeveFolds, sockWrinkles, thighFolds, torsoFolds, waistband } from "./folds.js";
-import { add, blob, brush, dist, inside, lerp, line, mul, perp, pt, ribbon, rotate, solid, sub, unit } from "./ink.js";
+import { add, blob, brush, curve, dist, inside, lerp, line, mul, perp, pt, ribbon, rotate, solid, sub, unit } from "./ink.js";
 import { headParts, shoeAcrossParts, shoeParts, torsoParts } from "./parts.js";
 
 /**
@@ -544,10 +544,12 @@ export function legPart(J, W, ank, knee, { front, seat, near = false, older }) {
   const kn = flat(knee);
   const hip = flat(front ? J.hipF : J.hipB);
   const made = legShapes(J, flat, ank, kn, { front, seat, near, older });
+  // The leg's points are on the piste; what follows them says whether a point is a corner and how much of its line it
+  // keeps, and is carried over.
   const set = (points) =>
     points.map((q) => {
-      const o = W(q);
-      return q.length > 3 ? [o[0], o[1], q[2], q[3]] : o;
+      const o = W([q[0], q[1]]);
+      return q.length > 2 ? [o[0], o[1], ...q.slice(2)] : o;
     });
   const foot = front ? shoeInFront(ank, set) : shoeAcross(ank, W, older);
   const su = unit(kn, ank);
@@ -577,6 +579,10 @@ export function legPart(J, W, ank, knee, { front, seat, near = false, older }) {
 }
 
 // ---------- Head and sabre ----------
+
+function dot(a, b) {
+  return a[0] * b[0] + a[1] * b[1];
+}
 
 // Where the middle of the head is in the neck's frame, up the neck from its base and forward of it. An older man carries
 // his head lower and thrust further forward.
@@ -629,34 +635,136 @@ export function headPart(J, W, older) {
   };
 }
 
+// The bell guard, a steel cup over the front of the fist: how wide its rim is (the radius), how deep the cup is from
+// its rim to the top of its dome, where the blade comes out, how far along the blade from the grip that is, and how far
+// the cup is turned from the blade toward the outside of the hand, so that it opens back toward the hand and in toward
+// the thumb, as a sabre's guard wraps the outside of the hand (cm and degrees).
+const BELL = { rim: 7.0, depth: 5.0, at: 1.6, tilt: 38 };
+
 /**
- * The sabre: a tapered blade, a small bell guard in dark steel, and the knuckle
- * bow from the cup back under the fist. They are worked out after projection, so
- * the guard stays an oval across the blade.
+ * The sabre: a tapered blade and the bell guard, a steel cup over the front of the fist, light with a line of ink
+ * round it, as the plates draw it. The cup is worked out in three dimensions. From one side the camera sees into it:
+ * the blade is behind it, the fist goes into it, and the near wall and lip of the cup are over the fingers in it, as
+ * the inside of a bowl seen from above shows what is in it only through its opening. From the other side the camera
+ * sees its dome, the blade coming out of it toward the camera and the fist behind it. `fist` is the fist's points in
+ * the frame of the forearm.
+ *
+ * Returns the blade, `back` of the guard or in `front` of it; the guard's shape `g` and line of ink `o`; and, seen
+ * into: the `inside` of the cup (its shape, the far half of its lip and the shade deep in it), the `fist` again, the
+ * near `wall` of the cup over it and the near half of the lip `d`. `k` is the shading over everything: the fingers
+ * in the shadow of the cup, or the dome on the side away from the light.
  */
-export function bladePart(J, W) {
-  const b0 = W(J.at(5));
-  const b1 = W(J.tip);
-  const cc = W(J.at(3));
-  const along = unit(b0, b1);
-  const across = perp(along);
-  const taper = (a, b, w0, w1) => {
-    const n = perp(unit(a, b));
-    return `M${[add(a, mul(n, w0)), add(b, mul(n, w1)), sub(b, mul(n, w1)), sub(a, mul(n, w0))].map(pt).join("L")}Z`;
+export function bladePart(J, W, fist) {
+  const { rim, depth, at, tilt } = BELL;
+  const v3 = {
+    add: (a, b) => a.map((v, i) => v + b[i]),
+    sub: (a, b) => a.map((v, i) => v - b[i]),
+    mul: (a, k) => a.map((v) => v * k),
+    dot: (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
+    cross: (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]],
+    unit: (a) => {
+      const l = Math.hypot(...a) || 1;
+      return a.map((v) => v / l);
+    },
   };
-  // The bell seen from the side is a dark crescent, open toward the hand.
-  const at = (x, y) => add(cc, add(mul(along, x), mul(across, y)));
-  const arc = (rx, ry, shift, n) =>
+  const along = v3.unit(v3.sub(J.at(1), J.at(0)));
+  // The outside of the hand is away from the body, square to the blade; with the blade along that, the guard faces down.
+  // Both fencers are drawn with the sword arm on the far side, as the plates draw them, so for either it is away from
+  // the camera's side of the piste.
+  const away = [0, 0, -(W.dir ?? 1)];
+  let outside = v3.add(away, v3.mul(along, -v3.dot(along, away)));
+  if (Math.hypot(...outside) < 0.2) outside = [0, -1, 0];
+  outside = v3.unit(outside);
+  const axis = v3.unit(v3.add(v3.mul(along, Math.cos(tilt * RAD)), v3.mul(outside, Math.sin(tilt * RAD))));
+  const e1 = v3.unit(v3.cross(axis, Math.abs(axis[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0]));
+  const e2 = v3.cross(axis, e1);
+  // The cup is a cap of a sphere: the top of its dome, where the blade comes out, and its rim, a circle round the fist.
+  const top = J.at(at);
+  const radius = (rim * rim + depth * depth) / (2 * depth);
+  const centre = v3.add(top, v3.mul(axis, -radius));
+  const widest = Math.acos((radius - depth) / radius);
+  const ring = (phi, n) =>
     Array.from({ length: n }, (_, i) => {
-      const t = -Math.PI / 2 + (i / (n - 1)) * Math.PI;
-      return at(rx * Math.cos(t) + shift, ry * Math.sin(t));
+      const t = (2 * Math.PI * i) / n;
+      const out = v3.add(v3.mul(e1, Math.cos(t)), v3.mul(e2, Math.sin(t)));
+      return v3.add(centre, v3.mul(v3.add(v3.mul(axis, Math.cos(phi)), v3.mul(out, Math.sin(phi))), radius));
     });
-  const tip = (p) => [p[0], p[1], 1];
-  const outer = arc(2.3, 5.6, 0.3, 7);
-  const inner = arc(1.0, 5.6, -0.2, 7).reverse().slice(1, -1);
-  const cup = [tip(outer[0]), ...outer.slice(1, -1), tip(outer[outer.length - 1]), ...inner];
-  // The bow, in the frame of the forearm, which is how the fist is set.
-  const forearm = unit(J.el, J.hn);
-  const bow = [[0.4, -5.2], [-3.6, -6.8], [-8.6, -6.4], [-11.4, -4.4]].map(([x, y]) => W([...place(J.hn, forearm, x, y), J.hn[2]]));
-  return { k: taper(b0, b1, 0.62, 0.18), g: blob(cup), d: line(bow) };
+  const lip3 = ring(widest, 20);
+  const lip = lip3.map(W);
+  const shell = hull([...lip, ...[0.4, 0.75].flatMap((k) => ring(widest * k, 12)).map(W), W(top)]);
+  // Seen into, the dome is further from the camera than the rim.
+  const into = W.depth(axis) < 0;
+  const mouth = v3.add(top, v3.mul(axis, -depth));
+  const middle = W(mouth);
+  const near = lip3.map((q) => W.depth(v3.sub(q, mouth)) > 0);
+
+  const b0 = W(top);
+  const b1 = W(J.tip);
+  const n = perp(unit(b0, b1));
+  const steel = `M${[add(b0, mul(n, 0.62)), add(b1, mul(n, 0.18)), sub(b1, mul(n, 0.18)), sub(b0, mul(n, 0.62))].map(pt).join("L")}Z`;
+  const shape = { g: blob(shell), o: ribbon(shell, 0.22, 0.75) };
+  if (!into) {
+    // The dome: strokes toward its top on the side away from the light, which is the lower right of the page.
+    const deep = W(top);
+    let k = "";
+    for (const p of shell.filter((q) => dot(unit(middle, q), [0.6, 0.8]) > 0.55).filter((_, i) => i % 2 === 0)) {
+      k += brush([p, lerp(p, deep, 0.2), lerp(p, deep, 0.38)], 0.4, 0.35);
+    }
+    return { back: "", front: steel, ...shape, inside: { g: "", d: "", k: "" }, fist: { g: "", o: "", d: "" }, wall: "", d: "", k };
+  }
+
+  // The near wall: what of the cup is seen outside its opening, between the near half of the lip and the dome.
+  const onShell = lip.map((p) => shell.includes(p));
+  const wall = [];
+  const start = shell.findIndex((p, i) => !lip.includes(p) && lip.includes(shell[(i + shell.length - 1) % shell.length]));
+  if (start >= 0) {
+    const from = lip.indexOf(shell[(start + shell.length - 1) % shell.length]);
+    let i = start;
+    while (!lip.includes(shell[i % shell.length])) wall.push(shell[i++ % shell.length]);
+    const to = lip.indexOf(shell[i % shell.length]);
+    // Back along the lip from where the wall leaves it to where it began, the way that is not round the outside.
+    const arc = (step) => {
+      const list = [];
+      for (let j = to; j !== from; j = (j + step + lip.length) % lip.length) list.push(j);
+      return [...list, from];
+    };
+    const inner = [arc(1), arc(-1)].find((list) => list.slice(1, -1).every((j) => !onShell[j])) ?? arc(1);
+    wall.unshift(lip[from]);
+    wall.push(...inner.map((j) => lip[j]));
+  }
+  // The lip, in its near and far halves, each a run round the circle.
+  const half = (keep) => {
+    const first = lip.findIndex((_, i) => keep(i) && !keep((i + lip.length - 1) % lip.length));
+    if (first < 0) return lip.some((_, i) => keep(i)) ? curve(lip, true) : "";
+    const run = [];
+    for (let i = first; keep(i % lip.length) && run.length < lip.length; i++) run.push(lip[i % lip.length]);
+    return run.length > 1 ? line(run) : "";
+  };
+  // Deep in the cup it is in shadow: strokes in from the far half of the lip, which the fist covers where it is in front.
+  let shade = "";
+  lip.forEach((p, i) => {
+    if (!near[i] && i % 2 === 0) shade += brush([p, lerp(p, middle, 0.25), lerp(p, middle, 0.45)], 0.45, 0.35);
+  });
+  // The fingers in the cup are in its shadow: strokes in from the near half of the lip, over the fist.
+  let k = "";
+  lip.forEach((p, i) => {
+    if (near[i] && i % 2 === 1) k += brush([p, lerp(p, middle, 0.2), lerp(p, middle, 0.36)], 0.4, 0.35);
+  });
+  let held = { g: "", o: "", d: "" };
+  if (fist) {
+    const fu = unit(J.el, J.hn);
+    const set = ([x, y]) => W([...place(J.hn, fu, x, y), J.hn[2]]);
+    // In the shadow of the cup its line is lighter than out in the light.
+    held = { ...drawn([fist.shape.map(set)], 0.2, 0.55), d: fist.lines.map((l) => line(l.map(set))).join("") };
+  }
+  return {
+    back: steel,
+    front: "",
+    ...shape,
+    inside: { g: blob(lip), d: half((i) => !near[i]), k: shade },
+    fist: held,
+    wall: wall.length > 2 ? blob(wall) : "",
+    d: half((i) => near[i]),
+    k,
+  };
 }

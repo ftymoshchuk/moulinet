@@ -110,7 +110,7 @@ test("in a browser, the page opens on the practice library and builds its contro
   assert.equal(count(/class="base-button"/g), BASES.length, "posture buttons");
   // Each fencer's parts are filled by what they are, so the older man's trousers can be a shade darker than his jersey.
   assert.equal(count(/class="figure__fill figure__fill--trousers"/g), 4, "two legs for each fencer");
-  assert.equal(count(/class="figure__fill figure__fill--jersey"/g), 6, "the jersey and both arms for each");
+  assert.equal(count(/class="figure__fill figure__fill--jersey"/g), 8, "the jersey and both arms for each, and the fist again where it is seen in the cup of the guard");
   assert.equal(count(/class="figure__fill figure__fill--face"/g), 2, "and a face for each");
   assert.equal(count(/<input type="range" id="joint-/g), 10, "joint sliders");
   assert.match(dom, /id="step-count"[^>]*>\d\d \/ 08</);

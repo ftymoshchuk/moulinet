@@ -484,26 +484,56 @@ test("the head nods only a little as the body leans, so the eyes stay level", ()
   assert.ok(facing(30) < facing(0), "though a little, with the body");
 });
 
-test("the sabre is a blade 83 cm long from the cup, a cup over the blade, and a bow back under the fist", () => {
+test("the sabre is a blade from the top of its guard to the tip, and the guard a steel cup round the front of the fist", () => {
   const { J, W } = posed();
-  const blade = bladePart(J, W);
-  const [taper] = readPath(blade.k);
+  const blade = bladePart(J, W, handParts().fist);
+  // The blade is drawn behind the guard or in front of it, never both.
+  assert.ok(Boolean(blade.back) !== Boolean(blade.front));
+  const [taper] = readPath(blade.back || blade.front);
   assert.equal(taper.points.length, 4);
-  near(dist(taper.points[0], taper.points[1]), 83, 0.5, "from 5 cm out to the tip");
-  assert.ok(dist(taper.points[0], taper.points[3]) > dist(taper.points[1], taper.points[2]) * 2, "thicker at the cup than at the tip");
+  near(dist(taper.points[0], taper.points[1]), 88 - 1.6, 0.5, "from the top of the guard, 1.6 cm out, to the tip");
+  assert.ok(dist(taper.points[0], taper.points[3]) > dist(taper.points[1], taper.points[2]) * 2, "thicker at the guard than at the tip");
+  // The cup is a round shape as wide as a hand and a little more, and the grip is in it.
   const [cup] = readPath(blade.g);
-  assert.equal(cup.points.length, 13, "twelve points, and the one that shuts the curve");
   assert.ok(cup.closed);
-  // The bell seen from the side is a thin crescent across the blade, 3 cm out along it, open toward the hand.
-  const near3 = W(J.at(3));
-  const along = [W(J.tip)[0] - W(J.at(5))[0], W(J.tip)[1] - W(J.at(5))[1]];
-  const long = Math.hypot(...along);
-  const u = [along[0] / long, along[1] / long];
-  const lengthwise = cup.points.map((p) => (p[0] - near3[0]) * u[0] + (p[1] - near3[1]) * u[1]);
-  const crosswise = cup.points.map((p) => -(p[0] - near3[0]) * u[1] + (p[1] - near3[1]) * u[0]);
-  const span = (list) => Math.max(...list) - Math.min(...list);
-  near(span(crosswise), 11.2, 0.6, "across the blade");
-  assert.ok(span(lengthwise) < span(crosswise) * 0.5, "and thin along it");
-  assert.ok(Math.max(...lengthwise) > 1.5 && Math.min(...lengthwise) > -1.5, "bulging toward the blade");
-  assert.ok(readPath(blade.d)[0].points.length >= 3, "the bow");
+  const box = boxOf([cup]);
+  assert.ok(box.maxY - box.minY > 12 && box.maxY - box.minY < 16, `about 14 cm across (${box.maxY - box.minY})`);
+  assert.ok(inside(cup.points, W(J.hn)), "round the grip");
+  assert.match(blade.o, /^M.*Z$/, "with a line of ink round it");
+});
+
+test("the cup opens toward the camera's side of the piste, so from there the fist is seen in it, and from the other side its dome", () => {
+  const parts = (camera, dir = 1) => {
+    const pose = resolvePose({ pose: "guard" });
+    const J = skeleton(pose);
+    return { J, W: projector(pose, dir, camera), blade: bladePart(J, projector(pose, dir, camera), handParts().fist) };
+  };
+  // Side on and from the default view, for either fencer, as the plates draw both: the blade behind the cup, its inside
+  // shaded, the fist drawn again in it, and the near wall and lip of the cup over the fingers.
+  for (const [camera, dir] of [[0, 1], [25, 1], [0, -1], [-25, -1]]) {
+    const { blade } = parts(camera, dir);
+    const where = `camera ${camera}, facing ${dir}`;
+    assert.ok(blade.back && !blade.front, `${where}: the blade is behind the cup`);
+    assert.match(blade.inside.g, /^M.*Z$/, `${where}: the inside of the cup`);
+    assert.match(blade.fist.g, /^M.*Z$/, `${where}: the fist in it`);
+    assert.match(blade.d, /^M/, `${where}: the near half of the lip`);
+    assert.match(blade.inside.d, /^M/, `${where}: and the far half`);
+    // The near wall is part of the cup: in it, or on its edge.
+    const shell = readPath(blade.g)[0].points;
+    const toEdge = (p) =>
+      Math.min(
+        ...shell.slice(0, -1).map((a, i) => {
+          const b = shell[i + 1];
+          const [dx, dy] = [b[0] - a[0], b[1] - a[1]];
+          const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / (dx * dx + dy * dy || 1)));
+          return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy);
+        }),
+      );
+    if (blade.wall) for (const p of readPath(blade.wall)[0].points) assert.ok(inside(shell, p) || toEdge(p) < 0.2, `${where}: the wall is on the cup`);
+  }
+  // From the other side the dome faces the camera: the blade comes out of it in front, and the fist is behind it.
+  const { blade } = parts(-60);
+  assert.ok(blade.front && !blade.back, "the blade is in front of the dome");
+  assert.equal(blade.fist.g + blade.inside.g + blade.wall + blade.d, "", "nothing of the inside is seen");
+  assert.match(blade.k, /^M/, "and the dome is shaded on the side away from the light");
 });

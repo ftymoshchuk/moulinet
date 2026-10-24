@@ -35,6 +35,24 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 const LAYERS = ["l1", "l2", "l3", "l4", "head", "l6"];
 // What each layer is when both fencers are drawn from the back (as the stage draws them): the sword arm, the two legs, the jersey, the head and the rear arm.
 const PARTS = { l1: "jersey", l2: "trousers", l3: "trousers", l4: "jersey", head: "face", l6: "jersey" };
+// The sabre, back to front, as inkFigure names its parts: the blade when it is behind the guard; the guard's line of
+// ink and its steel; seen into, the inside of the cup, the far half of its lip and the shade deep in it, the fist in it,
+// the near wall of the cup and the near half of its lip; the shading; and the blade when it is in front of the guard.
+const BLADE = [
+  ["back", "blade__steel"],
+  ["o", "blade__outline"],
+  ["g", "blade__guard"],
+  ["inside.g", "blade__inside"],
+  ["inside.d", "blade__rim"],
+  ["inside.k", "blade__shade"],
+  ["fist.o", "figure__outline"],
+  ["fist.g", "figure__fill figure__fill--jersey"],
+  ["fist.d", "figure__detail"],
+  ["wall", "blade__guard"],
+  ["d", "blade__rim"],
+  ["k", "blade__shade"],
+  ["front", "blade__steel"],
+];
 // Four motion ghosts, each this far behind the one before.
 const GHOSTS = [1, 2, 3, 4];
 const GHOST_GAP_MS = 45;
@@ -614,11 +632,7 @@ function createFencer(id) {
   return {
     layers,
     ground: document.getElementById(`ground-${id}`),
-    blade: {
-      steel: svgPath(blade, "blade__steel"),
-      guard: svgPath(blade, "blade__guard"),
-      bow: svgPath(blade, "blade__bow"),
-    },
+    blade: BLADE.map(([, className]) => svgPath(blade, className)),
     ghostBodies,
     ghostBlades,
   };
@@ -879,9 +893,7 @@ function drawFencer(parts, figure) {
     setAttr(layer.ink, "d", shape.k ?? "");
   }
   setAttr(parts.ground, "d", figure.ground);
-  setAttr(parts.blade.steel, "d", figure.blade.k);
-  setAttr(parts.blade.guard, "d", figure.blade.g);
-  setAttr(parts.blade.bow, "d", figure.blade.d);
+  BLADE.forEach(([key], i) => setAttr(parts.blade[i], "d", key.split(".").reduce((part, name) => part[name], figure.blade)));
 }
 
 // The Creator keeps one view as a scene is reshaped; the library and the postures

@@ -23,8 +23,13 @@ const SHOULDER = 22;
 // Half the width between the hip joints (cm), and how much of the shoulders' turn toward the camera the hips take.
 const PELVIS = 8;
 const HIPS = 0.85;
-// How far the knee of the leg behind is turned from bending straight back toward the camera (degrees): over the back foot, which points at the camera.
-const KNEE_OUT = 80;
+// How far the knee of the leg behind is turned out toward the camera from bending straight back (degrees), over the
+// back foot, which points at the camera: the first with its hip as far forward of that foot as the guard has it, where
+// the plates draw the knee bent back over the foot, and the second with the hip right over the foot, where the weight
+// sits back and the knee turns out over the toes. Between the two, it turns out as far as the hip is back.
+const KNEE_OUT = [40, 80];
+// How far forward of the back foot the hip of the leg behind is in the guard (cm).
+const HIPS_FORWARD = 35;
 // How much of the body's lean the neck takes. The rest it takes back, so the head is held up and the eyes stay level, as in the plates.
 const NECK = 0.3;
 
@@ -83,7 +88,8 @@ export function knee3(h, a, side = 1, out = 0) {
  * hip is toward the camera; the ankle is on the line of the piste.
  */
 export function kneeBehind(hx, hy, ax, ay, hz = 0) {
-  return knee3([hx, hy, hz], [ax, ay, 0], -1, KNEE_OUT);
+  const forward = Math.max(0, Math.min(1, (hx - ax) / HIPS_FORWARD));
+  return knee3([hx, hy, hz], [ax, ay, 0], -1, KNEE_OUT[1] + (KNEE_OUT[0] - KNEE_OUT[1]) * forward);
 }
 
 /** Every joint of a pose, plus `at(k)`: the point k cm along the blade from the hand. */
@@ -145,7 +151,10 @@ export function projector(p, dir, camera) {
   // For a shape worked out as the camera sees it, across the page and up: `u` is
   // forward along the camera's way of looking, that is c * forward + s * toward the camera.
   W.flat = ([u, y]) => [(p.x - PIVOT) * c + PIVOT + dir * u, -y];
+  // How far a step `v` in the body's frame goes toward the camera.
+  W.depth = (v) => dir * ((v[2] || 0) * c - v[0] * s);
   W.camera = camera;
+  W.dir = dir;
   return W;
 }
 
@@ -219,7 +228,7 @@ function draw(p, dir, camera, backView, older) {
     l4: order[3],
     head: headPart(J, W, older),
     l6: order[4],
-    blade: bladePart(J, W),
+    blade: bladePart(J, W, hands.fist),
     ground: ground(J.ankF, true) + ground(J.ankB, false),
   };
 }
