@@ -425,10 +425,10 @@ function legShapes(J, flat, ank, kn, { front, seat, near, older }) {
     lines.push(across(add(ank, mul(su, -1.2)), su, edge(hi, at) - 0.2, edge(lo, at) - 0.2, 0.7));
   } else {
     // (It starts square at the knee, inside the round end of the thigh, so the two make one knee.)
-    shapes.push(segment(kn, k(12), [10.8, 12.0, 11.0, 8.4], [9.8, 10.0, 8.8, 6.8], f, [0, 1]));
+    shapes.push(segment(kn, k(12), [8.8, 9.0, 8.5, 7.7], [8.4, 8.6, 7.8, 7.0], f, [0, 1]));
     shapes.push(segment(k(10.5), add(ank, mul(su, 2)), [6.4, 6.4, 5.7, 4.9, 4.4], [6.4, 6.7, 5.9, 4.9, 4.3], f, [0.2, 0.4]));
     // The lower edge of the cloth over the band, and the band itself, each curved round the leg.
-    lines.push(across(k(11.6), su, 8.1, 6.7, 3.0));
+    lines.push(across(k(11.6), su, 7.2, 6.8, 3.0));
     lines.push(across(k(14.2), su, 6.3, 6.3, 2.6));
   }
   if (seat) shapes.push(trouserFront(J, flat, older));
@@ -438,9 +438,10 @@ function legShapes(J, flat, ank, kn, { front, seat, near, older }) {
 // The thighs' half-widths from the hip joint to the knee: `hi` on the side that
 // faces forward, which is the top of the thigh in front and the inside of the
 // thigh behind, and `lo` on the other. Full at the top, where the cloth of the
-// hips comes down into them.
-const THIGH_FRONT = { hi: [16.0, 14.0, 12.6, 12.0], lo: [11.0, 11.0, 11.0, 11.2] };
-const THIGH_BACK = { hi: [16.0, 13.4, 11.8, 11.2], lo: [12.5, 12.2, 11.8, 11.4] };
+// hips comes down into them, and narrowing to the knee, where the knickerbockers
+// go into the pouch below it.
+const THIGH_FRONT = { hi: [16.0, 13.8, 11.6, 9.8], lo: [11.0, 10.4, 9.6, 8.8] };
+const THIGH_BACK = { hi: [16.0, 13.0, 10.8, 9.6], lo: [12.5, 11.6, 10.4, 9.2] };
 const LOOSE_FRONT = { hi: [15.0, 13.4, 13.0, 12.4], lo: [10.6, 11.6, 12.0, 11.6] };
 const LOOSE_BACK = { hi: [15.0, 13.0, 12.4, 12.0], lo: [12.0, 12.2, 12.2, 11.6] };
 

@@ -148,9 +148,9 @@ export function kneeFolds(W, knee, shin, ref, seed = 2) {
   // Centimetres down the shin from the knee, and out from it.
   const at = (s, c) => [s / 20, c];
   let d = "";
-  d += inFrame(W, f, at(0.6, 9.4), at(4.6, -6.4), 0.75 + r() * 0.2, 1.2, 0.4);
-  d += inFrame(W, f, at(4.4, 9.8), at(7.4, -2.6), 0.65 + r() * 0.2, 1.0, 0.45);
-  for (const c of [8.6, 6.0, 3.4, 0.8, -1.8, -4.4, -6.8]) {
+  d += inFrame(W, f, at(0.6, 7.4), at(4.6, -5.2), 0.75 + r() * 0.2, 1.2, 0.4);
+  d += inFrame(W, f, at(4.4, 7.6), at(7.4, -2.1), 0.65 + r() * 0.2, 1.0, 0.45);
+  for (const c of [7.0, 4.8, 2.6, 0.4, -1.8, -4.0, -6.0]) {
     const s = 8.6 + r() * 0.8 - Math.abs(c) * 0.06;
     d += inFrame(W, f, at(s, c), at(11.2, c * 0.96), 0.55 + r() * 0.15, 0, 0.5);
   }
