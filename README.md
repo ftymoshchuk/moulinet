@@ -12,28 +12,30 @@ Scenes you save stay in your browser's own storage, on that device.
 
 The name comes from the *moulinet*, the sabre's circular cut: the blade drops
 forward past the arm, swings up behind and comes down over the top. It is one
-of the four scenes built in.
+of the five scenes built in.
 
 ## Three modes
 One stage, three ways to use it. Choose the mode at the top of the page.
 
 **Practice library.** Scenes to practise from, each with the event it was noted
 at and a link to a reference, such as a video of the bout. Pick a scene and it
-plays; the four built in are an advance, lunge and head cut; a chest cut
+plays; the five built in are an advance, lunge and head cut; a chest cut
 parried in 3 and riposted; a head attack parried in 5 and riposted to the head;
-and the moulinet, solo. The built-in scenes have no event or link, because
-there is no real bout behind them. Scenes you save in the Creator are listed
-below them, with whatever you noted, and a link opens in a new tab. They live
-in your browser's storage, so one saved or deleted in another tab of the page
-appears or goes here too.
+a cut at the outside of the face met with face protection, as an old plate
+draws it; and the moulinet, solo. The built-in scenes have no event or link,
+because there is no real bout behind them. Scenes you save in the Creator are
+listed below them, with whatever you noted, and a link opens in a new tab. They
+live in your browser's storage, so one saved or deleted in another tab of the
+page appears or goes here too.
 
 **Base postures.** One fencer, never a pair, in one posture at a time, with the
 posture described in words: what it is for, and the parts worth looking at.
-Pick a posture from the list, or use the arrows under the stage. The thirteen
+Pick a posture from the list, or use the arrows under the stage. The fourteen
 postures are the poses of the library, in the order they are learned: the
 guard; the two halves of an advance; the arm extended and the blade up; the
-lunge in flight, to the head and to the chest; parries 3 and 5, each also with
-the weight drawn back; and the riposte.
+lunge in flight, to the head and to the chest; parry 3, and parry 3 with the
+weight drawn back; face protection; parry 5, and parry 5 with the weight drawn
+back; and the riposte.
 
 **Creator.** Make a scene of your own. Start from a blank one with **New
 scene**, or from a scene in the library: a built-in one opens as a copy, with
@@ -65,7 +67,7 @@ In the Creator there is more:
   it, and whether it moves smoothly, snaps or keeps one speed.
 - **Adjust this moment:** ten sliders reshape either fencer on the current
   step, from where they stand on the piste to the angle and turn of the blade.
-- **Poses:** thirteen named poses to put on any step.
+- **Poses:** fourteen named poses to put on any step.
 - **Phrase data:** the whole scene as text. Edit it in place or paste one in;
   it applies as you type, and says why when it can't. The fields above it and
   the text are the same thing, and follow each other. While the text can't be
@@ -209,6 +211,7 @@ postures** describe each one in words.
 | `lungeHead`, `lungeChest` | Lunge, landing a head cut or a chest cut |
 | `parry3`, `parry5` | Parry 3, parry 5 |
 | `parry3Back`, `parry5Back` | Parry 3, parry 5, with the weight drawn back over the bent back leg |
+| `faceParry` | Face protection: standing up, the hand low in front and the blade slanting forward across the line to the face |
 | `riposte` | Riposte to the head |
 | `extend` | Arm extended |
 

@@ -25,7 +25,10 @@
 // is straight from its hip to its foot, and the body stays nearly upright over the
 // front leg. The parries with the weight back keep the feet where the guard has
 // them and sit back over the bent back leg, the front leg straight, as the plates
-// draw them seen from the front.
+// draw them seen from the front. Face protection stands up, the front foot drawn
+// back toward the back foot, the hand low in front of the chest and the blade
+// slanting forward across the line to the face, as the plate of an outside face
+// cut draws it.
 export const POSES = {
   guard: { hipX: 41, hipY: 77, footF: 84, liftF: 0, liftB: 0, lean: 0, turn: 58, arm: -24, fore: -4, blade: 34, yaw: 0, rArm: -140, rFore: -28 },
   advLift: { hipX: 44, hipY: 79, footF: 103, liftF: 4 },
@@ -35,8 +38,9 @@ export const POSES = {
   lungeHead: { hipX: 83.1, hipY: 54.6, footF: 133, lean: 6, arm: 18, fore: 16, blade: 20 },
   lungeChest: { hipX: 83.1, hipY: 54.6, footF: 133, lean: 15, arm: 2, fore: 2, blade: 10 },
   parry3: { hipX: 38, hipY: 78, lean: -3, arm: -110, fore: -4, blade: 95 },
-  parry5: { hipX: 38, hipY: 78, lean: -4, arm: 20, fore: 112, blade: 6, yaw: 70 },
   parry3Back: { hipX: 24, hipY: 80, lean: -6, arm: -110, fore: -4, blade: 95 },
+  faceParry: { hipX: 30, hipY: 82, footF: 56, lean: 0, arm: -97, fore: 8, blade: 53 },
+  parry5: { hipX: 38, hipY: 78, lean: -4, arm: 20, fore: 112, blade: 6, yaw: 70 },
   parry5Back: { hipX: 24, hipY: 80, lean: -7, arm: 20, fore: 112, blade: 6, yaw: 70 },
   riposte: { hipX: 50, hipY: 77, footF: 100, lean: 8, arm: 0, fore: 0, blade: -6 },
   extend: { hipX: 42, lean: 1, arm: 4, fore: 4, blade: 14 },
@@ -51,8 +55,9 @@ export const POSE_NAMES = {
   lungeHead: "Lunge, head cut",
   lungeChest: "Lunge, chest cut",
   parry3: "Parry 3",
-  parry5: "Parry 5",
   parry3Back: "Parry 3, weight back",
+  faceParry: "Face protection",
+  parry5: "Parry 5",
   parry5Back: "Parry 5, weight back",
   riposte: "Riposte, head",
   extend: "Arm extended",
@@ -109,6 +114,20 @@ export const PRESETS = [
         { label: "A lunges to the head, B takes parry 5", ms: 260, hold: 500, ease: "snap", A: { pose: "lungeHead", x: 0, adj: { arm: 28, fore: 24, blade: 42 } }, B: { pose: "parry5", x: 310 } },
         { label: "B ripostes to the head", ms: 200, hold: 700, ease: "snap", A: { pose: "lungeHead", x: 0, adj: { arm: 26, fore: 20, blade: 52 } }, B: { pose: "riposte", x: 310 } },
         { label: "Both recover", ms: 420, hold: 500, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 310 } },
+      ],
+    },
+  },
+  {
+    id: "outside-face-cut-face-protection",
+    phrase: {
+      name: "Outside face cut, face protection",
+      note: "A extends the arm and lunges with a cut at the outside of B's face. B takes face protection: the hand low in front, the front foot drawn back, and the blade slanting forward, so the cut lands on the forte, well in front of the face. Then both recover.",
+      camera: 0,
+      steps: [
+        { label: "En garde", hold: 600, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 306 } },
+        { label: "A extends the arm", ms: 220, hold: 60, A: { pose: "extend", x: 0 } },
+        { label: "A cuts at the face, B takes face protection", ms: 260, hold: 700, ease: "snap", A: { pose: "lungeHead", x: 0, adj: { arm: 8, fore: 10, blade: 22 } }, B: { pose: "faceParry", x: 306 } },
+        { label: "Both recover", ms: 420, hold: 500, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 306 } },
       ],
     },
   },

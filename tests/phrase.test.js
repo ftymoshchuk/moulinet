@@ -67,6 +67,7 @@ test("the built-in phrases have the lengths the page reports", () => {
     [8, 3390],
     [4, 3320],
     [5, 3440],
+    [4, 2760],
     [7, 2680],
   ]);
 });

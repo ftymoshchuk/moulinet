@@ -103,7 +103,7 @@ test("in a browser, the page opens on the practice library and builds its contro
   const count = (pattern) => (dom.match(pattern) ?? []).length;
   assert.equal(count(/class="mode-button"/g), 3, "mode buttons");
   assert.match(dom, /<button[^>]*data-mode="library"[^>]*aria-pressed="true"[^>]*>Practice library</);
-  assert.equal(count(/class="scene-button"/g), 4, "scenes in the library");
+  assert.equal(count(/class="scene-button"/g), PRESETS.length, "scenes in the library");
   assert.match(dom, /id="scene-title"[^>]*>Advance, lunge, head cut</);
   assert.equal(count(/class="step-button"/g), 8, "step buttons");
   assert.equal(count(/class="pose-button"/g), Object.keys(POSE_NAMES).length, "pose buttons");
@@ -135,6 +135,7 @@ test("in a browser, the practice library plays each scene and says what it is", 
     { title: "Advance, lunge, head cut", pressed: "true", card: "Pair · 8 steps · 3.4 s", count: "01 / 08", solo: false, camera: "0", time: "0.00 / 3.39 s", scrubbedTo: "08 / 08" },
     { title: "Lunge to the chest, parry 3, riposte", pressed: "true", card: "Pair · 4 steps · 3.3 s", count: "01 / 04", solo: false, camera: "0", time: "0.00 / 3.32 s", scrubbedTo: "04 / 04" },
     { title: "Head attack, parry 5, riposte to head", pressed: "true", card: "Pair · 5 steps · 3.4 s", count: "01 / 05", solo: false, camera: "28", time: "0.00 / 3.44 s", scrubbedTo: "05 / 05" },
+    { title: "Outside face cut, face protection", pressed: "true", card: "Pair · 4 steps · 2.8 s", count: "01 / 04", solo: false, camera: "0", time: "0.00 / 2.76 s", scrubbedTo: "04 / 04" },
     { title: "Moulinet to the head", pressed: "true", card: "Solo · 7 steps · 2.7 s", count: "01 / 07", solo: true, camera: "25", time: "0.00 / 2.68 s", scrubbedTo: "07 / 07" },
   ]);
   // A built-in scene has no event or link to give, and says so, and cannot be deleted.
@@ -345,7 +346,7 @@ test("in a browser, scenes are saved on this device, listed in the library with 
   assert.deepEqual(seen.kept, { event: "Kept while away", count: "02 / 02", showing: ["stage", "scene", "phrase", "step", "adjust", "poses"] }, "the Creator is as it was left");
 
   const card = "Lunge to the headPair · 2 steps · 0.8 sClub night, October";
-  assert.deepEqual(seen.listed, { saved: [card, card], builtIn: 4, emptyHidden: true, pressed: 1 });
+  assert.deepEqual(seen.listed, { saved: [card, card], builtIn: PRESETS.length, emptyHidden: true, pressed: 1 });
   assert.deepEqual(seen.savedDetail, {
     title: "Lunge to the head",
     kind: "Saved on this device",
@@ -361,7 +362,8 @@ test("in a browser, scenes are saved on this device, listed in the library with 
     deleteHidden: false,
     count: "01 / 02",
     camera: "33",
-    saved: 4,
+    // The first saved card comes after the built-in scenes.
+    saved: PRESETS.length,
   });
 
   // What is stored is not to be trusted: the link that is a script is no link, and markup is only words.
@@ -387,7 +389,7 @@ test("in a browser, scenes are saved on this device, listed in the library with 
 
   assert.deepEqual(seen.deleteDeclined, { cards: 3, asked: 'Delete "<b>Evil</b>" from this device?' });
   assert.deepEqual(seen.deleted, { cards: 2, stored: 3, title: "Advance, lunge, head cut", focus: "library" });
-  assert.deepEqual(seen.allDeleted, { cards: 0, stored: 1, emptyShown: true, builtIn: 4 }, "all that is left is the entry it cannot show");
+  assert.deepEqual(seen.allDeleted, { cards: 0, stored: 1, emptyShown: true, builtIn: PRESETS.length }, "all that is left is the entry it cannot show");
   assert.deepEqual(seen.elsewhere, { cards: 0, title: "Advance, lunge, head cut" }, "a scene deleted in another tab leaves this one's list");
   const replace = "The scene in the Creator has changes that are not saved. Replace it?";
   assert.deepEqual(seen.asked, [replace, replace, replace, replace, replace, 'Delete "<b>Evil</b>" from this device?', 'Delete "<b>Evil</b>" from this device?', 'Delete "Lunge to the head" from this device?', 'Delete "Lunge to the head" from this device?']);

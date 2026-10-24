@@ -122,6 +122,17 @@ export const BASES = [
     ],
   },
   {
+    pose: "faceParry",
+    group: "Defence",
+    text: "Face protection, against a cut at the outside of the face. The hand stays low in front of the chest and the blade slants forward and up, so the cut is met on the forte, well in front of the face, as the old plates draw it.",
+    points: [
+      ["Sword arm", "The elbow down by the side and the hand in front of the chest."],
+      ["Blade", "Slanting forward and up, about halfway between level and upright, across the line to the face."],
+      ["Legs", "Standing up, the front foot drawn back toward the back foot, the body upright behind the blade."],
+      ["Covers", "The face, on the side of the sword arm."],
+    ],
+  },
+  {
     pose: "parry5",
     group: "Defence",
     text: "Quinte, the parry for the head. The blade lies across above the head, so a cut coming down lands on the blade.",

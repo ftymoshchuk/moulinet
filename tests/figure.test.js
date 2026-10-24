@@ -198,6 +198,49 @@ test("a parry with the weight back sits over the bent back leg, the front leg st
   }
 });
 
+test("face protection holds the hand low in front and slants the blade forward across the line to the face", () => {
+  const pose = resolvePose({ pose: "faceParry" });
+  const J = skeleton(pose);
+  const guard = skeleton(resolvePose({ pose: "guard" }));
+  assert.ok(J.hn[1] < J.sh[1] - 15 && J.hn[1] > J.hip[1] + 15, `the hand is in front of the chest, below the shoulder (${J.hn[1]})`);
+  assert.ok(J.hn[0] - J.hip[0] > 35, `and well in front of the body (${J.hn[0] - J.hip[0]})`);
+  assert.ok(J.el[1] < J.hn[1] && J.el[0] < J.hn[0], "the elbow down and back, under the line of the forearm");
+  assert.ok(pose.blade > 40 && pose.blade < 65 && pose.yaw === 0, "the blade slants forward and up, halfway between level and upright");
+  // At the height of the face, the blade is well in front of it.
+  const k = (J.hd[1] - J.hn[1]) / Math.sin((pose.blade * Math.PI) / 180);
+  assert.ok(J.at(k)[0] > J.hd[0] + 30, `across the line to the face, ${J.at(k)[0] - J.hd[0]} cm in front of it`);
+  // Standing up: the feet closer than in guard, the front foot drawn back, and the hips higher.
+  assert.ok(pose.footF < POSES.guard.footF - 15 && J.hip[1] > guard.hip[1], "standing up, the front foot drawn back");
+});
+
+test("in the outside face cut, the cut crosses the parrying blade on its forte, and the point comes to the face", () => {
+  const phrase = PRESETS.find(({ id }) => id === "outside-face-cut-face-protection").phrase;
+  const timeline = buildTimeline(phrase);
+  const step = timeline.steps.find((s) => s.B.blade === POSES.faceParry.blade);
+  assert.ok(step, "B takes face protection");
+  const blade = (pose, dir) => {
+    const J = skeleton(pose);
+    const W = projector(pose, dir, phrase.camera);
+    return { J, W, from: W(J.at(1.6)), to: W(J.tip) };
+  };
+  const a = blade(step.A, 1);
+  const b = blade(step.B, -1);
+  // Where the two blades cross on the page, as how far along each.
+  const [p, r, q, v] = [a.from, [a.to[0] - a.from[0], a.to[1] - a.from[1]], b.from, [b.to[0] - b.from[0], b.to[1] - b.from[1]]];
+  const d = r[0] * v[1] - r[1] * v[0];
+  const t = ((q[0] - p[0]) * v[1] - (q[1] - p[1]) * v[0]) / d;
+  const u = ((q[0] - p[0]) * r[1] - (q[1] - p[1]) * r[0]) / d;
+  assert.ok(t > 0 && t < 1 && u > 0 && u < 1, "the blades cross");
+  const onB = u * Math.hypot(...v);
+  assert.ok(onB > 15 && onB < 35, `on the forte of B's blade, ${onB} cm out from the guard`);
+  // The point, as the plate draws it, comes to the face: in front of the middle of the head (B faces left), no further
+  // than just past the tip of the nose, and between the chin and the eyes.
+  const head = b.W(b.J.hd);
+  const ahead = head[0] - a.to[0];
+  assert.ok(ahead > 0 && ahead < 17, `the point is at the face (${ahead} cm in front of the middle of the head)`);
+  assert.ok(a.to[1] - head[1] > 0 && a.to[1] - head[1] < 12, `below the eyes and above the chin (${a.to[1] - head[1]} cm under the middle of the head)`);
+});
+
 test("the knee behind is turned out toward the camera over the foot, with thigh and shin as long as ever", () => {
   for (const name of ["guard", "parry3", "advLift", "lungeFly", "riposte"]) {
     const J = skeleton(resolvePose({ pose: name }));
