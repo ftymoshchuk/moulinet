@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { basePhrase } from "../site/js/bases.js";
+import { BASE_BLADE, basePhrase } from "../site/js/bases.js";
 import { DEFAULT_FRAME, PIVOT, bladePaths, bladeTip, floorPath, frameOf, inkFigure, knee, projector, skeleton, stickFigure } from "../site/js/figure.js";
 import { area } from "../site/js/ink.js";
 import { POSES, PRESETS } from "../site/js/library.js";
@@ -236,9 +236,10 @@ test("the shoulders turn toward the camera by the pose's turn: the two arms lie 
 
 test("the stage looks where the fencers are: everyone, at every step, is in a frame the shape of the page", () => {
   const shape = DEFAULT_FRAME[2] / DEFAULT_FRAME[3];
-  for (const phrase of [...PRESETS.map((preset) => preset.phrase), basePhrase()]) {
+  // The library's frames hold the whole blade, the postures' as much of it as BASE_BLADE says.
+  for (const [phrase, blade] of [...PRESETS.map((preset) => [preset.phrase, undefined]), [basePhrase(), BASE_BLADE]]) {
     const timeline = buildTimeline(phrase);
-    const [x, y, w, h] = frameOf(timeline);
+    const [x, y, w, h] = frameOf(timeline, blade);
     assert.ok(Math.abs(w / h - shape) < 0.01, `${phrase.name} is in the shape of the page`);
     assert.ok(w >= DEFAULT_FRAME[2] * 0.72 - 0.1 && w <= DEFAULT_FRAME[2] * 1.3 + 0.1, `${phrase.name} is no closer than a third of the way in, nor further than a third out (${w})`);
     assert.ok(y < 0 && y + h > 8, "the floor is in it, with room under it for the strokes at the feet");
@@ -246,13 +247,53 @@ test("the stage looks where the fencers are: everyone, at every step, is in a fr
       for (const [who, dir] of timeline.solo ? [["A", 1]] : [["A", 1], ["B", -1]]) {
         const J = skeleton(step[who]);
         const W = projector(step[who], dir, 0);
-        for (const [name, q] of Object.entries({ head: J.hd, hand: J.hn, tip: J.tip, back: J.ankB, front: J.ankF })) {
+        const counted = blade === undefined ? J.tip : J.at(blade);
+        for (const [name, q] of Object.entries({ head: J.hd, hand: J.hn, blade: counted, back: J.ankB, front: J.ankF })) {
           const [px, py] = W(q);
           assert.ok(px >= x && px <= x + w && py >= y && py <= y + h, `${phrase.name}: ${who}'s ${name} is on the stage`);
         }
       }
     }
   }
+});
+
+test("the postures are looked at closer than their whole blades allow, with the fencer in view from every camera angle", () => {
+  const timeline = buildTimeline(basePhrase());
+  const whole = frameOf(timeline);
+  const [x, y, w, h] = frameOf(timeline, BASE_BLADE);
+  assert.ok(h < whole[3] * 0.95, `the view is closer: ${h} high, against ${whole[3]} for the whole blade`);
+  for (const step of timeline.steps) {
+    const J = skeleton(step.A);
+    // Heel and toe of each foot, on the floor.
+    const feet = [-8, 24].flatMap((reach) => [[J.ankB[0] + reach, 0], [J.ankF[0] + reach, 0]]);
+    const parts = [["head", [J.hd[0], J.hd[1] + 14]], ["hand", J.hn], ["rear hand", J.rh], ["blade", J.at(BASE_BLADE)], ...feet.map((q) => ["foot", q])];
+    for (let camera = -60; camera <= 60; camera += 15) {
+      const W = projector(step.A, 1, camera);
+      for (const [name, q] of parts) {
+        const [px, py] = W(q);
+        assert.ok(px >= x && px <= x + w && py >= y && py <= y + h, `${step.label}, camera ${camera}°: the ${name} is on the stage`);
+      }
+    }
+  }
+});
+
+test("a frame holds the blade only as far as it is told, and all of it unless told less", () => {
+  // The blade held up: its point sets how high the stage must reach.
+  const timeline = buildTimeline({ solo: true, steps: [{ A: { pose: "prep", x: 60 } }] });
+  const pose = timeline.steps[0].A;
+  const J = skeleton(pose);
+  const W = projector(pose, 1, 0);
+  const holds = ([x, y, w, h], q) => {
+    const [px, py] = W(q);
+    return px >= x && px <= x + w && py >= y && py <= y + h;
+  };
+  const whole = frameOf(timeline);
+  const short = frameOf(timeline, 40);
+  assert.ok(holds(whole, J.tip), "all of the blade, unless told less");
+  assert.ok(holds(short, J.at(40)) && !holds(short, J.tip), "the first 40 cm, and the point runs off");
+  assert.ok(holds(short, J.hn) && holds(short, [J.hd[0], J.hd[1] + 14]), "the hand and the head stay in");
+  assert.ok(short[3] < whole[3], "so the view is closer");
+  assert.ok(frameOf(timeline, 0)[3] <= short[3], "and the less is counted, the closer it gets");
 });
 
 test("a lone fencer is looked at closer than a pair, and the frame is worked out from the phrase alone", () => {

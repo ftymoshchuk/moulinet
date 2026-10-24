@@ -3,7 +3,7 @@
 // One stage serves three modes. The practice library plays a scene and says
 // where it was noted. The base postures show one fencer in one posture at a
 // time, in words as well as lines. The Creator makes new scenes.
-import { BASES, BASE_GROUPS, basePhrase } from "./bases.js";
+import { BASES, BASE_BLADE, BASE_GROUPS, basePhrase } from "./bases.js";
 import { DEFAULT_FRAME, bladePaths, floorPath, frameOf, inkFigure, stickFigure } from "./figure.js";
 import { JOINTS, POSE_NAMES, POSES, PRESETS } from "./library.js";
 import {
@@ -886,11 +886,13 @@ function drawFencer(parts, figure) {
   setAttr(parts.blade.bow, "d", figure.blade.d);
 }
 
-// The Creator keeps one view as a scene is reshaped; the library and the postures
-// look as close as keeps everyone in.
+// The Creator keeps one view as a scene is reshaped; the library looks as close as
+// keeps everyone and their whole blades in; the postures, as close as keeps the
+// fencer and most of the blade in.
 function frameFor() {
   if (state.mode === "creator") return DEFAULT_FRAME;
-  if (framed.timeline !== timeline) framed = { timeline, frame: frameOf(timeline) };
+  const blade = state.mode === "base" ? BASE_BLADE : undefined;
+  if (framed.timeline !== timeline || framed.blade !== blade) framed = { timeline, blade, frame: frameOf(timeline, blade) };
   return framed.frame;
 }
 

@@ -48,10 +48,12 @@ another tab changed or deleted after you opened it, yours is kept as a new scene
 beside theirs, and the Creator says so, so neither is lost.
 
 All three share the stage, and its **camera**, which turns the view up to 60°
-either way to see a blade come toward you or swing away. The library and the
-base postures look as close as keeps everyone in view, and turning the camera
-never zooms; the Creator keeps one view while you reshape a scene. The library
-and the Creator, which play scenes, add:
+either way to see a blade come toward you or swing away. The library looks as
+close as keeps everyone and their whole blades in view; the base postures, as
+close as keeps the fencer and most of the blade in view, so the point of the
+blade held up in Blade up runs off the top. Turning the camera never zooms, and
+the Creator keeps one view while you reshape a scene. The library and the
+Creator, which play scenes, add:
 - **Playback** at ¼, ½ or full speed, a step at a time, or scrubbed along the
   timeline, looped or once through.
 - **Motion ghosts and blade paths** show how each moment was reached: four
