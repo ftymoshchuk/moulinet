@@ -16,12 +16,15 @@ const RAD = Math.PI / 180;
 const THIGH = 44;
 const SHIN = 46;
 // The sword arm: shoulder to elbow, and elbow to the grip (the forearm and the hand round it).
-const UPPER_ARM = 31;
-const FOREARM = 31;
+const UPPER_ARM = 32;
+const FOREARM = 37;
 // Half the width between the shoulder joints (cm).
-const SHOULDER = 19;
+const SHOULDER = 22;
+// Half the width between the hip joints (cm), and how much of the shoulders' turn toward the camera the hips take.
+const PELVIS = 8;
+const HIPS = 0.85;
 // How far the knee of the leg behind is turned from bending straight back toward the camera (degrees): over the back foot, which points at the camera.
-const KNEE_OUT = 40;
+const KNEE_OUT = 60;
 
 function fmt(point) {
   return `${point[0].toFixed(1)} ${point[1].toFixed(1)}`;
@@ -41,31 +44,60 @@ export function knee(hx, hy, ax, ay, side = 1) {
 }
 
 /**
+ * The knee of a leg from the hip `h` to the ankle `a`, each as [x, y, z] with z
+ * toward the camera, keeping thigh and shin their lengths. It bends forward
+ * (`side` 1) or back (-1), square to the line from hip to ankle and as near the
+ * plane of the piste as it can, and is then turned `out` degrees about that line
+ * toward the camera. A leg too short to reach goes straight.
+ */
+export function knee3(h, a, side = 1, out = 0) {
+  const D = [a[0] - h[0], a[1] - h[1], a[2] - h[2]];
+  const d = Math.hypot(...D);
+  if (d >= THIGH + SHIN - 0.05 || d < 1) return h.map((v, i) => v + (D[i] * THIGH) / (THIGH + SHIN));
+  const u = D.map((v) => v / d);
+  // Where the knee is along the line from hip to ankle, and how far off it.
+  const along = (THIGH * THIGH + d * d - SHIN * SHIN) / (2 * d);
+  const r = Math.sqrt(Math.max(0, THIGH * THIGH - along * along));
+  // The way it bends: a quarter turn from the line, on the piste, and square to the line in depth too.
+  const turned = [-u[1] * side, u[0] * side, 0];
+  const dot = turned[0] * u[0] + turned[1] * u[1];
+  const b = [turned[0] - dot * u[0], turned[1] - dot * u[1], -dot * u[2]];
+  const bl = Math.hypot(...b) || 1;
+  const bend = b.map((v) => v / bl);
+  // Square to both, toward the camera.
+  let w = [u[1] * bend[2] - u[2] * bend[1], u[2] * bend[0] - u[0] * bend[2], u[0] * bend[1] - u[1] * bend[0]];
+  if (w[2] < 0) w = w.map((v) => -v);
+  const c = Math.cos(out * RAD);
+  const s = Math.sin(out * RAD);
+  return h.map((v, i) => v + u[i] * along + r * (c * bend[i] + s * w[i]));
+}
+
+/**
  * The knee of the leg behind, as [x, y, z] with z toward the camera. It bends
  * back, and is turned out toward the camera about the line from hip to ankle,
  * over the foot, which points that way: seen side on, the leg is shorter and the
  * knee a little forward and low, as in the plates, though thigh and shin are the
- * same lengths. A leg that is straight has nowhere to turn.
+ * same lengths. A leg that is straight has nowhere to turn. `hz` is how far the
+ * hip is toward the camera; the ankle is on the line of the piste.
  */
-export function kneeBehind(hx, hy, ax, ay) {
-  const [kx, ky] = knee(hx, hy, ax, ay, -1);
-  const d = Math.hypot(ax - hx, ay - hy);
-  if (d < 1) return [kx, ky, 0];
-  const [ux, uy] = [(ax - hx) / d, (ay - hy) / d];
-  // Where the knee is on the line from hip to ankle, and how far it is off it.
-  const along = (kx - hx) * ux + (ky - hy) * uy;
-  const [ox, oy] = [kx - hx - along * ux, ky - hy - along * uy];
-  const turn = KNEE_OUT * RAD;
-  return [hx + along * ux + ox * Math.cos(turn), hy + along * uy + oy * Math.cos(turn), Math.hypot(ox, oy) * Math.sin(turn)];
+export function kneeBehind(hx, hy, ax, ay, hz = 0) {
+  return knee3([hx, hy, hz], [ax, ay, 0], -1, KNEE_OUT);
 }
 
 /** Every joint of a pose, plus `at(k)`: the point k cm along the blade from the hand. */
 export function skeleton(p) {
   const hip = [p.hipX, p.hipY];
+  // The hips are turned toward the camera with the shoulders, though not as far:
+  // the joint of the leg behind is on the near side and back, the other on the
+  // far side and forward, each as [x, y, z].
+  const pelvis = p.turn * HIPS * RAD;
+  const hipF = [hip[0] + PELVIS * Math.sin(pelvis), hip[1], -PELVIS * Math.cos(pelvis)];
+  const hipB = [hip[0] - PELVIS * Math.sin(pelvis), hip[1], PELVIS * Math.cos(pelvis)];
   const ankB = [0, 8 + Math.max(0, p.liftB)];
   const ankF = [p.footF, 8 + Math.max(0, p.liftF)];
-  const kB = kneeBehind(hip[0], hip[1], ankB[0], ankB[1]);
-  const kF = knee(hip[0], hip[1], ankF[0], ankF[1]);
+  const kB = kneeBehind(hipB[0], hipB[1], ankB[0], ankB[1], hipB[2]);
+  // The knee in front bends forward toward its foot, which points at the opponent.
+  const kF = knee3(hipF, [ankF[0], ankF[1], 0], 1);
   // Up the torso, and forward across it.
   const u = [Math.sin(p.lean * RAD), Math.cos(p.lean * RAD)];
   const f = [u[1], -u[0]];
@@ -77,9 +109,9 @@ export function skeleton(p) {
   const back = SHOULDER * Math.sin(p.turn * RAD);
   // The sword shoulder is the one turned away, at the front of the chest.
   const sh = [...T(50, back * 0.9), -across];
-  const nk = T(58, 0);
+  const nk = T(57, 2.5);
   // The head is thrust forward of the shoulders on a neck, as the plates have it.
-  const hd = T(73.6, 3);
+  const hd = T(72.5, 9);
   const el = [sh[0] + UPPER_ARM * Math.cos(p.arm * RAD), sh[1] + UPPER_ARM * Math.sin(p.arm * RAD), sh[2]];
   const hn = [el[0] + FOREARM * Math.cos(p.fore * RAD), el[1] + FOREARM * Math.sin(p.fore * RAD), sh[2]];
   const bp = p.blade * RAD;
@@ -89,9 +121,9 @@ export function skeleton(p) {
   const ra = (p.rArm - p.lean) * RAD;
   const rf = (p.rFore - p.lean) * RAD;
   const rs = [...T(48, -back), across];
-  const re = [rs[0] + 28 * Math.cos(ra), rs[1] + 28 * Math.sin(ra), rs[2]];
+  const re = [rs[0] + 30 * Math.cos(ra), rs[1] + 30 * Math.sin(ra), rs[2]];
   const rh = [re[0] + 25 * Math.cos(rf), re[1] + 25 * Math.sin(rf), rs[2]];
-  return { hip, ankB, ankF, kB, kF, u, f, T, sh, nk, hd, el, hn, bp, at, tip: at(88), rs, re, rh, lean: p.lean, turn: p.turn };
+  return { hip, hipF, hipB, ankB, ankF, kB, kF, u, f, T, sh, nk, hd, el, hn, bp, at, tip: at(88), rs, re, rh, lean: p.lean, turn: p.turn };
 }
 
 /**
@@ -121,8 +153,8 @@ export function stickFigure(p, dir, camera) {
   const h = W(J.hd);
   return {
     body:
-      `M${S(J.hip)}L${S(J.kB)}L${S(J.ankB)}M${S(J.hip)}L${S(J.kF)}L${S(J.ankF)}` +
-      `M${S(J.hip)}L${S(J.nk)}M${S(J.sh)}L${S(J.el)}L${S(J.hn)}` +
+      `M${S(J.hipB)}L${S(J.kB)}L${S(J.ankB)}M${S(J.hipF)}L${S(J.kF)}L${S(J.ankF)}` +
+      `M${S(J.hipB)}L${S(J.hipF)}M${S(J.hip)}L${S(J.nk)}M${S(J.sh)}L${S(J.el)}L${S(J.hn)}` +
       `M${S(J.rs)}L${S(J.re)}L${S(J.rh)}` +
       `M${(h[0] - 10).toFixed(1)} ${h[1].toFixed(1)}a10 10 0 1 0 20 0a10 10 0 1 0 -20 0`,
     blade: `M${S(J.at(-7))}L${S(J.tip)}`,
@@ -158,11 +190,11 @@ function draw(p, dir, camera, backView, older) {
   const hands = handParts();
   const frame = torsoFrame(J, W, older);
   const torso = trunk(J, W, older, frame);
-  const sword = swordArm(J, W, hands.fist);
+  const sword = swordArm(J, W, hands.fist, frame);
   const rear = rearArm(J, W, hands.hip, frame);
-  // The hips and seat belong to the leg nearer the camera.
-  const legF = legPart(J, W, J.ankF, J.kF, { front: true, seat: !backView, older });
-  const legB = legPart(J, W, J.ankB, J.kB, { front: false, seat: backView, older });
+  // The front of the trousers belongs to the leg further from the camera, and the leg drawn over it parts from it only below the crotch.
+  const legF = legPart(J, W, J.ankF, J.kF, { front: true, seat: backView, near: !backView, older });
+  const legB = legPart(J, W, J.ankB, J.kB, { front: false, seat: !backView, near: backView, older });
 
   // Strokes on the floor under each planted foot, shorter as it lifts. The foot behind is turned across, so they go all round it.
   const ground = (ank, front) => {
@@ -216,7 +248,7 @@ export function frameOf(timeline) {
       const J = skeleton(p);
       const W = projector(p, dir, 0);
       const feet = [-8, 24].flatMap((reach) => [[J.ankB[0] + reach, 0], [J.ankF[0] + reach, 0]]);
-      const body = [[J.hd[0], J.hd[1] + 14], J.hn, J.tip, J.kF, J.kB, J.re, J.rs, [J.hip[0] - 16, J.hip[1]], [J.hip[0] + 16, J.hip[1]]];
+      const body = [[J.hd[0], J.hd[1] + 14], J.hn, J.tip, J.kF, J.kB, J.re, J.rs, [J.hipB[0] - 14, J.hip[1]], [J.hipF[0] + 14, J.hip[1]]];
       for (const q of [...feet, ...body]) take(W(q));
     }
   }

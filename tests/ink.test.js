@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { along, crotchFolds, cuffGathers, groundStrokes, kneeFolds, kneePuckers, sleeveFolds, sockWrinkles, thighFolds, torsoFolds, waistband } from "../site/js/folds.js";
+import { along, crotchFan, crotchFolds, cuffGathers, groundStrokes, kneeFolds, kneePuckers, sleeveFolds, sockWrinkles, thighFolds, torsoFolds, waistband } from "../site/js/folds.js";
 import { area, blob, brush, curve, dist, lerp, line, perp, ribbon, rotate, solid, unit, wound } from "../site/js/ink.js";
 import { boxOf, readPath } from "./path-data.js";
 
@@ -204,6 +204,7 @@ function folds(seed = 1) {
     sock: sockWrinkles(FLAT, lerp(knee, ankle, 0.2), ankle, [1, 0], seed),
     cuff: cuffGathers(FLAT, ankle, su, [1, 0], seed),
     crotch: crotchFolds(FLAT, hip, knee, [1, 0], seed),
+    fan: crotchFan(FLAT, [20, 60], [0, 1], [1, 0], seed),
     puckers: kneePuckers(FLAT, knee, su, [1, 0], seed),
     torso: torsoFolds(at, seed),
     belly: torsoFolds(at, seed, true),

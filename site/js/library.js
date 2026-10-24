@@ -3,7 +3,7 @@
 // A pose is a handful of numbers for one fencer, seen side on, facing the
 // opponent, with the back foot at 0. Lengths are centimetres and angles are
 // degrees, where 0 points at the opponent and 90 straight up:
-//   hipX, hipY    hips forward of the back foot, and their height
+//   hipX, hipY    the middle of the hips, forward of the back foot, and its height
 //   footF         front foot reach; liftF and liftB lift a foot off the floor
 //   lean          torso lean, forward positive
 //   turn          how far the shoulders are turned toward the camera, 0 side on
@@ -12,25 +12,28 @@
 //   rArm, rFore   rear arm, hand on the hip
 // A pose fills in whatever it leaves out from the guard.
 //
-// In the guard each knee is over its own foot, as in the plates. The front shin
-// stands upright, a thigh being 44 cm and the knee 54 cm up: with the hips at 76,
-// the front knee is where the thigh reaches, 37 cm on, over the front foot. The
-// knee of the leg behind is turned out toward the camera over its foot, which
-// points that way, so side on its shin leans a few degrees forward, as the
-// plates draw it. The poses that move the weight from there keep the knees over
-// the feet to within a few centimetres.
+// In the guard each knee is over its own foot, as in the plates. Each leg starts
+// from a hip of its own, the front one 6 cm forward of the middle of the hips
+// and the back one 6 cm behind it. The front shin stands upright, a thigh being
+// 44 cm and the knee 54 cm up: with the hips at 76, the front knee is where the
+// thigh reaches, 38 cm on from its hip, over the front foot. The knee of the leg
+// behind is turned out toward the camera over its foot, which points that way,
+// so side on its shin leans a few degrees forward, as the plates draw it. The
+// poses that move the weight from there keep the knees over the feet to within a
+// few centimetres, and in the lunges the leg behind is straight from its hip to
+// its foot.
 export const POSES = {
-  guard: { hipX: 40, hipY: 76, footF: 77, liftF: 0, liftB: 0, lean: 3, turn: 58, arm: -34, fore: 16, blade: 34, yaw: 0, rArm: -134, rFore: -32 },
-  advLift: { hipX: 44, hipY: 81, footF: 103, liftF: 9 },
-  advLand: { hipX: 49, hipY: 77, footF: 107 },
-  prep: { hipX: 42, lean: 4, arm: 15, fore: 30, blade: 85 },
-  lungeFly: { hipX: 57, hipY: 70, footF: 114, liftF: 8, lean: 12, arm: 25, fore: 25, blade: 45 },
-  lungeHead: { hipX: 77, hipY: 54.6, footF: 121, lean: 25, arm: 38, fore: 28, blade: 14 },
-  lungeChest: { hipX: 77, hipY: 54.6, footF: 121, lean: 24, arm: 8, fore: 6, blade: 8 },
-  parry3: { hipX: 38, hipY: 75, lean: -3, arm: -70, fore: 15, blade: 95 },
-  parry5: { hipX: 38, hipY: 75, lean: -4, arm: 35, fore: 60, blade: 8, yaw: 72 },
-  riposte: { hipX: 49, hipY: 76, footF: 94, lean: 14, arm: 0, fore: 0, blade: -6 },
-  extend: { hipX: 41, lean: 4, arm: 4, fore: 4, blade: 14 },
+  guard: { hipX: 34, hipY: 76, footF: 77, liftF: 0, liftB: 0, lean: 3, turn: 58, arm: -36, fore: 8, blade: 34, yaw: 0, rArm: -136, rFore: -31 },
+  advLift: { hipX: 38, hipY: 81, footF: 103, liftF: 9 },
+  advLand: { hipX: 43, hipY: 77, footF: 107 },
+  prep: { hipX: 36, lean: 4, arm: 15, fore: 30, blade: 85 },
+  lungeFly: { hipX: 55, hipY: 70, footF: 114, liftF: 8, lean: 12, arm: 25, fore: 25, blade: 45 },
+  lungeHead: { hipX: 83.1, hipY: 54.6, footF: 133, lean: 25, arm: 38, fore: 28, blade: 14 },
+  lungeChest: { hipX: 83.1, hipY: 54.6, footF: 133, lean: 24, arm: 8, fore: 6, blade: 8 },
+  parry3: { hipX: 32, hipY: 75, lean: -3, arm: -70, fore: 15, blade: 95 },
+  parry5: { hipX: 32, hipY: 75, lean: -4, arm: 35, fore: 60, blade: 8, yaw: 72 },
+  riposte: { hipX: 43, hipY: 76, footF: 94, lean: 14, arm: 0, fore: 0, blade: -6 },
+  extend: { hipX: 35, lean: 4, arm: 4, fore: 4, blade: 14 },
 };
 
 export const POSE_NAMES = {

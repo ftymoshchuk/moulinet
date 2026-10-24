@@ -5,6 +5,7 @@
 // pose always draws the same strokes, so they move with the body and never
 // flicker.
 import { add, brush, dist, lerp, mul, perp, unit } from "./ink.js";
+import { JERSEY_HEM as HEM } from "./parts.js";
 
 // A little steady variation, for strokes that should not look ruled.
 function wobble(seed) {
@@ -36,24 +37,68 @@ function stroke(W, points, width, swell) {
 }
 
 // How much heavier than first drawn every stroke is.
-const INK = 0.78;
+const INK = 1.0;
+
+// A stroke in a frame along a bone, from [t0, c0] to [t1, c1] (see `along`), bowed `bow` across it in the middle.
+function inFrame(W, f, [t0, c0], [t1, c1], width, bow = 0, swell = 0.45) {
+  return stroke(W, [f.at(t0, c0), f.at((t0 + t1) / 2, (c0 + c1) / 2 + bow), f.at(t1, c1)], width, swell);
+}
 
 /**
- * Long dry strokes down a baggy thigh from the hip toward the knee, spreading at
- * the top and drawing together at the bottom, where the cloth is gathered.
+ * The folds of a baggy thigh, from the hip toward the knee: a fan of long
+ * strokes from the crotch that runs out across the thigh as it goes down, and
+ * shorter strokes of shade along the inside of the thigh, where it faces the
+ * other leg. `inner` is the side the crotch is on: 1 for the side that faces
+ * `ref`, -1 for the other.
  */
-export function thighFolds(W, hip, knee, ref, seed = 1, offsets = [7.4, 3.0, -1.2, -5.2]) {
+export function thighFolds(W, hip, knee, ref, seed = 1, inner = 1, loose = false) {
   const f = along(hip, knee, ref);
   const r = wobble(seed);
+  const j = () => (r() - 0.5) * 0.06;
+  const at = ([t, c]) => [t, c * inner];
   let d = "";
-  offsets.forEach((c, i) => {
-    const t0 = 0.06 + r() * 0.2;
-    const t1 = 0.56 + r() * 0.36;
-    const a = f.at(t0, c + (r() - 0.5) * 2);
-    const b = f.at(t1, c * (0.35 + r() * 0.3));
-    const mid = f.at((t0 + t1) / 2, c * 0.75 + (r() - 0.5) * 4);
-    d += stroke(W, [a, mid, b], 0.45 + r() * 0.4, 0.3 + r() * 0.2);
-  });
+  // The fan from the crotch. Loose trousers hang in fewer, softer folds.
+  const fan = [
+    [[0.16, 9.0], [0.62, 2.0], 0.85],
+    [[0.24, 6.2], [0.78, -1.2], 0.75],
+    [[0.12, 3.2], [0.52, -4.6], 0.65],
+  ];
+  for (const [a, b, w] of loose ? fan.slice(0, 2) : fan) {
+    d += inFrame(W, f, at([a[0] + j(), a[1]]), at([b[0] + j(), b[1]]), w + r() * 0.2, inner * (r() - 0.3), 0.35 + r() * 0.15);
+  }
+  // Shade along the inside of the thigh, short strokes that follow it.
+  const shade = [
+    [[0.4, 9.8], [0.84, 7.4]],
+    [[0.5, 8.4], [0.9, 6.6]],
+    [[0.62, 7.0], [0.92, 5.6]],
+  ];
+  for (const [a, b] of loose ? shade.slice(0, 1) : shade) {
+    d += inFrame(W, f, at([a[0] + j(), a[1]]), at([b[0] + j(), b[1]]), 0.55 + r() * 0.15, 0, 0.5);
+  }
+  // A short fold at the top of the outside, where the cloth comes off the hip.
+  d += inFrame(W, f, at([0.04, -10.2]), at([0.26 + j(), -7.6]), 0.6, 0, 0.4);
+  return d;
+}
+
+/**
+ * The folds the stance pulls up from the crotch into the front of the trousers:
+ * a fan of strokes from the crotch `c` toward the hips and the waist, with `up`
+ * and `fwd` the way up the body and forward on the piste.
+ */
+export function crotchFan(W, c, up, fwd, seed = 14, count = 4) {
+  const r = wobble(seed);
+  const at = (u, v) => add(add(c, mul(up, u)), mul(fwd, v));
+  let d = "";
+  for (const [[u0, v0], [u1, v1], w] of [
+    [[2.2, 1.4], [10.6, 9.0], 0.85],
+    [[3.0, -0.4], [12.6, 2.2], 0.7],
+    [[2.0, -2.0], [9.4, -7.2], 0.75],
+    [[1.2, 3.2], [4.8, 12.6], 0.6],
+  ].slice(0, count)) {
+    const a = at(u0, v0);
+    const b = at(u1 + (r() - 0.5) * 1.4, v1 + (r() - 0.5) * 1.4);
+    d += stroke(W, [a, add(lerp(a, b, 0.5), mul(fwd, (r() - 0.5) * 1.2)), b], w, 0.3 + r() * 0.15);
+  }
   return d;
 }
 
@@ -70,7 +115,7 @@ export function crotchFolds(W, hip, knee, ref, seed = 12) {
     const t0 = 0.05 + i * 0.05;
     const t1 = 0.4 + i * 0.07 + r() * 0.04;
     const mid = f.at((t0 + t1) / 2, (c0 + c1) / 2 + (r() - 0.5));
-    d += stroke(W, [f.at(t0, c0), mid, f.at(t1, c1)], 0.5 + r() * 0.2, 0.4);
+    d += stroke(W, [f.at(t0, c0), mid, f.at(t1, c1)], 0.6 + r() * 0.2, 0.4);
   });
   return d;
 }
@@ -83,41 +128,47 @@ export function kneePuckers(W, knee, shin, ref, seed = 13) {
   [[-0.4, 9.2], [1.8, 8.6]].forEach(([s, c]) => {
     const a = f.at(s / 20, c);
     const b = f.at((s + 1.2) / 20, c * 0.2);
-    d += stroke(W, [a, f.at((s + 0.7) / 20, c * 0.7 + (r() - 0.5)), b], 0.5, 0.45);
+    d += stroke(W, [a, f.at((s + 0.7) / 20, c * 0.7 + (r() - 0.5)), b], 0.6, 0.45);
   });
   return d;
 }
 
-/** Long folds sweeping across the pouch of cloth at the knee, and the shadow where it gathers into the band. */
+/**
+ * The pouch of cloth that hangs over the band below the knee: two folds that
+ * sweep across it, and under it, where it overhangs the band, a row of short
+ * strokes of shade.
+ */
 export function kneeFolds(W, knee, shin, ref, seed = 2) {
   const f = along(knee, add(knee, mul(shin, 20)), ref);
   const r = wobble(seed);
+  // Centimetres down the shin from the knee, and out from it.
+  const at = (s, c) => [s / 20, c];
   let d = "";
-  [[-0.6, 8.8], [3.6, 8.8], [7.4, 7.6]].forEach(([s, c], i) => {
-    const a = f.at(s / 20, c);
-    const b = f.at((s + 1.7) / 20, -c * 0.7);
-    const mid = f.at((s + 1.4 + r()) / 20, c * 0.1);
-    d += stroke(W, [a, mid, b], 0.5 + r() * 0.3, 0.4 + i * 0.05);
-  });
-  // The cloth bunched above the band: short strokes low on the back of the leg.
-  for (let i = 0; i < 2; i++) {
-    const t = (9.8 + i * 1.1) / 20;
-    d += stroke(W, [f.at(t, -6.6 + i * 0.4), f.at(t + 0.1, -2.4 + r() * 1.5)], 0.7, 0.45);
+  d += inFrame(W, f, at(0.6, 9.4), at(4.6, -6.4), 0.75 + r() * 0.2, 1.2, 0.4);
+  d += inFrame(W, f, at(4.4, 9.8), at(7.4, -2.6), 0.65 + r() * 0.2, 1.0, 0.45);
+  for (const c of [8.6, 6.0, 3.4, 0.8, -1.8, -4.4, -6.8]) {
+    const s = 8.6 + r() * 0.8 - Math.abs(c) * 0.06;
+    d += inFrame(W, f, at(s, c), at(11.2, c * 0.96), 0.55 + r() * 0.15, 0, 0.5);
   }
   return d;
 }
 
-/** The wrinkles of a stocking, round the calf and gathered over the shoe. */
-export function sockWrinkles(W, from, ankle, ref, seed = 3) {
+/**
+ * The stocking: strokes of shade down the inside of the calf, the side that
+ * faces the other leg (`inner`, as for the thigh), and wrinkles where it
+ * gathers over the shoe.
+ */
+export function sockWrinkles(W, from, ankle, ref, seed = 3, inner = 1) {
   const f = along(from, ankle, ref);
   const r = wobble(seed);
   let d = "";
-  for (let i = 0; i < 3; i++) {
-    const t = 0.64 + i * 0.11 + r() * 0.03;
-    d += stroke(W, [f.at(t, 3.8 - r()), f.at(t + 0.02, 0.4), f.at(t + 0.045, -3.8 + r())], 0.45 + r() * 0.2, 0.5);
+  for (const [c, t1] of [[4.6, 0.72], [3.4, 0.6], [2.2, 0.44], [1.0, 0.3]]) {
+    d += inFrame(W, f, [0.03 + r() * 0.04, c * inner], [t1 + r() * 0.06, c * inner * 0.8], 0.6 + r() * 0.15, 0, 0.4);
   }
-  // A long soft line down the back of the calf.
-  d += stroke(W, [f.at(0.14, -4.6), f.at(0.4, -5.2), f.at(0.68, -3.6)], 0.5, 0.5);
+  for (let i = 0; i < 3; i++) {
+    const t = 0.7 + i * 0.09 + r() * 0.03;
+    d += stroke(W, [f.at(t, 3.6 - r()), f.at(t + 0.02, 0.4), f.at(t + 0.045, -3.6 + r())], 0.5 + r() * 0.2, 0.5);
+  }
   return d;
 }
 
@@ -128,19 +179,19 @@ export function cuffGathers(W, ankle, su, ref, seed = 3) {
   let d = "";
   for (let i = 0; i < 4; i++) {
     const t = 0.66 + i * 0.075 + r() * 0.02;
-    d += stroke(W, [f.at(t, 5.8 - r()), f.at(t + 0.018, 0.6), f.at(t + 0.034, -5.6 + r())], 0.5 + r() * 0.2, 0.5);
+    d += stroke(W, [f.at(t, 5.8 - r()), f.at(t + 0.018, 0.6), f.at(t + 0.034, -5.6 + r())], 0.55 + r() * 0.2, 0.5);
   }
-  d += stroke(W, [f.at(0.2, 3.6), f.at(0.45, 4.2), f.at(0.62, 3.4)], 0.5, 0.5);
-  d += stroke(W, [f.at(0.14, -4.4), f.at(0.42, -4.8), f.at(0.6, -4.0)], 0.5, 0.5);
+  d += stroke(W, [f.at(0.2, 3.6), f.at(0.45, 4.2), f.at(0.62, 3.4)], 0.6, 0.5);
+  d += stroke(W, [f.at(0.14, -4.4), f.at(0.42, -4.8), f.at(0.6, -4.0)], 0.6, 0.5);
   return d;
 }
 
 /**
- * The creases of a jersey, each a thin stroke laid on its surface: under the
- * sleeve, radiating from the armpit; across the chest; at the waist, where the
- * body bends; and two long folds down the front, where the body turns away.
- * `at(up, v)` is a point of the jersey: `up` cm above the hips, and `v` across
- * from the back, -1, to the front, 1. An older man has the folds of a belly.
+ * The creases of a jersey, each a stroke laid on its surface: a fan from each
+ * armpit, where the sleeve pulls the cloth; a fold across the chest; and the
+ * cloth bloused over the belt, gathered in short strokes above it. `at(up, v)`
+ * is a point of the jersey: `up` cm above the hips, and `v` across from the
+ * back, -1, to the front, 1. An older man has the folds of a belly.
  */
 export function torsoFolds(at, seed = 4, older = false) {
   const r = wobble(seed);
@@ -149,37 +200,43 @@ export function torsoFolds(at, seed = 4, older = false) {
   const crease = (points, width = 0.5, bow = 0.5) => {
     const [a, b] = [points[0], points[points.length - 1]];
     const mid = points.length > 2 ? points[1] : [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + bow * 0.08];
-    return stroke(page, [at(...a), at(...mid), at(...b)], width + r() * 0.15, 0.4 + r() * 0.2);
+    return stroke(page, [at(...a), at(...mid), at(...b)], width + r() * 0.15, 0.35 + r() * 0.2);
   };
   let d = "";
-  // Under the sleeve, radiating from the armpit.
-  [[40.6, -0.5, 38.0, -0.18], [42.0, -0.46, 40.2, -0.04]].forEach(([u0, v0, u1, v1]) => {
-    d += crease([[u0, v0], [u1, v1]], 0.5);
-  });
-  // At the waist, where the jersey is gathered.
-  [[18.4, -0.5, 16.6, 0.6], [14.8, -0.62, 13.2, 0.72], [21.6, -0.3, 20.6, 0.5]].forEach(([u0, v0, u1, v1]) => {
-    d += crease([[u0, v0], [(u0 + u1) / 2 - 0.5, (v0 + v1) / 2], [u1, v1]], 0.5);
-  });
-  // Down the front, where the body turns away: two long folds, not a row of ticks.
-  d += crease([[44.0, 0.72], [36.0, 0.84], [28.0, 0.8]], 0.6);
-  d += crease([[24.0, 0.8], [19.0, 0.88], [14.0, 0.82]], 0.6);
+  // From the armpit of the sword arm, at the front, down into the chest.
+  for (const [u1, v1] of [[35.0, 0.74], [37.4, 0.62], [39.6, 0.56]]) d += crease([[42.6, 0.95], [u1, v1]], 0.6, 0.4);
+  // From the armpit of the arm nearer the camera, at the back.
+  for (const [u1, v1] of [[35.6, -0.36], [38.2, -0.26]]) d += crease([[42.0, -0.6], [u1, v1]], 0.55, -0.4);
+  // The cloth bloused over the belt.
+  for (const v of [-0.72, -0.44, -0.16, 0.12, 0.4, 0.66]) {
+    const top = HEM + 6.4 + r() * 3.2;
+    d += crease([[top, v + (r() - 0.5) * 0.08], [HEM + 1.8, v * 1.03]], 0.55, (r() - 0.5) * 2);
+  }
   if (older) {
     // The weight of a belly: folds that hang across it, and the shadow below.
-    d += crease([[12.4, -0.1], [11.4, 0.5], [12.6, 0.96]], 0.8);
-    d += crease([[16.2, 0.2], [15.2, 0.62], [16.6, 0.94]], 0.6);
+    d += crease([[HEM + 4.4, -0.1], [HEM + 3.4, 0.5], [HEM + 4.6, 0.96]], 0.8);
+    d += crease([[HEM + 8.2, 0.2], [HEM + 7.2, 0.62], [HEM + 8.6, 0.94]], 0.6);
   }
   return d;
 }
 
-/** A heavier line along the hem, where the jersey meets the waistband. */
+/**
+ * A heavier line along the hem, where the jersey meets the waistband, and below
+ * it the trousers gathered into the band: short strokes hanging from it.
+ */
 export function waistband(at) {
   const page = (q) => q;
-  return stroke(page, [at(9.6, -0.94), at(8.6, 0.0), at(9.8, 0.96)], 1.0, 0.5);
+  let d = stroke(page, [at(HEM + 1.4, -0.96), at(HEM + 0.4, 0.0), at(HEM + 1.6, 0.96)], 1.1, 0.5);
+  for (const [v, length] of [[-0.62, 4.4], [-0.34, 5.6], [-0.06, 4.0], [0.22, 5.2], [0.5, 3.8]]) {
+    d += stroke(page, [at(HEM - 0.6, v), at(HEM - 0.6 - length * 0.5, v * 1.02), at(HEM - 0.6 - length, v * 0.98)], 0.6, 0.4);
+  }
+  return d;
 }
 
 /**
- * Folds in a sleeve at the elbow: strokes drawn in toward the inside of the bend
- * from along both arms, and the heavier line along the underside of the forearm.
+ * Folds in a sleeve: a fan drawn in toward the inside of the bend at the elbow
+ * from along both arms, strokes of shade along the underside of the upper arm
+ * near the armpit, and the heavier line along the underside of the forearm.
  */
 export function sleeveFolds(W, shoulder, elbow, wrist, seed = 6) {
   const r = wobble(seed);
@@ -189,18 +246,22 @@ export function sleeveFolds(W, shoulder, elbow, wrist, seed = 6) {
   const bend = (elbow[0] - shoulder[0]) * (wrist[1] - elbow[1]) - (elbow[1] - shoulder[1]) * (wrist[0] - elbow[0]);
   const side = bend > 0 ? -1 : 1;
   let d = "";
-  for (let i = 0; i < 2; i++) {
-    const c = side * (3.2 - i * 0.6);
-    const a = fore.at(0.36 + i * 0.14, c * 1.5);
-    const b = lerp(elbow, a, 0.18);
-    d += stroke(W, [a, add(lerp(a, b, 0.5), mul(fore.n, side * 0.8)), b], 0.5 + r() * 0.3, 0.45);
+  for (let i = 0; i < 3; i++) {
+    const c = side * (3.6 - i * 0.7);
+    const a = fore.at(0.3 + i * 0.12, c * 1.4);
+    const b = lerp(elbow, a, 0.16);
+    d += stroke(W, [a, add(lerp(a, b, 0.5), mul(fore.n, side * 0.8)), b], 0.6 + r() * 0.3, 0.45);
   }
-  {
-    const a = up.at(0.68, side * 3.4);
-    d += stroke(W, [a, lerp(a, elbow, 0.5), lerp(elbow, a, 0.12)], 0.5, 0.45);
+  for (let i = 0; i < 2; i++) {
+    const a = up.at(0.62 + i * 0.12, side * (3.8 - i * 0.8));
+    d += stroke(W, [a, lerp(a, elbow, 0.5), lerp(elbow, a, 0.14)], 0.6, 0.45);
+  }
+  // Shade under the upper arm, near the armpit.
+  for (const [t0, t1, c] of [[0.12, 0.46, -5.4], [0.16, 0.38, -4.2]]) {
+    d += stroke(W, [up.at(t0, c), up.at((t0 + t1) / 2, c - 0.3), up.at(t1, c + 0.2)], 0.65, 0.45);
   }
   // The heavier line under the forearm.
-  d += stroke(W, [fore.at(0.2, -5.2), fore.at(0.55, -4.9), fore.at(0.94, -4.1)], 1.1, 0.5);
+  d += stroke(W, [fore.at(0.18, -5.4), fore.at(0.55, -5.0), fore.at(0.94, -4.2)], 1.2, 0.5);
   return d;
 }
 

@@ -7,119 +7,131 @@
 // chin and up the back of the skull. Origin is the middle of the head: the
 // crown is 12.4 above it and the chin 11.8 below.
 const SKULL = [
-  [2.0, 12.4],
-  [6.0, 10.4],
-  [7.6, 7.2],
-  [7.7, 5.6],
-  [8.7, 3.0], // brow
-  [7.7, 1.5], // where the nose begins
-  [8.3, 0.2],
-  [11.0, -3.6], // tip of the nose
-  [9.5, -4.8],
-  [9.1, -6.2], // upper lip
-  [9.4, -7.3], // lips
-  [8.8, -8.3],
-  [8.1, -9.5],
-  [8.6, -11.2], // chin
-  [6.4, -12.6],
-  [1.5, -11.4], // under the jaw
-  [-3.0, -9.0], // angle of the jaw
-  [-5.6, -8.2],
-  [-8.6, -4.6],
-  [-9.7, 1.4],
-  [-8.8, 7.2],
-  [-5.0, 11.7],
+  [2.0, 12.6],
+  [6.2, 10.6],
+  [7.8, 7.4],
+  [8.0, 5.4],
+  [9.0, 3.0], // brow
+  [8.0, 1.4], // where the nose begins
+  [8.8, -0.2],
+  [11.4, -3.8], // tip of the nose
+  [9.8, -5.0],
+  [9.3, -6.2], // upper lip
+  [9.6, -7.3], // lips
+  [9.0, -8.3],
+  [8.4, -9.4],
+  [9.0, -11.2], // chin
+  [6.8, -12.8],
+  [1.5, -11.6], // under the jaw
+  [-3.4, -9.2], // angle of the jaw
+  [-6.2, -8.6],
+  [-9.4, -4.8],
+  [-10.6, 1.4],
+  [-9.6, 7.4],
+  [-5.4, 12.0],
 ];
 
-// Dark hair, short and brushed back: the top and back of the head down to the
-// nape, a hairline over the temple, and a sideburn in front of the ear.
+// Dark hair, short and brushed back: full over the forehead, the top and back
+// of the head down to a ragged edge at the nape, round the ear, a sideburn, and
+// a hairline that steps back at the temple.
 const HAIR_YOUNG = [
-  [7.5, 7.3],
-  [6.2, 10.5],
-  [2.0, 12.8],
-  [-3.8, 12.4],
-  [-8.2, 9.0],
-  [-9.9, 3.2],
-  [-9.8, -2.4],
-  [-8.2, -6.4],
-  [-6.4, -7.8],
-  [-4.6, -5.8],
-  [-3.4, -3.0], // behind the ear
-  [-3.0, 0.6],
-  [-1.8, 2.8], // above the ear
-  [0.8, 2.6],
-  [2.6, 1.8],
-  [3.6, 1.2], // the sideburn
-  [4.0, 4.2],
-  [5.4, 6.4],
+  [8.0, 7.6],
+  [7.6, 10.4],
+  [4.6, 12.8],
+  [0.0, 13.8],
+  [-4.8, 13.2],
+  [-8.8, 10.0],
+  [-11.0, 4.0],
+  [-11.0, -1.8],
+  [-9.6, -5.8],
+  [-7.8, -7.8], // the nape
+  [-6.6, -7.0],
+  [-5.6, -7.6],
+  [-5.2, -4.6], // behind the ear
+  [-5.0, -1.2],
+  [-4.4, 1.6], // over the ear
+  [-2.4, 2.8],
+  [0.0, 2.6],
+  [1.8, 1.8],
+  [2.6, 0.4], // the sideburn
+  [3.6, 0.6],
+  [4.2, 3.8], // the hairline at the temple
+  [5.8, 5.4],
+  [6.8, 7.2],
 ];
 
 // An older man's: bare on top, a ring of hair from above the ear round the back.
 const HAIR_OLD = [
-  [-2.4, 4.6],
-  [-3.6, 9.0],
-  [-5.8, 11.3],
-  [-8.4, 8.5],
-  [-9.8, 2.4],
-  [-9.6, -3.0],
-  [-7.6, -6.8],
-  [-6.0, -6.8],
-  [-5.8, -4.4],
-  [-7.2, -0.4],
-  [-7.4, 4.4],
-  [-5.6, 7.8],
-  [-3.4, 6.2],
+  [-3.8, 4.6],
+  [-4.8, 9.0],
+  [-6.8, 11.3],
+  [-9.4, 8.5],
+  [-10.8, 2.4],
+  [-10.6, -3.0],
+  [-8.6, -6.8],
+  [-7.0, -6.8],
+  [-6.6, -4.4],
+  [-8.0, -0.4],
+  [-8.2, 4.4],
+  [-6.6, 7.8],
+  [-4.6, 6.2],
 ];
 
 // The way the hair lies, as strokes of paper left in it: along each, from the
-// parting back over the crown.
+// forehead back over the crown and down the back of the head.
 const STREAKS_YOUNG = [
-  [[5.4, 9.4], [2.0, 11.2], [-2.8, 10.8]],
-  [[4.2, 7.4], [0.4, 8.8], [-4.8, 8.0]],
-  [[-1.6, 4.6], [-5.0, 5.2], [-8.4, 2.4]],
+  [[6.4, 10.4], [2.6, 12.2], [-2.4, 12.0]],
+  [[5.6, 8.4], [1.0, 10.2], [-4.4, 9.8]],
+  [[3.6, 6.4], [-1.0, 7.8], [-6.4, 7.0]],
+  [[-0.4, 4.4], [-4.6, 4.8], [-8.6, 2.6]],
+  [[-6.6, 1.0], [-8.8, -1.4], [-9.0, -4.0]],
 ];
 const STREAKS_OLD = [];
 
 // The ear: an outer curve and the fold inside it.
 const EAR = [
-  [-0.8, 1.7],
-  [0.8, 0.7],
-  [1.0, -1.4],
-  [-0.2, -3.6],
-  [-1.8, -3.1],
-  [-2.5, -0.9],
-  [-1.9, 1.2],
+  [-2.3, 1.2],
+  [-0.7, 0.2],
+  [-0.5, -1.9],
+  [-1.7, -4.1],
+  [-3.3, -3.6],
+  [-4.0, -1.4],
+  [-3.4, 0.7],
 ];
 const EAR_FOLD = [
-  [-0.7, 0.1],
-  [0.0, -0.9],
-  [-0.2, -2.2],
+  [-2.2, -0.4],
+  [-1.5, -1.4],
+  [-1.7, -2.7],
 ];
 
 // Marks on the face: [where a stroke starts, where it ends, how thick]. The eye
-// and brow are heavier than the nostril and the line of the mouth.
+// and brow are heavier than the nostril and the line of the mouth, and the
+// shadow under the cheekbone runs down toward the jaw.
 const FACE = {
-  brow: [[4.2, 2.7], [6.2, 3.1], [8.1, 2.8], 0.8],
-  eye: [[5.2, 1.0], [6.1, 1.35], [7.0, 1.0], 0.8],
-  lid: [[5.0, 1.9], [6.0, 2.1], [7.1, 1.9], 0.25],
-  nostril: [[8.6, -4.2], [9.1, -4.2], [9.6, -4.5], 0.7],
-  mouth: [[7.2, -7.2], [8.3, -7.3], [9.3, -7.0], 0.35],
+  brow: [[4.4, 2.8], [6.4, 3.3], [8.4, 2.9], 0.9],
+  eye: [[5.4, 1.0], [6.3, 1.4], [7.2, 1.0], 0.9],
+  lid: [[5.2, 1.9], [6.2, 2.1], [7.3, 1.9], 0.25],
+  nostril: [[8.9, -4.4], [9.4, -4.4], [9.9, -4.7], 0.7],
+  mouth: [[7.4, -7.3], [8.5, -7.4], [9.5, -7.1], 0.4],
+  cheek: [[3.4, -2.6], [4.2, -5.6], [5.6, -8.0], 0.5],
 };
 
-// Loose ends of hair at the edge of the hairline, and the short hair that is
-// left on an older man's crown: strokes of ink, each from where it starts to
-// where it ends.
+// Loose ends of hair at the edge of the hairline and at the nape, and the short
+// hair that is left on an older man's crown: strokes of ink, each from where it
+// starts to where it ends.
 const TUFTS_YOUNG = [
-  [[7.2, 7.8], [8.1, 8.6]],
-  [[6.0, 9.8], [6.9, 10.7]],
-  [[3.6, 1.6], [3.0, -0.8]],
+  [[7.6, 8.0], [8.6, 8.9]],
+  [[6.4, 10.4], [7.3, 11.4]],
+  [[3.4, 1.2], [3.0, -0.8]],
+  [[-7.0, -7.4], [-6.6, -8.8]],
+  [[-8.6, -6.6], [-8.8, -8.0]],
 ];
 const TUFTS_OLD = [
-  [[-4.0, 9.2], [-6.6, 8.8], [-8.0, 6.2]],
-  [[-7.6, 5.0], [-8.6, 2.2], [-8.8, -0.6]],
-  [[-8.4, -1.8], [-8.4, -4.2], [-7.4, -6.0]],
-  [[-6.4, 9.8], [-8.0, 8.2]],
-  [[-8.8, 3.4], [-9.2, 0.6]],
+  [[-5.0, 9.2], [-7.6, 8.8], [-9.0, 6.2]],
+  [[-8.6, 5.0], [-9.6, 2.2], [-9.8, -0.6]],
+  [[-9.4, -1.8], [-9.4, -4.2], [-8.4, -6.0]],
+  [[-7.4, 9.8], [-9.0, 8.2]],
+  [[-9.8, 3.4], [-10.2, 0.6]],
 ];
 
 /**
@@ -138,28 +150,31 @@ export function headParts(older = false) {
   };
 }
 
-// The fist of the sword hand in its glove, in the frame of the forearm, with
-// the grip at the origin and x along the forearm toward the blade: the shape,
-// and the lines of the fingers and the thumb.
+// The fist of the sword hand in its glove, seen from the side, in the frame of
+// the forearm with the grip at the origin and x along the forearm toward the
+// blade: the back of the hand and the knuckles on top, the fingers curled round
+// the grip in front and under it, and the heel of the hand below. The shape,
+// and the lines of the knuckles, the fingers and the thumb.
 const FIST = {
   shape: [
-    [-1.2, 4.6],
-    [0.6, 5.6],
-    [2.6, 6.0],
-    [5.0, 5.4],
-    [7.4, 3.8],
-    [8.6, 1.2],
-    [8.0, -2.2],
-    [6.2, -4.6],
-    [3.2, -5.2],
-    [0.0, -4.8],
+    [-11.4, 4.4],
+    [-8.0, 5.2],
+    [-4.2, 5.6],
+    [-1.6, 4.9],
+    [-0.4, 2.8],
+    [-0.3, 0.0],
+    [-1.0, -2.8],
+    [-2.6, -4.6],
+    [-5.6, -5.3],
+    [-8.8, -4.9],
+    [-11.4, -4.2],
   ],
   lines: [
-    [[-1.2, 4.6], [-1.3, 0], [-1.2, -4.6]],
-    [[2.6, 4.8], [5.4, 4.6], [7.4, 3.6]],
-    [[4.8, 2.8], [7.0, 1.6], [7.8, -0.2]],
-    [[4.4, 0.4], [6.8, -0.6], [7.4, -2.2]],
-    [[4.0, -2.0], [6.0, -2.8], [6.4, -4.0]],
+    [[-3.0, 4.8], [-1.4, 3.2], [-1.0, 0.8]],
+    [[-4.6, 1.6], [-2.8, 1.5], [-1.0, 1.0]],
+    [[-4.8, -0.8], [-2.8, -1.1], [-1.0, -1.4]],
+    [[-4.4, -3.0], [-2.8, -3.4], [-1.8, -3.9]],
+    [[-8.2, 3.6], [-5.4, 3.0], [-3.2, 3.2]],
   ],
 };
 
@@ -187,19 +202,16 @@ const HIP_HAND = {
   ],
 };
 
-// A hand shape moved `dx` along its x axis.
-function shifted(hand, dx, scale = 1) {
-  const move = ([x, y]) => [x * scale + dx, y * scale];
-  return { shape: hand.shape.map(move), lines: hand.lines.map((l) => l.map(move)) };
+// A copy of a hand's points, so a drawing cannot change the ones here.
+function copied(hand) {
+  const copy = ([x, y]) => [x, y];
+  return { shape: hand.shape.map(copy), lines: hand.lines.map((l) => l.map(copy)) };
 }
-
-// The sword hand is a big gauntlet glove, a fifth larger than drawn above.
-const GLOVE = 1.2;
 
 // The fist sits behind the guard, which is at the front of the grip: its front
 // is at the origin, so it reaches back from there.
 export function handParts() {
-  return { fist: shifted(FIST, -9.4 * GLOVE, GLOVE), hip: HIP_HAND };
+  return { fist: copied(FIST), hip: HIP_HAND };
 }
 
 // A lace-up leather shoe seen from the side, in a frame with the ankle at the
@@ -209,41 +221,46 @@ export function handParts() {
 const SHOE = {
   // The points along the sole, the heavy edge of the line, keep half of it ([x, y, 0, weight]).
   shape: [
-    [-6.4, -8.0, 0, 0.5],
-    [-7.0, -5.4],
-    [-6.4, -1.8],
-    [-5.0, 1.2],
-    [-2.4, 2.0],
-    [0.8, 0.6],
-    [4.8, -1.4],
-    [9.6, -3.0],
-    [14.4, -4.0],
-    [18.4, -4.0],
-    [21.0, -5.4],
-    [21.4, -7.0, 0, 0.7],
-    [19.6, -8.0, 0, 0.5],
-    [8.0, -8.3, 0, 0.5],
+    [-7.0, -8.0, 0, 0.5],
+    [-7.6, -5.2],
+    [-7.0, -1.6],
+    [-5.4, 1.4],
+    [-2.6, 2.4],
+    [0.8, 1.0],
+    [5.0, -0.8],
+    [10.0, -2.2],
+    [15.0, -2.8],
+    [19.4, -3.0],
+    [22.6, -4.4],
+    [23.6, -6.4, 0, 0.7],
+    [22.0, -8.0, 0, 0.5],
+    [8.0, -8.4, 0, 0.5],
   ],
-  ink: [[[-6.6, -8.1], [-6.8, -6.6], [-3.0, -6.6], [-2.6, -8.2]]],
+  ink: [[[-7.2, -8.1], [-7.5, -6.4], [-3.2, -6.4], [-2.8, -8.2]]],
   hatch: [
-    [[-6.6, -2.2], [-5.2, -4.4]],
-    [[-6.2, -0.6], [-4.6, -3.0]],
-    [[-5.4, 0.7], [-3.8, -1.6]],
-    [[13.4, -3.6], [14.0, -5.8]],
-    [[15.0, -3.5], [15.6, -5.7]],
-    [[16.6, -3.7], [17.2, -5.6]],
-    [[18.2, -4.2], [18.7, -5.6]],
-    [[9.6, -4.4], [10.4, -6.0]],
-    [[11.2, -4.6], [11.9, -6.0]],
+    [[-7.2, -2.0], [-5.8, -4.4]],
+    [[-6.8, -0.4], [-5.2, -3.0]],
+    [[-5.8, 1.0], [-4.2, -1.6]],
+    [[14.6, -3.4], [15.2, -6.0]],
+    [[16.4, -3.4], [17.0, -6.0]],
+    [[18.2, -3.6], [18.8, -6.0]],
+    [[20.0, -3.8], [20.6, -6.0]],
+    [[10.4, -3.0], [11.2, -5.8]],
+    [[12.4, -3.2], [13.0, -5.8]],
+    [[-1.0, -4.6], [-0.6, -6.8]],
+    [[1.2, -4.4], [1.6, -6.8]],
+    [[3.4, -4.6], [3.8, -6.8]],
+    [[5.6, -4.8], [6.0, -6.8]],
+    [[7.8, -5.0], [8.2, -6.8]],
   ],
   laces: [
-    [[0.6, 0.4], [2.0, -2.0]],
-    [[2.6, -0.2], [4.0, -2.6]],
-    [[4.6, -1.0], [6.0, -3.2]],
-    [[6.6, -1.8], [8.0, -3.8]],
+    [[0.8, 0.8], [2.2, -1.6]],
+    [[2.8, 0.0], [4.2, -2.4]],
+    [[4.8, -0.6], [6.2, -3.0]],
+    [[6.8, -1.2], [8.2, -3.6]],
   ],
-  sole: [[-2.4, -7.2], [6.0, -7.4], [20.4, -6.9]],
-  cap: [[11.6, -3.4], [12.6, -5.0], [12.2, -6.2]],
+  sole: [[-2.6, -7.0], [7.0, -7.2], [22.6, -6.8]],
+  cap: [[13.0, -2.6], [14.0, -4.6], [13.6, -6.2]],
 };
 
 export function shoeParts() {
@@ -261,9 +278,9 @@ const SHOE_ACROSS = {
   // Each dome: where its middle is along the foot, its half-length, its half-width,
   // its height, and how square it is (2 is an ellipse, and more is squarer).
   domes: [
-    [-2.2, 4.8, 3.9, 10.0, 3.0], // the heel and the ankle, which the stocking runs into
-    [0.8, 8.0, 4.9, 8.6, 1.9], // the instep, where the laces run
-    [12.4, 9.0, 5.3, 5.2, 2.3], // the toe box
+    [-2.6, 5.0, 4.1, 10.4, 3.0], // the heel and the ankle, which the stocking runs into
+    [1.0, 8.4, 5.1, 8.8, 1.9], // the instep, where the laces run
+    [13.6, 10.0, 5.5, 6.0, 2.3], // the toe box
   ],
   // The sole is a slab under the shoe, a little wider than it, and bowed down at the toe.
   sole: { height: 1.2, edge: 0.4, bow: 0.35 },
@@ -274,16 +291,16 @@ const SHOE_ACROSS = {
   // Where the laces cross: how far along the foot.
   laces: [1.8, 3.4, 5.0, 6.6],
   // The seam of the toe cap, as how far along the foot it crosses the toe box.
-  seam: 17.6,
+  seam: 19.0,
   // Strokes of shade on the side that turns from the light, each hanging from the
   // skin of a dome: which dome, how far across it and how far along the foot it
   // is, and how long.
   hatch: [
-    [2, 4.3, 11.2, 2.3],
-    [2, 3.3, 13.8, 2.3],
-    [2, 2.2, 16.2, 2.0],
-    [1, 3.9, 3.8, 2.2],
-    [1, 3.4, 5.8, 2.0],
+    [2, 4.5, 12.4, 2.6],
+    [2, 3.5, 15.0, 2.6],
+    [2, 2.4, 17.4, 2.2],
+    [1, 4.1, 3.8, 2.4],
+    [1, 3.6, 5.8, 2.2],
   ],
 };
 
@@ -297,15 +314,20 @@ export function shoeAcrossParts() {
 // the shoulders turned toward the camera the slices make the broad shoulders
 // that taper to the waist, and the camera swings them round as it swings.
 const TORSO = [
-  [8, 0.4, 11.8, 12.6],
-  [17, 0.4, 11.4, 12.0],
-  [27, 0.8, 12.4, 14.4],
-  [37, 1.4, 13.4, 18.0],
-  [45, 1.4, 12.8, 19.4],
-  [51, 0.6, 10.6, 19.6],
-  [55, -0.2, 7.4, 14.6],
-  [58, -0.4, 5.6, 8.6],
+  [11, 0.4, 12.6, 17.6],
+  [18, 0.4, 12.0, 16.6],
+  [27, 0.8, 13.0, 18.4],
+  [36, 1.4, 14.0, 20.6],
+  [44, 1.4, 13.6, 21.8],
+  [51, 0.6, 11.0, 22.5],
+  [54.5, 0.4, 9.5, 21.5],
+  [57, 0.6, 8.0, 18.0],
+  [58.5, 1.0, 7.0, 12.0],
+  [59.5, 1.2, 6.0, 7.5],
 ];
+
+// How far above the hips the hem of the jersey is, where it is tucked into the trousers under the belt.
+export const JERSEY_HEM = TORSO[0][0];
 
 /** The slices of the jersey; an older man carries more at the waist and has narrower, more sloping shoulders. */
 export function torsoParts(older = false) {

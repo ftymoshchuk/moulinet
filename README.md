@@ -84,17 +84,28 @@ is in this repository.
 
 The shoulders are turned toward you, as in those books: the jersey is a stack
 of slices of the body, set round by the pose's `turn`, so it is broad at the
-shoulders and narrow at the waist, and the camera swings it as it swings the
-piste. The sleeve of the arm on your side begins on the jersey itself, and the
-other arm lies behind it, set on the shoulder at the front of the chest and as
-long as an arm. The foot in front points at the opponent, and the foot behind
-is turned across, its toe at you, so that the two make an L, as the stance is
-taught. That shoe is a few domes standing on the floor, which the camera turns
-with the piste, so it is seen end on, from a quarter or from the side as the
-camera moves. Each knee is over its own foot: the front shin stands upright, and
-the knee of the leg behind bends back and is turned out toward you, over the
-foot, so side on its shin leans a little forward and the leg is seen shorter, as
-the plates draw it. Together they give the guard its wide stance.
+shoulders and a little narrower at the waist, and the camera swings it as it
+swings the piste. The sleeve of the arm on your side begins on the jersey
+itself, and the other arm lies behind it, set on the shoulder at the front of
+the chest and as long as an arm, its loose sleeve running on from the line of
+the shoulder into a gauntlet. The hips turn with the shoulders, if not as far,
+so each leg starts from a hip of its own, the leg behind on your side and the
+leg in front on the far side: the legs part at the crotch, under a wide front
+of the trousers, rather than from one point. The foot in front points at the
+opponent, and the foot behind is turned across, its toe at you, so that the two
+make an L, as the stance is taught. That shoe is a few domes standing on the
+floor, which the camera turns with the piste, so it is seen end on, from a
+quarter or from the side as the camera moves. Each knee is over its own foot:
+the front shin stands upright, and the knee of the leg behind bends back and is
+turned out toward you, over the foot, so side on its shin leans a little
+forward and the leg is seen shorter, as the plates draw it. Together they give
+the guard its wide stance.
+
+The shading is drawn as the plates draw it, in strokes: a fan of folds from
+the crotch, the cloth bloused over the belt and gathered under it, shadow on
+the insides of the legs, where each faces the other, and under the cloth that
+hangs over the band below the knee, and folds from the armpits and at the
+elbows.
 
 A young fencer wears knickerbockers and long stockings, an older one loose
 trousers gathered at the ankle, a belly and narrower shoulders. The strokes are
@@ -162,7 +173,7 @@ points at the opponent and 90 straight up.
 
 | Key | Joint |
 |---|---|
-| `hipX`, `hipY` | Hips: how far forward of the back foot, and how high |
+| `hipX`, `hipY` | Hips: how far their middle is forward of the back foot, and how high |
 | `footF` | Front foot: how far forward of the back foot |
 | `liftF`, `liftB` | How far the front or back foot is off the floor |
 | `lean` | Torso lean, forward positive |
