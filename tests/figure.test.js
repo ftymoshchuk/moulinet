@@ -181,6 +181,22 @@ test("in the guard each knee is over its own foot: the front shin is upright, th
   for (const name of ["lungeHead", "lungeChest"]) assert.ok(Math.abs(over(name)[0]) < 0.5, `${name}: the front knee is over the front ankle`);
 });
 
+test("a parry with the weight back sits over the bent back leg, the front leg straight, the arm and blade as in the parry", () => {
+  const length = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], (a[2] ?? 0) - (b[2] ?? 0));
+  for (const [back, parry] of [["parry3Back", "parry3"], ["parry5Back", "parry5"]]) {
+    const pose = resolvePose({ pose: back });
+    const J = skeleton(pose);
+    const plain = skeleton(resolvePose({ pose: parry }));
+    assert.equal(pose.footF, POSES.guard.footF, `${back}: the feet are where the guard has them; only the weight moves`);
+    assert.ok(J.hip[0] < plain.hip[0] - 10, `${back}: the hips go back (${J.hip[0]} against ${plain.hip[0]})`);
+    assert.ok(Math.abs(J.kB[0] - J.ankB[0]) < 4, `${back}: the back knee is over the back foot (${J.kB[0] - J.ankB[0]})`);
+    assert.ok(length(J.hipB, J.ankB) < 80, `${back}: and bent, taking the weight`);
+    assert.ok(length(J.hipF, J.ankF) >= 89.9, `${back}: the front leg is straight`);
+    assert.ok(pose.lean < 0, `${back}: the body is upright or a little back`);
+    for (const key of ["arm", "fore", "blade", "yaw"]) assert.equal(pose[key], resolvePose({ pose: parry })[key], `${back}: the ${key} is the parry's`);
+  }
+});
+
 test("the knee behind is turned out toward the camera over the foot, with thigh and shin as long as ever", () => {
   for (const name of ["guard", "parry3", "advLift", "lungeFly", "riposte"]) {
     const J = skeleton(resolvePose({ pose: name }));

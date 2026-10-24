@@ -29,11 +29,11 @@ appears or goes here too.
 
 **Base postures.** One fencer, never a pair, in one posture at a time, with the
 posture described in words: what it is for, and the parts worth looking at.
-Pick a posture from the list, or use the arrows under the stage. The eleven
+Pick a posture from the list, or use the arrows under the stage. The thirteen
 postures are the poses of the library, in the order they are learned: the
 guard; the two halves of an advance; the arm extended and the blade up; the
-lunge in flight, to the head and to the chest; parries 3 and 5; and the
-riposte.
+lunge in flight, to the head and to the chest; parries 3 and 5, each also with
+the weight drawn back; and the riposte.
 
 **Creator.** Make a scene of your own. Start from a blank one with **New
 scene**, or from a scene in the library: a built-in one opens as a copy, with
@@ -65,7 +65,7 @@ In the Creator there is more:
   it, and whether it moves smoothly, snaps or keeps one speed.
 - **Adjust this moment:** ten sliders reshape either fencer on the current
   step, from where they stand on the piste to the angle and turn of the blade.
-- **Poses:** eleven named poses to put on any step.
+- **Poses:** thirteen named poses to put on any step.
 - **Phrase data:** the whole scene as text. Edit it in place or paste one in;
   it applies as you type, and says why when it can't. The fields above it and
   the text are the same thing, and follow each other. While the text can't be
@@ -201,6 +201,7 @@ postures** describe each one in words.
 | `lungeFly` | Lunge, in flight |
 | `lungeHead`, `lungeChest` | Lunge, landing a head cut or a chest cut |
 | `parry3`, `parry5` | Parry 3, parry 5 |
+| `parry3Back`, `parry5Back` | Parry 3, parry 5, with the weight drawn back over the bent back leg |
 | `riposte` | Riposte to the head |
 | `extend` | Arm extended |
 

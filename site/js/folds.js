@@ -83,11 +83,15 @@ export function thighFolds(W, hip, knee, ref, seed = 1, inner = 1, loose = false
 /**
  * The folds the stance pulls up from the crotch into the front of the trousers:
  * a fan of strokes from the crotch `c` toward the hips and the waist, with `up`
- * and `fwd` the way up the body and forward on the piste.
+ * and `fwd` the way up the body and forward on the piste. `room` is how far the
+ * crotch is below the middle of the hips: the fan is as long as there is cloth
+ * for it, and where the legs part right under the hips there is none.
  */
-export function crotchFan(W, c, up, fwd, seed = 14, count = 4) {
+export function crotchFan(W, c, up, fwd, seed = 14, count = 4, room = 14) {
+  const fit = Math.min(1, (room - 4) / 10);
+  if (fit < 0.4) return "";
   const r = wobble(seed);
-  const at = (u, v) => add(add(c, mul(up, u)), mul(fwd, v));
+  const at = (u, v) => add(add(c, mul(up, u * fit)), mul(fwd, v * fit));
   let d = "";
   for (const [[u0, v0], [u1, v1], w] of [
     [[2.2, 1.4], [10.6, 9.0], 0.85],

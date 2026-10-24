@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { bladePart, crotch, footSpan, headFrame, headPart, legPart, place, rearArm, segment, shoe, shoeAcross, swordArm, torsoFrame, trunk } from "../site/js/body.js";
+import { bladePart, crotch, footSpan, headFrame, headPart, hull, legPart, place, rearArm, segment, shoe, shoeAcross, swordArm, torsoFrame, trunk } from "../site/js/body.js";
 import { projector, skeleton } from "../site/js/figure.js";
 import { area, dist, inside } from "../site/js/ink.js";
 import { handParts, headParts, shoeAcrossParts, shoeParts } from "../site/js/parts.js";
@@ -316,6 +316,30 @@ test("the legs part at the crotch, below and between the hips, and the front of 
   // (The shoe, one shape for the foot in front, comes last.)
   const box = boxOf([readPath(under.g).at(-2)]);
   assert.ok(box.maxY - box.minY > 14 && box.maxX - box.minX > 14, "the front of the trousers is as big as the hips");
+});
+
+test("the front of the trousers is the shape round its corners, so it never folds over itself and cuts a hole", () => {
+  const square = [[0, 0], [10, 0], [10, 10], [0, 10]];
+  const shape = hull([[5, 5], ...square, [2, 8]]);
+  assert.deepEqual(shape.map(String).toSorted(), square.map(String).toSorted(), "the points inside are left out");
+  assert.ok(area(shape) > 0, "and it goes round one way");
+  // A shape with a fold in it: taken round in this order, its two halves go round opposite ways.
+  const folded = [[0, 0], [10, 10], [10, 0], [0, 10]];
+  assert.equal(hull(folded).length, 4);
+  assert.ok(Math.abs(area(hull(folded))) > Math.abs(area(folded)), "the shape round it has none");
+  // Every pose, from every camera: the front of the trousers is a shape that bulges everywhere, with nothing folded in.
+  for (const name of ["guard", "lungeChest", "parry3Back", "parry5Back", "advLand"]) {
+    for (const camera of [-60, 0, 25, 60]) {
+      const { J, W } = posed(name, {}, camera);
+      const leg = legPart(J, W, J.ankF, J.kF, { front: true, seat: true, older: false });
+      const { points } = readPath(leg.g).at(-2);
+      const turns = points.slice(0, -1).map((p, i, list) => {
+        const [a, b] = [list[(i + 1) % list.length], list[(i + 2) % list.length]];
+        return Math.sign((a[0] - p[0]) * (b[1] - a[1]) - (a[1] - p[1]) * (b[0] - a[0]));
+      });
+      assert.ok(turns.every((t) => t >= 0) || turns.every((t) => t <= 0), `${name} from ${camera}°: it turns one way all round`);
+    }
+  }
 });
 
 test("an older man is in loose trousers, with no pouch of cloth at the knee", () => {

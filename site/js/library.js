@@ -22,7 +22,9 @@
 // seen nearly straight, as the plates draw it. The poses that move the weight
 // from there keep the knees over the feet to within a few centimetres. In the
 // lunges the leg behind is straight from its hip to its foot, and the body stays
-// nearly upright over the front leg.
+// nearly upright over the front leg. The parries with the weight back keep the
+// feet where the guard has them and sit back over the bent back leg, the front
+// leg straight, as the plates draw them seen from the front.
 export const POSES = {
   guard: { hipX: 34, hipY: 83, footF: 73, liftF: 0, liftB: 0, lean: 0, turn: 58, arm: -36, fore: 8, blade: 34, yaw: 0, rArm: -124, rFore: -28 },
   advLift: { hipX: 37, hipY: 84, footF: 92, liftF: 4 },
@@ -33,6 +35,8 @@ export const POSES = {
   lungeChest: { hipX: 83.1, hipY: 54.6, footF: 133, lean: 15, arm: 2, fore: 2, blade: 10 },
   parry3: { hipX: 32, hipY: 82, lean: -3, arm: -110, fore: -4, blade: 95 },
   parry5: { hipX: 32, hipY: 82, lean: -4, arm: 20, fore: 112, blade: 6, yaw: 70 },
+  parry3Back: { hipX: 16, hipY: 82, lean: -6, arm: -110, fore: -4, blade: 95 },
+  parry5Back: { hipX: 16, hipY: 82, lean: -7, arm: 20, fore: 112, blade: 6, yaw: 70 },
   riposte: { hipX: 43, hipY: 82, footF: 90, lean: 8, arm: 0, fore: 0, blade: -6 },
   extend: { hipX: 35, lean: 1, arm: 4, fore: 4, blade: 14 },
 };
@@ -47,6 +51,8 @@ export const POSE_NAMES = {
   lungeChest: "Lunge, chest cut",
   parry3: "Parry 3",
   parry5: "Parry 5",
+  parry3Back: "Parry 3, weight back",
+  parry5Back: "Parry 5, weight back",
   riposte: "Riposte, head",
   extend: "Arm extended",
 };

@@ -468,18 +468,37 @@ export function crotch(J, flat, older, fallback) {
 }
 
 /**
- * The front of the trousers between the hips: from the top of the leg behind,
- * up under the jersey and across to the top of the leg in front, and down to
- * the crotch, where the thighs part. Each corner is a corner of a thigh's top,
- * so it fills between them with no line of its own but the trousers' back and
- * front above the thighs.
+ * The front of the trousers between the hips: round the tops of both thighs and
+ * up under the jersey, as the smallest shape with no hollow in it that holds the
+ * corners of both thighs' tops. Where it reaches over a thigh, the thigh is drawn
+ * on it, so it has no line of its own but the trousers' back and front above the
+ * thighs, and the crotch where they part. Taken round its corners in order, it
+ * would fold over itself where the thighs' tops cross, and the fold would cut a
+ * hole in the silhouette.
  */
 function trouserFront(J, flat, older) {
   const front = thighTop(flat(J.hipF), flat(J.kF), older ? LOOSE_FRONT : THIGH_FRONT);
   const back = thighTop(flat(J.hipB), flat(J.kB), older ? LOOSE_BACK : THIGH_BACK);
   // Up under the jersey, drawn in toward the middle of the hips so that, however the thighs are set, it stays under it.
   const under = (corner, k) => add(lerp(corner, J.hip, k), mul(J.u, 14));
-  return [back.lo, under(back.lo, 0.3), under(front.hi, 0.5), front.hi, front.lo, back.hi];
+  // Between the thighs it runs straight from one thigh's corner to the other's.
+  const between = new Set([front.lo, back.hi]);
+  return hull([back.lo, under(back.lo, 0.3), under(front.hi, 0.5), front.hi, front.lo, back.hi]).map((p) => (between.has(p) ? [...p, 1] : p));
+}
+
+/** The smallest shape with no hollow in it round points: the points of it, in order round it. */
+export function hull(points) {
+  const sorted = points.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const turn = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const half = (list) => {
+    const out = [];
+    for (const p of list) {
+      while (out.length >= 2 && turn(out[out.length - 2], out[out.length - 1], p) <= 0) out.pop();
+      out.push(p);
+    }
+    return out.slice(0, -1);
+  };
+  return [...half(sorted), ...half(sorted.slice().reverse())];
 }
 
 // How far out a shape's edge is `t` of the way along it, for the half-widths given at evenly spaced stations.
@@ -540,8 +559,13 @@ export function legPart(J, W, ank, knee, { front, seat, near = false, older }) {
   const legFolds = older
     ? crotchFolds(W, hip, kn, ref, seed) + kneePuckers(W, kn, su, ref, seed + 1) + cuffGathers(W, ank, su, ref, seed + 2)
     : sockWrinkles(W, stocking, ank, ref, seed + 2, inner) + kneeFolds(W, kn, su, ref, seed + 1);
-  // The leg drawn over the other carries the folds that run up from the crotch into the front of the trousers.
-  const fan = near ? crotchFan(W, crotch(J, flat, older), J.u, J.f, seed + 3, older ? 2 : 4) : "";
+  // The leg drawn over the other carries the folds that run up from the crotch into the front of the trousers, as far as
+  // the crotch is below the middle of the hips.
+  let fan = "";
+  if (near) {
+    const c = crotch(J, flat, older);
+    fan = crotchFan(W, c, J.u, J.f, seed + 3, older ? 2 : 4, (J.hip[0] - c[0]) * J.u[0] + (J.hip[1] - c[1]) * J.u[1]);
+  }
   const folds = thighFolds(W, hip, kn, ref, seed, inner, older) + legFolds + fan;
   // The leather is dark where the sole and heel are, and hatched where the shoe turns away from the light.
   const leather = foot.ink.map((shape) => solid(shape)).join("") + foot.hatch.map((stroke) => brush(stroke, 0.6, 0.4)).join("");

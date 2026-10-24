@@ -111,6 +111,17 @@ export const BASES = [
     ],
   },
   {
+    pose: "parry3Back",
+    group: "Defence",
+    text: "Tierce taken with the weight drawn back, as the old plates draw it. The hips sit back over the back foot, the back knee bends to take the weight and the front leg straightens, so the body is further from the cut while the blade closes the line.",
+    points: [
+      ["Legs", "The back knee bent and turned out over the back foot, carrying the weight; the front leg straight, its foot flat where it was in guard."],
+      ["Hips", "Back over the back foot."],
+      ["Torso", "Upright, or a little back, behind the blade."],
+      ["Blade", "As in tierce: near vertical in front of the body, the point up."],
+    ],
+  },
+  {
     pose: "parry5",
     group: "Defence",
     text: "Quinte, the parry for the head. The blade lies across above the head, so a cut coming down lands on the blade.",
@@ -119,6 +130,17 @@ export const BASES = [
       ["Blade", "Roughly level and turned across, like a roof over the head."],
       ["Body", "A little back and under the blade. The legs stay in guard."],
       ["Covers", "The head."],
+    ],
+  },
+  {
+    pose: "parry5Back",
+    group: "Defence",
+    text: "Quinte with the weight drawn back. The body sits back over the bent back leg and the front leg straightens, so the head is further from the cut, and the blade lies across above it.",
+    points: [
+      ["Legs", "As in tierce with the weight back: the back knee bent over the back foot, the front leg straight."],
+      ["Sword arm", "Raised, the hand just above the head, the elbow bent."],
+      ["Blade", "Level and turned across, like a roof over the head."],
+      ["Covers", "The head, with the body drawn back out of reach."],
     ],
   },
   {
