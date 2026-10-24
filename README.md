@@ -101,11 +101,15 @@ turned out toward you, over the foot, so side on its shin leans a little
 forward and the leg is seen shorter, as the plates draw it. Together they give
 the guard its wide stance.
 
-The shading is drawn as the plates draw it, in strokes: a fan of folds from
-the crotch, the cloth bloused over the belt and gathered under it, shadow on
-the insides of the legs, where each faces the other, and under the cloth that
-hangs over the band below the knee, and folds from the armpits and at the
-elbows.
+The head is drawn as the plates draw it: a long skull and a short, square face,
+carried forward on a thick neck. The hair is strokes of the pen, combed in rows
+round the crown, up off the forehead, back over the top and down the back of
+the head, sparse on top where the light falls and heavier at the back, and its
+strokes make the edge of the head where it grows. The shading is drawn the same
+way: a fan of folds from the crotch, the cloth bloused over the belt and
+gathered under it, shadow on the insides of the legs, where each faces the
+other, and under the cloth that hangs over the band below the knee, and folds
+from the armpits and at the elbows.
 
 A young fencer wears knickerbockers and long stockings, an older one loose
 trousers gathered at the ankle, a belly and narrower shoulders. The strokes are

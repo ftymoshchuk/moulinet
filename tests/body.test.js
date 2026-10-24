@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 import { bladePart, crotch, footSpan, headPart, legPart, place, rearArm, segment, shoe, shoeAcross, swordArm, torsoFrame, trunk } from "../site/js/body.js";
 import { projector, skeleton } from "../site/js/figure.js";
-import { area, dist } from "../site/js/ink.js";
+import { area, dist, inside } from "../site/js/ink.js";
 import { handParts, headParts, shoeAcrossParts, shoeParts } from "../site/js/parts.js";
 import { resolvePose } from "../site/js/phrase.js";
 import { boxOf, readPath } from "./path-data.js";
@@ -30,7 +30,7 @@ test("the hand-drawn parts are made of finite points, and the hair lies on the h
   for (const older of [false, true]) {
     const head = headParts(older);
     for (const key of ["skull", "hair", "ear", "earFold"]) assert.ok(head[key].length >= 3 && finite(head[key]), `${key}, older ${older}`);
-    for (const strokes of [...head.streaks, ...head.tufts]) assert.ok(strokes.length >= 2 && finite(strokes));
+    for (const strokes of head.tufts) assert.ok(strokes.length >= 2 && finite(strokes));
     for (const mark of Object.values(head.face)) assert.ok(mark.length >= 3 && finite(mark.slice(0, 3)) && mark.at(-1) > 0, "a mark has points and a thickness");
     const xs = head.skull.map((p) => p[0]);
     const ys = head.skull.map((p) => p[1]);
@@ -38,14 +38,38 @@ test("the hand-drawn parts are made of finite points, and the hair lies on the h
       assert.ok(x > Math.min(...xs) - 1.5 && x < Math.max(...xs) + 1.5, `hair at ${x}, ${y}`);
       assert.ok(y > Math.min(...ys) - 1.5 && y < Math.max(...ys) + 1.5, `hair at ${x}, ${y}`);
     }
+    // The hair is strokes of the pen, each through three points where the hair grows, with a width.
+    assert.ok(head.comb.length >= 12, `strokes of hair, older ${older}`);
+    for (const [points, width] of head.comb) {
+      assert.ok(points.length === 3 && finite(points) && width > 0.2 && width < 1.2);
+      for (const p of points) assert.ok(inside(head.hair, p) || head.hair.some((q) => dist(p, q) < 1.5), `a stroke of hair at ${p} is in the hair`);
+    }
   }
+});
+
+test("the hair is combed back over the top of the head and down the back, and is thickest at the back", () => {
+  const { comb } = headParts(false);
+  // Along each stroke, round the crown the way the head faces: back over the top, down the back.
+  let back = 0;
+  let down = 0;
+  for (const [[a, , b]] of comb) {
+    const [mx, my] = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    if (my > 8) back += b[0] < a[0] ? 1 : -1;
+    if (mx < -7 && my < 6) down += b[1] < a[1] ? 1 : -1;
+  }
+  assert.ok(back > 0, "back over the top");
+  assert.ok(down > 0, "and down the back");
+  const ink = (keep) => comb.filter(([points]) => keep(points[1])).reduce((sum, [points, width]) => sum + dist(points[0], points[2]) * width, 0);
+  assert.ok(ink(([x]) => x < -4) > ink(([x, y]) => x > -1 && y > 8), "more ink at the back than on top, where the light falls");
+  assert.equal(headParts(false).comb, comb, "worked out once, and shared");
 });
 
 test("an older man has the same face and a balding man's hair", () => {
   const young = headParts(false);
   const older = headParts(true);
   for (const key of ["skull", "ear", "earFold", "face"]) assert.equal(older[key], young[key], key);
-  for (const key of ["hair", "streaks", "tufts"]) assert.notDeepEqual(older[key], young[key], key);
+  for (const key of ["hair", "comb", "tufts"]) assert.notDeepEqual(older[key], young[key], key);
+  assert.ok(older.comb.length < young.comb.length, "fewer strokes of hair");
   assert.ok(Math.abs(area(older.hair)) < Math.abs(area(young.hair)) / 2, "less hair, and none on top");
   assert.deepEqual(headParts(), young, "the young man is the default");
 });
@@ -373,7 +397,7 @@ test("the rear sleeve starts on the jersey itself, so the shoulder is the jersey
   const hands = handParts();
   const frame = torsoFrame(J, W, false);
   const sleeve = readPath(rearArm(J, W, hands.hip, frame).g)[0].points;
-  for (const [up, v] of [[55.2, -0.95], [53, -1], [50.4, -1]]) {
+  for (const [up, v] of [[58.6, -0.6], [57.6, -0.84], [55.6, -0.97], [53, -1]]) {
     const anchor = frame.across(up, v);
     assert.ok(sleeve.some((p) => dist(p, anchor) < 0.15), `the sleeve is joined to the jersey ${up} cm up`);
   }
@@ -403,10 +427,12 @@ test("the head sits where the skeleton puts it, and turns older with the hair", 
   assert.ok(dist(centre, W(J.hd)) < 3);
   assert.ok(box.maxY - box.minY > 20 && box.maxY - box.minY < 30, "about a head tall");
   for (const key of ["g", "hair", "k"]) assert.match(head[key], /^M/, key);
-  assert.match(head.s, /^M/, "a young man's dark hair has strokes of paper left in it");
-  assert.equal(headPart(J, W, true).s, "", "and an older man's thin grey hair has none");
+  // The hair is strokes of the pen and nothing under them: a stroke is a lens of eight corners.
+  const strokes = readPath(head.hair);
+  assert.ok(strokes.length >= 30 && strokes.every((stroke) => stroke.closed && stroke.points.length === 8), "the hair is drawn in strokes");
   const old = headPart(J, W, true);
   assert.notEqual(old.hair, head.hair);
+  assert.ok(readPath(old.hair).length < strokes.length, "an older man has less of it");
   // An older man's head is a little larger, and carried lower and further forward.
   const oldBox = boxOf(readPath(old.g));
   assert.ok(oldBox.maxY - oldBox.minY > (box.maxY - box.minY) * 1.04, "a little larger");

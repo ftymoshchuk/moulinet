@@ -660,14 +660,9 @@ textarea:focus-visible {
   fill: var(--fencer-b-face);
 }
 
+/* The hair, drawn in strokes of the pen. */
 .figure__hair {
   fill: var(--hair);
-  stroke: none;
-}
-
-/* Strokes of paper left in the hair. */
-.figure__shine {
-  fill: var(--paper);
   stroke: none;
 }
 

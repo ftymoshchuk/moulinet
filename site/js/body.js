@@ -4,7 +4,7 @@
 // back `{ g, d, k }`: the shapes that make the silhouette, the thin lines, and
 // the brush strokes.
 import { crotchFan, crotchFolds, cuffGathers, kneeFolds, kneePuckers, sleeveFolds, sockWrinkles, thighFolds, torsoFolds, waistband } from "./folds.js";
-import { add, blob, brush, dist, lerp, line, mul, perp, pt, ribbon, rotate, solid, sub, unit } from "./ink.js";
+import { add, blob, brush, dist, inside, lerp, line, mul, perp, pt, ribbon, rotate, solid, sub, unit } from "./ink.js";
 import { headParts, shoeAcrossParts, shoeParts, torsoParts } from "./parts.js";
 
 /**
@@ -193,7 +193,7 @@ export function rearArm(J, W, hand, frame = torsoFrame(J, W, false)) {
   // Along the jersey's own edge the sleeve has no line, and nor has its seam.
   const on = (p) => [p[0], p[1], 0, 0];
   const seam = (p) => [p[0], p[1], 0, 0];
-  const sleeve = [on(across(55.2, -0.95)), on(across(53, -1)), on(across(50.4, -1)), ...outline.slice(1), seam(across(42, -0.6)), seam(across(47, -0.86))];
+  const sleeve = [on(across(58.6, -0.6)), on(across(57.6, -0.84)), on(across(55.6, -0.97)), on(across(53, -1)), ...outline.slice(1), seam(across(42, -0.6)), seam(across(50, -0.8))];
   const fore = segment(J.re, J.rh, [6.8, 6.0, 5.2, 4.6], [6.6, 5.6, 4.9, 4.3], up);
   const palm = hand.shape.map(([x, y]) => Wa(place(J.rh, qu, x, y)));
   // The point of the elbow, rounded, on the outside of the bend.
@@ -551,13 +551,17 @@ export function legPart(J, W, ank, knee, { front, seat, near = false, older }) {
 
 // ---------- Head and sabre ----------
 
-// The head is set a little smaller than the points of parts.js, as in the plates, where it is small for the body.
-const HEAD_SIZE = 0.96;
+// The head is drawn at the size of the points of parts.js.
+const HEAD_SIZE = 1;
 // Where the middle of the head is in the torso's frame, up the spine and forward of it. An older man carries his head lower and thrust further forward.
 const YOUNGER_HEAD = [72.5, 9];
 const OLDER_HEAD = [71.2, 10.6];
 
-/** The head in profile: the face, the hair, the ear and the marks of the features. */
+/**
+ * The head in profile: the face, the hair drawn in strokes of the pen, the ear
+ * and the marks of the features. Where the hair grows the head has hardly any
+ * line round it, so the strokes of the hair make its edge.
+ */
 export function headPart(J, W, older) {
   const lean = (J.lean * 0.35 * Math.PI) / 180;
   const hf = [Math.cos(lean), -Math.sin(lean)];
@@ -571,17 +575,16 @@ export function headPart(J, W, older) {
   const Hs = (list) =>
     list.map((q) => {
       const o = H(q);
-      return q.length > 2 ? [o[0], o[1], q[2]] : o;
+      return q.length > 2 ? [o[0], o[1], ...q.slice(2)] : o;
     });
   const mark = (m) => brush(m.slice(0, 3).map(H), m[3], 0.5);
-  const face = parts.face;
+  const skull = parts.skull.map((q) => (inside(parts.hair, q) ? [q[0], q[1], 0, 0.45] : q));
   return {
-    ...drawn([Hs(parts.skull)], 0.18, 0.6),
-    hair: blob(Hs(parts.hair)),
-    s: parts.streaks.map((streak) => brush(streak.map(H), 0.5, 0.5)).join(""),
+    ...drawn([Hs(skull)], 0.18, 0.6),
+    hair: parts.comb.map(([points, width]) => brush(points.map(H), width, 0.45)).join(""),
     d: line(Hs(parts.ear)) + line(Hs(parts.earFold)),
     // The older man's grey hair is drawn with finer strokes than a young man's dark hair.
-    k: [face.brow, face.eye, face.lid, face.nostril, face.mouth, face.cheek].map(mark).join("") + parts.tufts.map((tuft) => brush(tuft.map(H), older ? 0.45 : 0.9, 0.35)).join(""),
+    k: Object.values(parts.face).map(mark).join("") + parts.tufts.map((tuft) => brush(tuft.map(H), 0.45, 0.35)).join(""),
   };
 }
 

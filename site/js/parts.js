@@ -2,151 +2,210 @@
 // bones: the head, with its face and hair. Each is a handful of points in a frame
 // of its own, in centimetres, facing +x with +y up, which figure.js then sets on
 // the body and turns for the camera.
+import { inside } from "./ink.js";
 
-// The head from the side, from the top of the forehead round the face, under the
-// chin and up the back of the skull. Origin is the middle of the head: the
-// crown is 12.4 above it and the chin 11.8 below.
+// The head from the side, as the plates draw it: a long skull and a short, square
+// face. From the top of the forehead round the face, under the chin and up the
+// back of the head, whose top and back are the outer edge of the hair. Origin is
+// the middle of the head: the top of the hair is 12.3 above it and the chin 10.9
+// below, and the back of the head 11.2 behind it and the tip of the nose 12.2 in
+// front.
 const SKULL = [
-  [2.0, 12.6],
-  [6.2, 10.6],
-  [7.8, 7.4],
-  [8.0, 5.4],
-  [9.0, 3.0], // brow
-  [8.0, 1.4], // where the nose begins
-  [8.8, -0.2],
-  [11.4, -3.8], // tip of the nose
-  [9.8, -5.0],
-  [9.3, -6.2], // upper lip
-  [9.6, -7.3], // lips
-  [9.0, -8.3],
-  [8.4, -9.4],
-  [9.0, -11.2], // chin
-  [6.8, -12.8],
-  [1.5, -11.6], // under the jaw
-  [-3.4, -9.2], // angle of the jaw
-  [-6.2, -8.6],
-  [-9.4, -4.8],
-  [-10.6, 1.4],
-  [-9.6, 7.4],
-  [-5.4, 12.0],
+  [4.2, 11.8],
+  [6.9, 10.2],
+  [8.6, 7.6], // the hairline
+  [10.0, 4.6],
+  [10.8, 1.5], // brow
+  [10.1, -0.2], // where the nose begins
+  [11.0, -1.9],
+  [12.2, -3.9], // tip of the nose
+  [10.8, -4.6],
+  [9.8, -4.9], // under the nose
+  [10.2, -5.9], // upper lip
+  [9.5, -6.5], // where the lips meet
+  [10.0, -7.3], // lower lip
+  [9.3, -8.0],
+  [10.2, -9.1], // chin
+  [8.8, -10.5],
+  [4.2, -10.9], // under the jaw
+  [0.7, -10.1],
+  [-2.2, -7.7], // angle of the jaw
+  [-4.8, -6.9],
+  [-9.4, -6.5], // the nape
+  [-11.0, -3.4],
+  [-11.2, 0.6], // the back of the head
+  [-10.2, 6.1],
+  [-7.2, 10.3],
+  [-2.3, 12.3],
 ];
 
-// Dark hair, short and brushed back: full over the forehead, the top and back
-// of the head down to a ragged edge at the nape, round the ear, a sideburn, and
-// a hairline that steps back at the temple.
+// Where the hair grows, a little outside the edge of the head, so the strokes of
+// it break that edge. A young man's: full over the forehead, over the top and
+// down the back of the head to the nape, round the ear, a sideburn in front of
+// it, and a hairline that steps back at the temple.
 const HAIR_YOUNG = [
-  [8.0, 7.6],
-  [7.6, 10.4],
-  [4.6, 12.8],
-  [0.0, 13.8],
-  [-4.8, 13.2],
-  [-8.8, 10.0],
-  [-11.0, 4.0],
-  [-11.0, -1.8],
-  [-9.6, -5.8],
-  [-7.8, -7.8], // the nape
-  [-6.6, -7.0],
-  [-5.6, -7.6],
-  [-5.2, -4.6], // behind the ear
-  [-5.0, -1.2],
-  [-4.4, 1.6], // over the ear
-  [-2.4, 2.8],
-  [0.0, 2.6],
-  [1.8, 1.8],
-  [2.6, 0.4], // the sideburn
-  [3.6, 0.6],
-  [4.2, 3.8], // the hairline at the temple
-  [5.8, 5.4],
-  [6.8, 7.2],
+  [8.4, 7.8],
+  [8.6, 9.4], // the hair lifts off the forehead
+  [7.0, 11.4],
+  [4.2, 12.7],
+  [-1.6, 13.4],
+  [-7.0, 11.2],
+  [-10.6, 6.6],
+  [-11.8, 0.8],
+  [-11.6, -3.6],
+  [-10.0, -6.8],
+  [-8.6, -7.4], // the nape
+  [-7.6, -5.8],
+  [-6.9, -3.6], // behind the ear
+  [-6.9, -0.6],
+  [-6.4, 1.9], // over the ear
+  [-4.6, 2.9],
+  [-2.6, 2.7],
+  [-1.7, 1.4],
+  [-1.4, -2.2], // the sideburn
+  [0.0, -2.0],
+  [0.4, 1.0],
+  [1.8, 3.6], // the temple
+  [3.4, 5.0],
+  [5.6, 5.9],
+  [7.2, 6.8],
 ];
 
 // An older man's: bare on top, a ring of hair from above the ear round the back.
 const HAIR_OLD = [
-  [-3.8, 4.6],
-  [-4.8, 9.0],
-  [-6.8, 11.3],
-  [-9.4, 8.5],
-  [-10.8, 2.4],
-  [-10.6, -3.0],
-  [-8.6, -6.8],
-  [-7.0, -6.8],
-  [-6.6, -4.4],
-  [-8.0, -0.4],
-  [-8.2, 4.4],
-  [-6.6, 7.8],
-  [-4.6, 6.2],
+  [-5.8, 6.4],
+  [-7.6, 9.6],
+  [-10.0, 7.6],
+  [-11.6, 3.0],
+  [-11.8, -2.0],
+  [-10.6, -5.6],
+  [-8.8, -7.2],
+  [-7.6, -5.8],
+  [-7.0, -3.4],
+  [-6.9, -0.4],
+  [-6.4, 2.0],
+  [-4.4, 3.2], // over the ear
+  [-2.6, 3.0],
+  [-1.6, 1.4],
+  [-1.4, -1.6], // a short sideburn
+  [-0.2, -1.4],
+  [0.0, 2.6],
+  [-1.4, 4.6],
+  [-3.6, 5.6],
 ];
 
-// The way the hair lies, as strokes of paper left in it: along each, from the
-// forehead back over the crown and down the back of the head.
-const STREAKS_YOUNG = [
-  [[6.4, 10.4], [2.6, 12.2], [-2.4, 12.0]],
-  [[5.6, 8.4], [1.0, 10.2], [-4.4, 9.8]],
-  [[3.6, 6.4], [-1.0, 7.8], [-6.4, 7.0]],
-  [[-0.4, 4.4], [-4.6, 4.8], [-8.6, 2.6]],
-  [[-6.6, 1.0], [-8.8, -1.4], [-9.0, -4.0]],
-];
-const STREAKS_OLD = [];
+// The hair is combed round this point of the head: up off the forehead, back over
+// the top, and down the back of the head to the nape.
+const CROWN = [-1.4, 1.0];
 
-// The ear: an outer curve and the fold inside it.
+// A point `s` cm on along the comb from `p`.
+function combed(p, s) {
+  const r = Math.hypot(p[0] - CROWN[0], p[1] - CROWN[1]) || 1;
+  const a = Math.atan2(p[1] - CROWN[1], p[0] - CROWN[0]) + s / r;
+  return [CROWN[0] + r * Math.cos(a), CROWN[1] + r * Math.sin(a)];
+}
+
+// A little steady variation, so the strokes of the hair are not ruled.
+function steady(seed) {
+  let s = seed;
+  return () => {
+    s = (s * 9301 + 49297) % 233280;
+    return s / 233280;
+  };
+}
+
+/**
+ * The hair as strokes of the pen, laid as it is combed: in rows round the crown,
+ * `rows` cm apart, each row a run of strokes about `length` long, end to end,
+ * drawn out along the comb as far as the hair goes. Fewer where the light falls
+ * on the top of the head, so the hair is darkest at the back and round the ear.
+ * Each stroke is [three points, how wide].
+ */
+function comb(region, { rows, length, width, seed }) {
+  const r = steady(seed);
+  const reachOf = region.map((p) => Math.hypot(p[0] - CROWN[0], p[1] - CROWN[1]));
+  const strokes = [];
+  for (let radius = 1.5 + r() * rows; radius < Math.max(...reachOf) + 0.5; radius += rows * (0.85 + r() * 0.3)) {
+    const round = 2 * Math.PI * radius;
+    for (let along = r() * length; along < round; along += length * (0.8 + r() * 0.4)) {
+      const a = along / radius;
+      const p = [CROWN[0] + radius * Math.cos(a), CROWN[1] + radius * Math.sin(a)];
+      const lit = p[1] > 8.5 && p[0] > -6 ? 0.4 : 0.05;
+      if (!inside(region, p) || r() < lit) continue;
+      const half = (length * (0.75 + r() * 0.4)) / 2;
+      // Heavier toward the back of the head, which is in shadow.
+      const shade = Math.max(0, Math.min(1, (-2 - p[0]) / 8));
+      // As far along the comb each way as the hair goes, in steps of 4 mm.
+      const reach = (way) => {
+        let step = 0;
+        while (step < half && inside(region, combed(p, way * (step + 0.4)))) step += 0.4;
+        return step;
+      };
+      const [back, on] = [reach(-1), reach(1)];
+      if (back + on < 2.2) continue;
+      strokes.push([[combed(p, -back), combed(p, (on - back) / 2), combed(p, on)], width * (0.8 + r() * 0.4) * (1 + 0.45 * shade)]);
+    }
+  }
+  return strokes;
+}
+
+const COMB_YOUNG = comb(HAIR_YOUNG, { rows: 0.62, length: 5.0, width: 0.66, seed: 17 });
+// An older man's hair is grey, thin and short: finer strokes, further apart.
+const COMB_OLD = comb(HAIR_OLD, { rows: 0.5, length: 3.4, width: 0.6, seed: 23 });
+
+// The ear: an outer curve and the fold inside it, well back of the middle of the head.
 const EAR = [
-  [-2.3, 1.2],
-  [-0.7, 0.2],
-  [-0.5, -1.9],
-  [-1.7, -4.1],
-  [-3.3, -3.6],
-  [-4.0, -1.4],
-  [-3.4, 0.7],
+  [-4.4, 2.1],
+  [-2.6, 1.0],
+  [-2.4, -1.3],
+  [-3.7, -3.8],
+  [-5.5, -3.2],
+  [-6.2, -0.8],
+  [-5.6, 1.5],
 ];
 const EAR_FOLD = [
-  [-2.2, -0.4],
-  [-1.5, -1.4],
-  [-1.7, -2.7],
+  [-4.2, 0.3],
+  [-3.5, -0.8],
+  [-3.7, -2.2],
 ];
 
 // Marks on the face: [where a stroke starts, where it ends, how thick]. The eye
-// and brow are heavier than the nostril and the line of the mouth, and the
-// shadow under the cheekbone runs down toward the jaw.
+// and brow are heavier than the nostril and the line of the mouth, the shadow
+// under the cheekbone runs down toward the jaw, and a short stroke under the lip
+// marks the chin.
 const FACE = {
-  brow: [[4.4, 2.8], [6.4, 3.3], [8.4, 2.9], 0.9],
-  eye: [[5.4, 1.0], [6.3, 1.4], [7.2, 1.0], 0.9],
-  lid: [[5.2, 1.9], [6.2, 2.1], [7.3, 1.9], 0.25],
-  nostril: [[8.9, -4.4], [9.4, -4.4], [9.9, -4.7], 0.7],
-  mouth: [[7.4, -7.3], [8.5, -7.4], [9.5, -7.1], 0.4],
-  cheek: [[3.4, -2.6], [4.2, -5.6], [5.6, -8.0], 0.5],
+  brow: [[6.2, 1.9], [8.2, 2.4], [10.2, 1.8], 1.0],
+  eye: [[6.8, 0.5], [7.7, 0.9], [8.6, 0.5], 0.9],
+  lid: [[6.6, 1.3], [7.6, 1.6], [8.7, 1.3], 0.25],
+  nostril: [[9.8, -3.5], [10.4, -3.6], [11.0, -3.9], 0.7],
+  mouth: [[8.2, -6.4], [9.1, -6.5], [9.9, -6.3], 0.4],
+  cheek: [[5.0, -2.0], [5.8, -5.0], [7.0, -7.6], 0.5],
+  chin: [[7.6, -8.6], [8.4, -8.9], [9.1, -8.6], 0.45],
 };
 
-// Loose ends of hair at the edge of the hairline and at the nape, and the short
-// hair that is left on an older man's crown: strokes of ink, each from where it
-// starts to where it ends.
-const TUFTS_YOUNG = [
-  [[7.6, 8.0], [8.6, 8.9]],
-  [[6.4, 10.4], [7.3, 11.4]],
-  [[3.4, 1.2], [3.0, -0.8]],
-  [[-7.0, -7.4], [-6.6, -8.8]],
-  [[-8.6, -6.6], [-8.8, -8.0]],
-];
+// Loose ends of an older man's hair, at the edge of the fringe and on his crown.
 const TUFTS_OLD = [
-  [[-5.0, 9.2], [-7.6, 8.8], [-9.0, 6.2]],
-  [[-8.6, 5.0], [-9.6, 2.2], [-9.8, -0.6]],
-  [[-9.4, -1.8], [-9.4, -4.2], [-8.4, -6.0]],
-  [[-7.4, 9.8], [-9.0, 8.2]],
-  [[-9.8, 3.4], [-10.2, 0.6]],
+  [[-6.0, 9.2], [-8.6, 8.8], [-10.0, 6.2]],
+  [[-9.6, 5.0], [-10.6, 2.2], [-10.8, -0.6]],
+  [[-10.4, -1.8], [-10.4, -4.2], [-9.4, -6.0]],
+  [[-8.4, 9.8], [-10.0, 8.2]],
+  [[-10.8, 3.4], [-11.2, 0.6]],
 ];
 
 /**
- * The head as points in its own frame. `older` swaps the dark hair for a
- * balding man's.
+ * The head as points in its own frame: the skull, where the hair grows and the
+ * strokes it is drawn in, the ear, and the marks of the face. `older` swaps the
+ * dark hair for a balding man's.
  */
 export function headParts(older = false) {
   return {
     skull: SKULL,
     hair: older ? HAIR_OLD : HAIR_YOUNG,
-    streaks: older ? STREAKS_OLD : STREAKS_YOUNG,
+    comb: older ? COMB_OLD : COMB_YOUNG,
     ear: EAR,
     earFold: EAR_FOLD,
     face: FACE,
-    tufts: older ? TUFTS_OLD : TUFTS_YOUNG,
+    tufts: older ? TUFTS_OLD : [],
   };
 }
 
@@ -320,9 +379,9 @@ const TORSO = [
   [36, 1.4, 14.0, 20.6],
   [44, 1.4, 13.6, 21.8],
   [51, 0.6, 11.0, 22.5],
-  [54.5, 0.4, 9.5, 21.5],
-  [57, 0.6, 8.0, 18.0],
-  [58.5, 1.0, 7.0, 12.0],
+  [54, 0.4, 9.5, 17.6],
+  [56.5, 0.6, 8.2, 13.4],
+  [58.5, 1.0, 7.0, 10.0],
   [59.5, 1.2, 6.0, 7.5],
 ];
 

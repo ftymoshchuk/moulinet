@@ -600,7 +600,6 @@ function createFencer(id) {
       outline: svgPath(body, "figure__outline"),
       fill: svgPath(body, `figure__fill figure__fill--${PARTS[name]}`),
       hair: isHead ? svgPath(body, "figure__hair") : null,
-      shine: isHead ? svgPath(body, "figure__shine") : null,
       detail: svgPath(body, "figure__detail"),
       ink: svgPath(body, "figure__ink"),
     };
@@ -876,7 +875,6 @@ function drawFencer(parts, figure) {
     setAttr(layer.outline, "d", shape.o);
     setAttr(layer.fill, "d", shape.g);
     if (layer.hair) setAttr(layer.hair, "d", shape.hair);
-    if (layer.shine) setAttr(layer.shine, "d", shape.s);
     setAttr(layer.detail, "d", shape.d);
     setAttr(layer.ink, "d", shape.k ?? "");
   }

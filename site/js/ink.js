@@ -72,6 +72,17 @@ export function area(points) {
   return a;
 }
 
+/** Whether a point is inside a polygon. */
+export function inside(points, [x, y]) {
+  let hit = false;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+    const [xi, yi] = points[i];
+    const [xj, yj] = points[j];
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) hit = !hit;
+  }
+  return hit;
+}
+
 /** The points wound one way, whichever way they came, so shapes drawn together merge as one. */
 export function wound(points) {
   return area(points) < 0 ? points.slice().reverse() : points;
