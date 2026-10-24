@@ -63,8 +63,9 @@ The base postures stand still, so they have neither.
 In the Creator there is more:
 - **This step:** its label, how long it takes to move into it and to stay on
   it, and whether it moves smoothly, snaps or keeps one speed.
-- **Adjust this moment:** ten sliders reshape either fencer on the current
-  step, from where they stand on the piste to the angle and turn of the blade.
+- **Adjust this moment:** thirteen sliders reshape either fencer on the current
+  step, from where they stand on the piste to the turn of the shoulders, the
+  rear arm and the angle and turn of the blade.
 - **Poses:** eleven named poses to put on any step.
 - **Phrase data:** the whole scene as text. Edit it in place or paste one in;
   it applies as you type, and says why when it can't. The fields above it and
@@ -166,7 +167,7 @@ points at the opponent and 90 straight up.
 | `footF` | Front foot: how far forward of the back foot |
 | `liftF`, `liftB` | How far the front or back foot is off the floor |
 | `lean` | Torso lean, forward positive |
-| `turn` | How far the shoulders are turned toward the camera: 0 is side on |
+| `turn` | How far the shoulders are turned toward the camera: 0 is side on, 90 square to it |
 | `arm`, `fore` | Sword arm: upper arm and forearm |
 | `blade` | Blade angle |
 | `yaw` | Blade turned toward the camera |
