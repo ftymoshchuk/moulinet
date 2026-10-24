@@ -194,6 +194,33 @@ test("how far the shoulders are turned is an angle like the others: a phrase can
   assert.equal(mixPoses({ turn: 170 }, { turn: -170 }, 0.5).turn, 180, "the short way round");
 });
 
+test("the turns of the foot and the knee behind are angles like the others: the guard has them as the plates do, a phrase can set them, and they ease between steps", () => {
+  assert.equal(POSES.guard.toeBack, 14, "the toe behind is turned back a little from straight at the camera");
+  assert.equal(POSES.guard.kneeOut, 40, "and the knee behind is turned out toward it");
+  assert.ok(POSES.guard.toeBack > 0 && POSES.guard.toeBack < 30, "turned back from the camera a little, as in the plates, and not away from it");
+  for (const name of Object.keys(POSES)) {
+    const pose = resolvePose({ pose: name });
+    assert.equal(pose.toeBack, 14, `${name}: a pose that leaves them out keeps the guard's`);
+    assert.equal(pose.kneeOut, 40, name);
+  }
+  const set = resolvePose({ pose: "lungeChest", adj: { toeBack: 20, kneeOut: 60 } });
+  assert.deepEqual([set.toeBack, set.kneeOut], [20, 60]);
+  // Phrase text keeps them, and reads back the same.
+  const phrase = { steps: [{ A: { pose: "guard", adj: { toeBack: 20, kneeOut: 60 } } }] };
+  assert.ok(phraseToText(phrase).includes('"toeBack":20') && phraseToText(phrase).includes('"kneeOut":60'));
+  assert.deepEqual(parsePhrase(phraseToText(phrase)), phrase);
+  const timeline = buildTimeline({
+    steps: [
+      { hold: 100, A: { pose: "guard", x: 0 } },
+      { ms: 200, hold: 100, ease: "linear", A: { pose: "guard", x: 0, adj: { toeBack: 34, kneeOut: 60 } } },
+    ],
+  });
+  const halfway = poseAt(timeline, 200).A;
+  assert.equal(halfway.toeBack, 24, "halfway from 14 to 34");
+  assert.equal(halfway.kneeOut, 50, "and from 40 to 60");
+  assert.equal(mixPoses({ kneeOut: 350 }, { kneeOut: 10 }, 0.5).kneeOut, 360, "the short way round");
+});
+
 test("each slider moves a joint the poses have, and reaches the value every pose gives it", () => {
   const keys = JOINTS.map(({ key }) => key);
   assert.equal(new Set(keys).size, keys.length, "no slider twice");

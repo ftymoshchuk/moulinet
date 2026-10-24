@@ -5,6 +5,11 @@
 // degrees, where 0 points at the opponent and 90 straight up:
 //   hipX, hipY    the middle of the hips, forward of the back foot, and its height
 //   footF         front foot reach; liftF and liftB lift a foot off the floor
+//   toeBack       how far the toe of the foot behind is turned back from pointing
+//                 straight at the camera: 0 makes an exact L with the foot in front
+//   kneeOut       how far the knee of the leg behind is turned out toward the camera
+//                 from bending straight back with the hips as far forward as in the
+//                 guard, and further as they sit back over the foot: 0 is flat
 //   lean          torso lean, forward positive
 //   turn          how far the shoulders are turned toward the camera, 0 side on
 //   arm, fore     sword arm: upper arm and forearm
@@ -30,7 +35,7 @@
 // slanting forward across the line to the face, as the plate of an outside face
 // cut draws it.
 export const POSES = {
-  guard: { hipX: 41, hipY: 77, footF: 84, liftF: 0, liftB: 0, lean: 0, turn: 58, arm: -24, fore: -4, blade: 34, yaw: 0, rArm: -140, rFore: -28 },
+  guard: { hipX: 41, hipY: 77, footF: 84, liftF: 0, liftB: 0, lean: 0, turn: 58, arm: -24, fore: -4, blade: 34, yaw: 0, rArm: -140, rFore: -28, toeBack: 14, kneeOut: 40 },
   advLift: { hipX: 44, hipY: 79, footF: 103, liftF: 4 },
   advLand: { hipX: 52.5, hipY: 79, footF: 114 },
   prep: { hipX: 42, lean: 1, arm: 15, fore: 30, blade: 85 },
@@ -159,6 +164,8 @@ export const JOINTS = [
   { key: "liftF", label: "Front foot lift", min: 0, max: 30, unit: " cm" },
   { key: "hipX", label: "Hips forward", min: 5, max: 90, unit: " cm" },
   { key: "hipY", label: "Hip height", min: 48, max: 96, unit: " cm" },
+  { key: "toeBack", label: "Back foot turned back", min: 0, max: 45, unit: "°" },
+  { key: "kneeOut", label: "Back knee turned out", min: 0, max: 90, unit: "°" },
   { key: "lean", label: "Torso lean", min: -25, max: 35, unit: "°" },
   { key: "turn", label: "Shoulder turn toward camera", min: 0, max: 90, unit: "°" },
   { key: "arm", label: "Upper arm", min: -120, max: 120, unit: "°" },

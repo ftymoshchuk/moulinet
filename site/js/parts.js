@@ -327,8 +327,9 @@ export function shoeParts() {
 }
 
 // The shoe of the foot behind, which is turned across the piste so that its toe
-// points at the camera: with the foot in front it makes the L of the stance. It
-// is not an outline but a few domes standing on the floor, which body.js turns
+// points at the camera: with the foot in front it makes the L of the stance, and
+// the pose's `toeBack` says how far it is turned back from straight at the camera.
+// It is not an outline but a few domes standing on the floor, which body.js turns
 // with the camera and sets on the page, so that the same shoe is seen from the
 // front, from a quarter and from the side. A point of it is [across, along, up]:
 // how far to the side of the foot's middle line, how far along the foot from the
@@ -343,8 +344,6 @@ const SHOE_ACROSS = {
   ],
   // The sole is a slab under the shoe, a little wider than it, and bowed down at the toe.
   sole: { height: 1.2, edge: 0.4, bow: 0.35 },
-  // How far the toe is turned back from pointing straight at the camera.
-  turn: 14,
   // The edge of the shoe where the stocking goes into it, across the front of the ankle: how wide it is, and how high it is at either end and in the middle.
   collar: { wide: 3.7, ends: 9.9, middle: 9.4 },
   // Where the laces cross: how far along the foot.

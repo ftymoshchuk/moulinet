@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { BASE_BLADE, basePhrase } from "../site/js/bases.js";
-import { DEFAULT_FRAME, PIVOT, bladePaths, bladeTip, floorPath, frameOf, inkFigure, knee, knee3, projector, skeleton, stickFigure } from "../site/js/figure.js";
+import { DEFAULT_FRAME, PIVOT, bladePaths, bladeTip, floorPath, frameOf, inkFigure, knee, knee3, kneeBehind, projector, skeleton, stickFigure } from "../site/js/figure.js";
 import { area } from "../site/js/ink.js";
 import { POSES, PRESETS } from "../site/js/library.js";
 import { buildTimeline, poseAt, resolvePose } from "../site/js/phrase.js";
@@ -266,6 +266,80 @@ test("the knee behind is turned out toward the camera over the foot, with thigh 
   // The same drawing for a foot lifted off the floor.
   const lifted = skeleton(resolvePose({ pose: "guard", adj: { liftB: 12 } })).kB;
   assert.ok(lifted[2] > 5 && lifted.every(Number.isFinite));
+});
+
+test("how far the knee behind is turned out is the pose's: 0 is the flat knee, and the more, the more of its offset is toward the camera", () => {
+  const turns = [0, 20, 40, 70, 90];
+  const poses = turns.map((kneeOut) => skeleton(resolvePose({ pose: "guard", adj: { kneeOut } })));
+  // The knee is turned about the line from its hip to the ankle: how far off the line it is, and how much of that is depth.
+  const aboutLine = (J) => {
+    const [hx, hy, hz] = J.hipB;
+    const ankle = [J.ankB[0], J.ankB[1], 0];
+    const line = [ankle[0] - hx, ankle[1] - hy, ankle[2] - hz];
+    const length = Math.hypot(...line);
+    const knee = [J.kB[0] - hx, J.kB[1] - hy, J.kB[2] - hz];
+    const along = (knee[0] * line[0] + knee[1] * line[1] + knee[2] * line[2]) / length;
+    const off = knee.map((v, i) => v - (along * line[i]) / length);
+    return { thigh: Math.hypot(...knee), shin: Math.hypot(J.kB[0] - ankle[0], J.kB[1] - ankle[1], J.kB[2] - ankle[2]), off: Math.hypot(...off), depth: Math.abs(off[2]) / Math.hypot(...off) };
+  };
+  const measured = poses.map(aboutLine);
+  // At 0 the knee is flat: as near the plane of the piste as the leg lets it be.
+  const [flat] = poses;
+  assert.deepEqual(flat.kB, knee3(flat.hipB, [flat.ankB[0], flat.ankB[1], 0], -1, 0));
+  assert.ok(measured[0].depth < 1e-9, "none of its offset from the line is depth");
+  measured.reduce((before, now, i) => {
+    assert.ok(now.depth > before.depth, `${turns[i]}°: more of its offset is toward the camera than at the turn before`);
+    return now;
+  });
+  assert.ok(measured.at(-1).depth > 0.99, "at 90° it points straight at the camera");
+  // However far it is turned, thigh and shin are as long as ever, and the knee keeps its distance from the line.
+  measured.forEach((now, i) => {
+    assert.ok(Math.abs(now.thigh - 44) < 1e-9, `${turns[i]}°: the thigh is 44 cm`);
+    assert.ok(Math.abs(now.shin - 46) < 1e-9, `${turns[i]}°: and the shin 46`);
+    assert.ok(Math.abs(now.off - measured[0].off) < 1e-9, `${turns[i]}°: and the knee is as far off the line from hip to ankle`);
+  });
+});
+
+test("the knee behind turns out as far as the pose's kneeOut with the hips forward, and further, in proportion, as they sit back over the foot", () => {
+  const at = (hx, kneeOut) => kneeBehind(hx, 77, 0, 8, 5, kneeOut);
+  const turned = (hx, out) => knee3([hx, 77, 5], [0, 8, 0], -1, out);
+  // The plates' rule: 40° with the hip 35 cm or more forward of the foot, 80° with it right over the foot, and between, as far as it is back.
+  assert.deepEqual(at(41, 40), turned(41, 40), "in the guard");
+  assert.deepEqual(at(35, 40), turned(35, 40), "with the hip as far forward as the guard has it");
+  assert.deepEqual(at(17.5, 40), turned(17.5, 60), "halfway back");
+  assert.deepEqual(at(0, 40), turned(0, 80), "right over the foot");
+  assert.deepEqual(at(-10, 40), turned(-10, 80), "and no further for a hip behind it");
+  // The pose's own turn scales that, so 0 is a flat knee however far back the hips are.
+  assert.deepEqual(at(41, 20), turned(41, 20));
+  assert.deepEqual(at(0, 20), turned(0, 40), "half as far, right over the foot too");
+  assert.deepEqual(at(41, 0), turned(41, 0));
+  assert.deepEqual(at(0, 0), turned(0, 0), "flat with the weight back, too");
+  // Never past straight at the camera, nor turned the other way.
+  assert.deepEqual(at(0, 90), turned(0, 90));
+  assert.deepEqual(at(41, 120), turned(41, 90));
+  assert.deepEqual(at(41, -30), turned(41, 0));
+  // So the poses with the weight back turn the knee out further than the guard does, as they were drawn.
+  const guard = skeleton(resolvePose({ pose: "guard" })).hipB[0];
+  assert.ok(skeleton(resolvePose({ pose: "parry3Back" })).hipB[0] < guard - 10, "the hip is back");
+  assert.ok(skeleton(resolvePose({ pose: "parry3" })).kB[2] < skeleton(resolvePose({ pose: "parry3Back" })).kB[2], "and the knee is nearer the camera");
+});
+
+test("the motion ghosts use the knee the pose turns, as the drawing does", () => {
+  const ghost = (kneeOut, camera) => stickFigure(resolvePose({ pose: "guard", adj: { kneeOut } }), 1, camera).body;
+  for (const camera of [0, 30, -60]) assert.notEqual(ghost(0, camera), ghost(40, camera), `${camera}°: the ghost's knee turns with the pose`);
+});
+
+test("the foot's turn and the knee's turn reach the drawing: the leg behind changes, the head and the blade do not, and the floor round the foot follows the foot alone", () => {
+  const drawn = (adj) => inkFigure(resolvePose({ pose: "guard", adj }), 1, 28, { backView: true });
+  const guard = drawn({});
+  const changes = (figure) => Object.keys(figure).filter((key) => JSON.stringify(figure[key]) !== JSON.stringify(guard[key]));
+  for (const adj of [{ toeBack: 40 }, { kneeOut: 70 }]) {
+    const changed = changes(drawn(adj));
+    assert.ok(changed.length > 0, `${JSON.stringify(adj)}: the drawing changes`);
+    for (const part of ["head", "blade"]) assert.ok(!changed.includes(part), `${JSON.stringify(adj)}: but not the ${part}`);
+  }
+  assert.notEqual(drawn({ toeBack: 40 }).ground, guard.ground, "the strokes on the floor go round the foot as it turns");
+  assert.equal(drawn({ kneeOut: 70 }).ground, guard.ground, "and not round the knee");
 });
 
 test("an advance lands the front foot where the next guard has it, so no foot slides when the back foot follows", () => {

@@ -26,7 +26,8 @@ const HIPS = 0.85;
 // How far the knee of the leg behind is turned out toward the camera from bending straight back (degrees), over the
 // back foot, which points at the camera: the first with its hip as far forward of that foot as the guard has it, where
 // the plates draw the knee bent back over the foot, and the second with the hip right over the foot, where the weight
-// sits back and the knee turns out over the toes. Between the two, it turns out as far as the hip is back.
+// sits back and the knee turns out over the toes. Between the two, it turns out as far as the hip is back. The first
+// is the guard's `kneeOut`, and a pose's own `kneeOut` scales both, so 0 is a flat knee however far back the hip is.
 const KNEE_OUT = [40, 80];
 // How far forward of the back foot the hip of the leg behind is in the guard (cm).
 const HIPS_FORWARD = 35;
@@ -87,11 +88,15 @@ export function knee3(h, a, side = 1, out = 0) {
  * over the foot, which points that way: seen side on, the leg is shorter and the
  * knee a little forward and low, as in the plates, though thigh and shin are the
  * same lengths. A leg that is straight has nowhere to turn. `hz` is how far the
- * hip is toward the camera; the ankle is on the line of the piste.
+ * hip is toward the camera; the ankle is on the line of the piste. `kneeOut` is
+ * the pose's: how far it is turned out with the hip as far forward as in the
+ * guard, and further, in proportion, as the hip sits back over the foot, but
+ * never past straight at the camera. At 0 the knee is flat.
  */
-export function kneeBehind(hx, hy, ax, ay, hz = 0) {
+export function kneeBehind(hx, hy, ax, ay, hz, kneeOut) {
   const forward = Math.max(0, Math.min(1, (hx - ax) / HIPS_FORWARD));
-  return knee3([hx, hy, hz], [ax, ay, 0], -1, KNEE_OUT[1] + (KNEE_OUT[0] - KNEE_OUT[1]) * forward);
+  const out = (kneeOut / KNEE_OUT[0]) * (KNEE_OUT[1] + (KNEE_OUT[0] - KNEE_OUT[1]) * forward);
+  return knee3([hx, hy, hz], [ax, ay, 0], -1, Math.max(0, Math.min(90, out)));
 }
 
 /** Every joint of a pose, plus `at(k)`: the point k cm along the blade from the hand. */
@@ -105,7 +110,7 @@ export function skeleton(p) {
   const hipB = [hip[0] - PELVIS * Math.sin(pelvis), hip[1], PELVIS * Math.cos(pelvis)];
   const ankB = [0, 8 + Math.max(0, p.liftB)];
   const ankF = [p.footF, 8 + Math.max(0, p.liftF)];
-  const kB = kneeBehind(hipB[0], hipB[1], ankB[0], ankB[1], hipB[2]);
+  const kB = kneeBehind(hipB[0], hipB[1], ankB[0], ankB[1], hipB[2], p.kneeOut);
   // The knee in front bends forward toward its foot, which points at the opponent.
   const kF = knee3(hipF, [ankF[0], ankF[1], 0], 1);
   // Up the torso, and forward across it.
@@ -139,7 +144,7 @@ export function skeleton(p) {
   const rs = [...T(48, -back), across];
   const re = [rs[0] + 30 * Math.cos(ra), rs[1] + 30 * Math.sin(ra), rs[2]];
   const rh = [re[0] + 25 * Math.cos(rf), re[1] + 25 * Math.sin(rf), rs[2]];
-  return { hip, hipF, hipB, ankB, ankF, kB, kF, u, f, T, sh, nk, nu, nf, N, hd, el, hn, bp, at, tip: at(BLADE), rs, re, rh, lean: p.lean, turn: p.turn };
+  return { hip, hipF, hipB, ankB, ankF, kB, kF, u, f, T, sh, nk, nu, nf, N, hd, el, hn, bp, at, tip: at(BLADE), rs, re, rh, lean: p.lean, turn: p.turn, toeBack: p.toeBack };
 }
 
 /**
@@ -218,7 +223,7 @@ function draw(p, dir, camera, backView, older) {
   // Strokes on the floor under each planted foot, shorter as it lifts. The foot behind is turned across, so they go all round it.
   const ground = (ank, front) => {
     const lift = ank[1] - 8;
-    return lift > 5 ? "" : groundStrokes(W, ank, front, front ? 7 : 9, 1 - lift / 6, front ? undefined : footSpan(W));
+    return lift > 5 ? "" : groundStrokes(W, ank, front, front ? 7 : 9, 1 - lift / 6, front ? undefined : footSpan(W, J.toeBack));
   };
 
   // Draw order: what the camera sees first goes last.

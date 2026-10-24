@@ -156,7 +156,7 @@ function footBehind({ dir = 1, camera = 0, older = false, adj = {} } = {}) {
   const pose = resolvePose({ pose: "guard", adj });
   const J = skeleton(pose);
   const W = projector(pose, dir, camera);
-  const foot = shoeAcross(J.ankB, W, older);
+  const foot = shoeAcross(J.ankB, W, J.toeBack, older);
   return { foot, J, W, ...extentOf(foot.shapes), ankle: W(J.ankB)[0] };
 }
 
@@ -183,7 +183,7 @@ test("the camera turns the foot behind: its toe goes toward the opponent from on
   }
   // A foot turned a little back from the camera shows its toe a little back of the ankle, when seen square.
   const back = footBehind({ camera: 0 });
-  assert.ok(back.middle < back.ankle, "turned back from the camera by the shoe's own turn");
+  assert.ok(back.middle < back.ankle, "turned back from the camera by the guard's toeBack");
 });
 
 test("the foot behind stands on the floor and rises with its ankle", () => {
@@ -228,8 +228,8 @@ test("the span of the foot behind is how far its sole reaches either side of the
   const J = skeleton(resolvePose({ pose: "guard" }));
   for (const camera of [-60, 0, 25, 60]) {
     const W = projector({ x: 0 }, 1, camera);
-    const [from, to] = footSpan(W);
-    const { minX, maxX } = extentOf(shoeAcross(J.ankB, W).shapes);
+    const [from, to] = footSpan(W, J.toeBack);
+    const { minX, maxX } = extentOf(shoeAcross(J.ankB, W, J.toeBack).shapes);
     // (The page is the piste compressed by the camera, so a span on the piste is taken across it.)
     const c = Math.cos((camera * Math.PI) / 180);
     near(W([J.ankB[0] + from, 0])[0] - W([J.ankB[0], 0])[0], (minX - W(J.ankB)[0]), 1e-9, `${camera}°: the foot's near edge`);
@@ -238,8 +238,34 @@ test("the span of the foot behind is how far its sole reaches either side of the
   }
 });
 
+test("how far the toe is turned back is the pose's: 0 is seen square from a level camera, and the more, the further back the toe is seen", () => {
+  const square = footBehind({ adj: { toeBack: 0 } });
+  near(square.middle, square.ankle, 1e-9, "turned back 0°, the shoe is seen square, its middle under the ankle");
+  let last = square;
+  for (const toeBack of [14, 30, 45]) {
+    const turned = footBehind({ adj: { toeBack } });
+    assert.ok(turned.middle < last.middle - 1, `${toeBack}°: the toe is further back`);
+    assert.ok(turned.maxX - turned.minX > last.maxX - last.minX + 1, `${toeBack}°: and the shoe is seen longer`);
+    last = turned;
+  }
+});
+
+test("the span of the foot behind follows the pose's toeBack, and reaches further back the more the toe is turned back", () => {
+  let last = 0;
+  for (const toeBack of [0, 14, 30, 45]) {
+    const J = skeleton(resolvePose({ pose: "guard", adj: { toeBack } }));
+    const W = projector({ x: 0 }, 1, 0);
+    const [from, to] = footSpan(W, J.toeBack);
+    const { minX, maxX } = extentOf(shoeAcross(J.ankB, W, J.toeBack).shapes);
+    near(W([J.ankB[0] + from, 0])[0] - W([J.ankB[0], 0])[0], minX - W(J.ankB)[0], 1e-9, `${toeBack}°: the foot's near edge`);
+    near(to - from, maxX - minX, 1e-9, `${toeBack}°: as wide as the sole`);
+    assert.ok(from < last, `${toeBack}°: further back than at the turn before`);
+    last = from;
+  }
+});
+
 test("the shoe of the foot behind stands as high as the profile shoe, from the heel to the toe", () => {
-  const { domes, sole, turn, laces, seam, hatch, collar } = shoeAcrossParts();
+  const { domes, sole, laces, seam, hatch, collar } = shoeAcrossParts();
   const profile = shoeParts().shape;
   assert.ok(domes.length >= 3);
   for (const [mid, half, wide, high, square] of domes) {
@@ -249,7 +275,7 @@ test("the shoe of the foot behind stands as high as the profile shoe, from the h
   near(Math.min(...domes.map((d) => d[0] - d[1])), Math.min(...profile.map((p) => p[0])), 1, "the heel");
   near(Math.max(...domes.map((d) => d[0] + d[1])), Math.max(...profile.map((p) => p[0])), 1, "the toe");
   near(Math.max(...domes.map((d) => d[3])) - 8, Math.max(...profile.map((p) => p[1])), 0.5, "the ankle, 8 cm above the floor");
-  assert.ok(turn > 0 && turn < 30, "turned back from the camera a little, as in the plates, and not away from it");
+  assert.ok(!("turn" in shoeAcrossParts()), "how far it is turned back is the pose's toeBack, not the shoe's");
   assert.ok(sole.height > 0 && sole.edge > 0 && sole.bow > 0);
   assert.ok(laces.length === 4 && laces.every((along) => along > 0 && along < 10), "the laces are on the instep");
   assert.ok(seam > domes[2][0] && seam < domes[2][0] + domes[2][1], "the seam is on the front half of the toe box");
@@ -278,6 +304,19 @@ test("the legs: the foot behind is turned across, the seat belongs to one leg, a
   const heavy = posed("guard", { liftF: 80 });
   const high = legPart(heavy.J, heavy.W, heavy.J.ankF, heavy.J.kF, { front: true, seat: false, older: false });
   assert.ok(shoeOf(high)[1] < 24, "though only so far");
+});
+
+test("the leg behind is drawn with the pose's toeBack in its shoe, and the foot in front does not turn with it", () => {
+  const legs = (toeBack) => {
+    const { J, W } = posed("guard", { toeBack });
+    return {
+      back: legPart(J, W, J.ankB, J.kB, { front: false, seat: false, older: false }),
+      front: legPart(J, W, J.ankF, J.kF, { front: true, seat: false, older: false }),
+    };
+  };
+  const [guard, turned] = [legs(14), legs(40)];
+  assert.notDeepEqual(turned.back, guard.back, "the shoe behind turns");
+  assert.deepEqual(turned.front, guard.front, "and the foot in front does not");
 });
 
 test("a knee turned toward the camera is drawn where the camera sees it, and the leg is drawn to that knee", () => {

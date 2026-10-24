@@ -241,8 +241,9 @@ const HEM = 7;
 
 /**
  * The shoe of the foot behind, which is turned across the piste with its toe at
- * the camera, as it is seen on the page. The way it is turned from straight at
- * the camera is `turn` in parts.js, and the camera turns it on from there.
+ * the camera, as it is seen on the page. `toeBack` is how far it is turned back
+ * from straight at the camera, in degrees: the pose's, and the camera turns it
+ * on from there.
  *
  * Each dome of the shoe is a superellipsoid standing on the floor. A level
  * camera sees one as half a superellipse of the same squareness: as high as the
@@ -257,8 +258,8 @@ const HEM = 7;
  * An older man's loose trousers hang over the top of the shoe, so its collar and
  * the laces that lie under the cloth are left out.
  */
-export function shoeAcross(ank, W, older = false, parts = shoeAcrossParts()) {
-  const { domes, left, right, at, page, side, faces, ce } = acrossFrame(ank, W, parts);
+export function shoeAcross(ank, W, toeBack, older = false, parts = shoeAcrossParts()) {
+  const { domes, left, right, at, page, side, faces, ce } = acrossFrame(ank, W, toeBack, parts);
   const { height, edge, bow } = parts.sole;
   const middle = (left + right) / 2;
   // Over the top of the shoe, sampled closely where it turns down at either end.
@@ -314,8 +315,8 @@ export function shoeAcross(ank, W, older = false, parts = shoeAcrossParts()) {
  * the ankle: so the strokes on the floor go all round it, however the camera
  * turns it.
  */
-export function footSpan(W, parts = shoeAcrossParts()) {
-  const { left, right } = acrossFrame([0, 8], W, parts);
+export function footSpan(W, toeBack, parts = shoeAcrossParts()) {
+  const { left, right } = acrossFrame([0, 8], W, toeBack, parts);
   // (The camera does not turn beyond 60°, but a span must not run away if it did.)
   const squeeze = Math.max(0.25, Math.cos(W.camera * RAD));
   return [(left - parts.sole.edge) / squeeze, (right + parts.sole.edge) / squeeze];
@@ -347,11 +348,11 @@ function archOver([mid, half, wide, high, square], along, n) {
 }
 
 // The foot behind as the camera sees it, which its shoe and the strokes on the floor round it are set from.
-function acrossFrame(ank, W, parts) {
+function acrossFrame(ank, W, toeBack, parts) {
   const look = W.camera * RAD;
   const ce = Math.cos(look);
   const se = Math.sin(look);
-  const turn = parts.turn * RAD;
+  const turn = toeBack * RAD;
   // How far across the page a step across the foot goes, and a step along it toward the toe.
   const sideways = Math.cos(turn) * ce + Math.sin(turn) * se;
   const lengthways = -Math.sin(turn) * ce + Math.cos(turn) * se;
@@ -551,7 +552,7 @@ export function legPart(J, W, ank, knee, { front, seat, near = false, older }) {
       const o = W([q[0], q[1]]);
       return q.length > 2 ? [o[0], o[1], ...q.slice(2)] : o;
     });
-  const foot = front ? shoeInFront(ank, set) : shoeAcross(ank, W, older);
+  const foot = front ? shoeInFront(ank, set) : shoeAcross(ank, W, J.toeBack, older);
   const su = unit(kn, ank);
   const seed = front ? 11 : 21;
   const ref = [1, 0];
