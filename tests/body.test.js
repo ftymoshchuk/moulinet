@@ -3,7 +3,8 @@ import { test } from "node:test";
 
 import { bladePart, crotch, footSpan, headFrame, headPart, hull, legPart, place, rearArm, segment, shoe, shoeAcross, swordArm, torsoFrame, trunk } from "../site/js/body.js";
 import { projector, skeleton } from "../site/js/figure.js";
-import { area, dist, inside } from "../site/js/ink.js";
+import { area, dist, inside, lerp, unit } from "../site/js/ink.js";
+import { POSES } from "../site/js/library.js";
 import { handParts, headParts, shoeAcrossParts, shoeParts } from "../site/js/parts.js";
 import { resolvePose } from "../site/js/phrase.js";
 import { boxOf, readPath } from "./path-data.js";
@@ -388,6 +389,69 @@ test("an older man is in loose trousers, with no pouch of cloth at the knee", ()
   assert.notEqual(older.g, young.g);
   assert.notEqual(older.k, young.k, "and folds of loose cloth, pulled from the crotch");
   assert.ok(older.d.length > 0 && young.d.length > 0);
+});
+
+test("the knickerbockers narrow to the knee and go into a bag over the band, about 1.35 times as wide as the stocking, as the plate draws them", () => {
+  // How far points reach to either side of a line on the page, taking only those from `from` to `to` of the way along it.
+  const across = (points, [a, b], from = -Infinity, to = Infinity) => {
+    const u = unit(a, b);
+    const length = dist(a, b);
+    const out = points
+      .filter((p) => {
+        const t = ((p[0] - a[0]) * u[0] + (p[1] - a[1]) * u[1]) / length;
+        return t > from && t < to;
+      })
+      .map((p) => (p[1] - a[1]) * u[0] - (p[0] - a[0]) * u[1]);
+    return { min: Math.min(...out), max: Math.max(...out), width: Math.max(...out) - Math.min(...out) };
+  };
+  for (const name of ["guard", "lungeHead", "lungeChest"]) {
+    const { J, W } = posed(name);
+    for (const front of [true, false]) {
+      const [hip, knee, ankle] = front ? [J.hipF, J.kF, J.ankF] : [J.hipB, J.kB, J.ankB];
+      const where = `${name}, the leg ${front ? "in front" : "behind"}`;
+      const leg = legPart(J, W, ankle, knee, { front, seat: false, older: false });
+      const [thigh, bag, stocking] = readPath(leg.g).map((shape) => shape.points);
+      const shin = [W(knee.slice(0, 2)), W(ankle)];
+      const bone = [W(hip.slice(0, 2)), shin[0]];
+      // (At the hip the thigh is cut square; at the knee its end is round, and the round of it is further on than the knee.)
+      const [top, bottom] = [across(thigh, bone, -0.02, 0.1).width, across(thigh, bone, 0.85, 1.02).width];
+      assert.ok(bottom < top * 0.75, `${where}: the thigh narrows from ${top} across at the hip to ${bottom} at the knee`);
+      const [b, s] = [across(bag, shin), across(stocking, shin)];
+      assert.ok(bottom < b.width * 1.12, `${where}: and goes into the bag, ${b.width} across, no wider than it`);
+      near(b.width / s.width, 1.35, 0.1, `${where}: how many times as wide as the stocking the bag is`);
+      for (const over of [b.max - s.max, s.min - b.min]) assert.ok(over > 1 && over < 3.5, `${where}: it hangs ${over} over the band`);
+    }
+  }
+});
+
+test("the folds and lines of a leg stay on its cloth, on the bag at the knee as on the rest, from every camera angle", () => {
+  // How far a point is from the edge of a shape. A shape is drawn as a smooth curve through its points, and a stroke as a
+  // lens with some width, so a stroke on the edge of the cloth may come a little past the points of it.
+  const toEdge = (shape, p) =>
+    Math.min(
+      ...shape.map((a, i) => {
+        const b = shape[(i + 1) % shape.length];
+        const [dx, dy] = [b[0] - a[0], b[1] - a[1]];
+        const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / (dx * dx + dy * dy || 1)));
+        return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy);
+      }),
+    );
+  for (const name of Object.keys(POSES)) {
+    for (const camera of [-60, -25, 0, 25, 60]) {
+      const { J, W } = posed(name, {}, camera);
+      for (const front of [true, false]) {
+        const leg = legPart(J, W, front ? J.ankF : J.ankB, front ? J.kF : J.kB, { front, seat: false, older: false });
+        const cloth = readPath(leg.g).map((shape) => shape.points);
+        const off = (p) => (cloth.some((shape) => inside(shape, p)) ? 0 : Math.min(...cloth.map((shape) => toEdge(shape, p))));
+        // A stroke of shade by its two ends and its middle; the band and the other lines by every point they pass.
+        const strokes = readPath(leg.k).map(({ points: q }) => (q.length >= 8 ? [q[0], q[4], lerp(q[2], q[6], 0.5)] : q));
+        const lines = readPath(leg.d).map(({ points }) => points);
+        for (const p of [...strokes, ...lines].flat()) {
+          assert.ok(off(p) < 0.6, `${name} from ${camera}°, the leg ${front ? "in front" : "behind"}: ${p} is ${off(p)} off the cloth`);
+        }
+      }
+    }
+  }
 });
 
 test("the trunk is a jersey, a neck and a collar, with its seams and the shading on it", () => {

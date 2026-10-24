@@ -127,9 +127,12 @@ under the cloth that hangs over the band below the knee, and folds from the
 armpits and at the elbows.
 
 A young fencer wears knickerbockers and long stockings, an older one loose
-trousers gathered at the ankle, a belly and narrower shoulders. The strokes are
-placed by rule and never by chance, so a figure moves as one drawing and does
-not flicker, and a pose that is held is drawn once.
+trousers gathered at the ankle, a belly and narrower shoulders. The
+knickerbockers are full at the hips and narrow to the knee, where the cloth
+hangs over the band in a bag about a third wider than the stocking, as the
+plates draw it. The strokes are placed by rule and never by chance, so a figure
+moves as one drawing and does not flicker, and a pose that is held is drawn
+once.
 
 ## Writing a phrase
 A scene is a phrase: JSON, with a few words about where it comes from. **Phrase
