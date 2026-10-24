@@ -12,28 +12,30 @@ Scenes you save stay in your browser's own storage, on that device.
 
 The name comes from the *moulinet*, the sabre's circular cut: the blade drops
 forward past the arm, swings up behind and comes down over the top. It is one
-of the four scenes built in.
+of the five scenes built in.
 
 ## Three modes
 One stage, three ways to use it. Choose the mode at the top of the page.
 
 **Practice library.** Scenes to practise from, each with the event it was noted
 at and a link to a reference, such as a video of the bout. Pick a scene and it
-plays; the four built in are an advance, lunge and head cut; a chest cut
+plays; the five built in are an advance, lunge and head cut; a chest cut
 parried in 3 and riposted; a head attack parried in 5 and riposted to the head;
-and the moulinet, solo. The built-in scenes have no event or link, because
-there is no real bout behind them. Scenes you save in the Creator are listed
-below them, with whatever you noted, and a link opens in a new tab. They live
-in your browser's storage, so one saved or deleted in another tab of the page
-appears or goes here too.
+a cut at the outside of the face met with face protection, as an old plate
+draws it; and the moulinet, solo. The built-in scenes have no event or link,
+because there is no real bout behind them. Scenes you save in the Creator are
+listed below them, with whatever you noted, and a link opens in a new tab. They
+live in your browser's storage, so one saved or deleted in another tab of the
+page appears or goes here too.
 
 **Base postures.** One fencer, never a pair, in one posture at a time, with the
 posture described in words: what it is for, and the parts worth looking at.
-Pick a posture from the list, or use the arrows under the stage. The eleven
+Pick a posture from the list, or use the arrows under the stage. The fourteen
 postures are the poses of the library, in the order they are learned: the
 guard; the two halves of an advance; the arm extended and the blade up; the
-lunge in flight, to the head and to the chest; parries 3 and 5; and the
-riposte.
+lunge in flight, to the head and to the chest; parry 3, and parry 3 with the
+weight drawn back; face protection; parry 5, and parry 5 with the weight drawn
+back; and the riposte.
 
 **Creator.** Make a scene of your own. Start from a blank one with **New
 scene**, or from a scene in the library: a built-in one opens as a copy, with
@@ -68,7 +70,7 @@ In the Creator there is more:
 - **Adjust this moment:** thirteen sliders reshape either fencer on the current
   step, from where they stand on the piste to the turn of the shoulders, the
   rear arm and the angle and turn of the blade.
-- **Poses:** eleven named poses to put on any step.
+- **Poses:** fourteen named poses to put on any step.
 - **Phrase data:** the whole scene as text. Edit it in place or paste one in;
   it applies as you type, and says why when it can't. The fields above it and
   the text are the same thing, and follow each other. While the text can't be
@@ -87,17 +89,42 @@ is in this repository.
 
 The shoulders are turned toward you, as in those books: the jersey is a stack
 of slices of the body, set round by the pose's `turn`, so it is broad at the
-shoulders and narrow at the waist, and the camera swings it as it swings the
-piste. The sleeve of the arm on your side begins on the jersey itself, and the
-other arm lies behind it, set on the shoulder at the front of the chest and as
-long as an arm. The foot in front points at the opponent, and the foot behind
-is turned across, its toe at you, so that the two make an L, as the stance is
-taught. That shoe is a few domes standing on the floor, which the camera turns
-with the piste, so it is seen end on, from a quarter or from the side as the
-camera moves. Each knee is over its own foot: the front shin stands upright, and
-the knee of the leg behind bends back and is turned out toward you, over the
-foot, so side on its shin leans a little forward and the leg is seen shorter, as
-the plates draw it. Together they give the guard its wide stance.
+shoulders and a little narrower at the waist, and the camera swings it as it
+swings the piste. The sleeve of the arm on your side begins on the jersey
+itself, and the other arm lies behind it, set on the shoulder at the front of
+the chest and as long as an arm, its loose sleeve running on from the line of
+the shoulder into a gauntlet. The hips turn with the shoulders, if not as far,
+so each leg starts from a hip of its own, the leg behind on your side and the
+leg in front on the far side: the legs part at the crotch, under a wide front
+of the trousers, rather than from one point. The foot in front points at the
+opponent, and the foot behind is turned across, its toe at you, so that the two
+make an L, as the stance is taught. That shoe is a few domes standing on the
+floor, which the camera turns with the piste, so it is seen end on, from a
+quarter or from the side as the camera moves. The guard is the plates' classic
+stance: wide, both knees bent, each over its own foot, so both shins stand
+upright. The knee of the leg behind is turned out toward you, over the foot: a
+little in the guard, so side on it is seen bent back over the foot, as the
+plates draw it, and further as the weight sits back over that foot. In the
+lunge the back leg is straight and the body stays nearly upright over the front
+leg.
+
+The sabre's guard is a steel bell over the front of the fist, light, with a line
+of ink round it, as the plates draw it, and worked out in three dimensions: from
+the side the plates draw, you look a little into it, and see the fist in it, the
+cup shaded inside and its near lip over the fingers; turned the other way, its
+dome faces you and the blade comes out of it toward you.
+
+The head is drawn as the plates draw it: a long skull and a short, square face,
+carried forward on a thick neck. The neck takes only part of the body's lean
+and the head hardly any, so however the body leans the head is held up and the
+eyes look ahead. The hair is strokes of the pen, combed in rows round the
+crown, up off the forehead, back over the top and down the back of the head,
+sparse on top where the light falls and heavier at the back, and its strokes
+make the edge of the head where it grows. The shading is drawn the same way: a
+fan of folds from the crotch, the cloth bloused over the belt and gathered
+under it, shadow on the insides of the legs, where each faces the other, and
+under the cloth that hangs over the band below the knee, and folds from the
+armpits and at the elbows.
 
 A young fencer wears knickerbockers and long stockings, an older one loose
 trousers gathered at the ankle, a belly and narrower shoulders. The strokes are
@@ -165,7 +192,7 @@ points at the opponent and 90 straight up.
 
 | Key | Joint |
 |---|---|
-| `hipX`, `hipY` | Hips: how far forward of the back foot, and how high |
+| `hipX`, `hipY` | Hips: how far their middle is forward of the back foot, and how high |
 | `footF` | Front foot: how far forward of the back foot |
 | `liftF`, `liftB` | How far the front or back foot is off the floor |
 | `lean` | Torso lean, forward positive |
@@ -186,6 +213,8 @@ postures** describe each one in words.
 | `lungeFly` | Lunge, in flight |
 | `lungeHead`, `lungeChest` | Lunge, landing a head cut or a chest cut |
 | `parry3`, `parry5` | Parry 3, parry 5 |
+| `parry3Back`, `parry5Back` | Parry 3, parry 5, with the weight drawn back over the bent back leg |
+| `faceParry` | Face protection: standing up, the hand low in front and the blade slanting forward across the line to the face |
 | `riposte` | Riposte to the head |
 | `extend` | Arm extended |
 

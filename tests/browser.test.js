@@ -15,7 +15,7 @@ import { promisify } from "node:util";
 
 import { BASES, BASE_BLADE, BASE_GROUPS, basePhrase } from "../site/js/bases.js";
 import { frameOf } from "../site/js/figure.js";
-import { POSE_NAMES, PRESETS } from "../site/js/library.js";
+import { JOINTS, POSE_NAMES, PRESETS } from "../site/js/library.js";
 import { buildTimeline } from "../site/js/phrase.js";
 import { siteHandler } from "../scripts/serve.js";
 
@@ -105,14 +105,14 @@ test("in a browser, the page opens on the practice library and builds its contro
   const count = (pattern) => (dom.match(pattern) ?? []).length;
   assert.equal(count(/class="mode-button"/g), 3, "mode buttons");
   assert.match(dom, /<button[^>]*data-mode="library"[^>]*aria-pressed="true"[^>]*>Practice library</);
-  assert.equal(count(/class="scene-button"/g), 4, "scenes in the library");
+  assert.equal(count(/class="scene-button"/g), PRESETS.length, "scenes in the library");
   assert.match(dom, /id="scene-title"[^>]*>Advance, lunge, head cut</);
   assert.equal(count(/class="step-button"/g), 8, "step buttons");
-  assert.equal(count(/class="pose-button"/g), 11, "pose buttons");
-  assert.equal(count(/class="base-button"/g), 11, "posture buttons");
+  assert.equal(count(/class="pose-button"/g), Object.keys(POSE_NAMES).length, "pose buttons");
+  assert.equal(count(/class="base-button"/g), BASES.length, "posture buttons");
   // Each fencer's parts are filled by what they are, so the older man's trousers can be a shade darker than his jersey.
   assert.equal(count(/class="figure__fill figure__fill--trousers"/g), 4, "two legs for each fencer");
-  assert.equal(count(/class="figure__fill figure__fill--jersey"/g), 6, "the jersey and both arms for each");
+  assert.equal(count(/class="figure__fill figure__fill--jersey"/g), 8, "the jersey and both arms for each, and the fist again where it is seen in the cup of the guard");
   assert.equal(count(/class="figure__fill figure__fill--face"/g), 2, "and a face for each");
   assert.equal(count(/<input type="range" id="joint-/g), 13, "joint sliders");
   assert.match(dom, /id="step-count"[^>]*>\d\d \/ 08</);
@@ -137,6 +137,7 @@ test("in a browser, the practice library plays each scene and says what it is", 
     { title: "Advance, lunge, head cut", pressed: "true", card: "Pair · 8 steps · 3.4 s", count: "01 / 08", solo: false, camera: "0", time: "0.00 / 3.39 s", scrubbedTo: "08 / 08" },
     { title: "Lunge to the chest, parry 3, riposte", pressed: "true", card: "Pair · 4 steps · 3.3 s", count: "01 / 04", solo: false, camera: "0", time: "0.00 / 3.32 s", scrubbedTo: "04 / 04" },
     { title: "Head attack, parry 5, riposte to head", pressed: "true", card: "Pair · 5 steps · 3.4 s", count: "01 / 05", solo: false, camera: "28", time: "0.00 / 3.44 s", scrubbedTo: "05 / 05" },
+    { title: "Outside face cut, face protection", pressed: "true", card: "Pair · 4 steps · 2.8 s", count: "01 / 04", solo: false, camera: "0", time: "0.00 / 2.76 s", scrubbedTo: "04 / 04" },
     { title: "Moulinet to the head", pressed: "true", card: "Solo · 7 steps · 2.7 s", count: "01 / 07", solo: true, camera: "25", time: "0.00 / 2.68 s", scrubbedTo: "07 / 07" },
   ]);
   // A built-in scene has no event or link to give, and says so, and cannot be deleted.
@@ -188,7 +189,7 @@ test("in a browser, the base postures show one fencer, not a pair, and describe 
   assert.deepEqual(seen.baseShows, { chosen: ["base"], panels: ["stage", "detail", "bases"], controls: ["[data-toggle=ink]", "#camera"] });
   assert.deepEqual(seen.baseStage, {
     label: "Guard (tierce)",
-    count: "01 / 11",
+    count: `01 / ${two(BASES.length)}`,
     solo: true,
     bodyA: "inline",
     bodyB: "none",
@@ -217,14 +218,14 @@ test("in a browser, the base postures show one fencer, not a pair, and describe 
   );
   assert.deepEqual(seen.groups, BASE_GROUPS);
   assert.deepEqual(seen.arrows, {
-    atStart: "01 / 11",
+    atStart: `01 / ${two(BASES.length)}`,
     third: "Advance, land",
-    announced: "Posture 3 of 11: Advance, land",
-    atEnd: "11 / 11",
+    announced: `Posture 3 of ${BASES.length}: Advance, land`,
+    atEnd: `${two(BASES.length)} / ${two(BASES.length)}`,
     cameraTurned: true,
     inkOff: null,
   });
-  assert.deepEqual(seen.baseKept, { count: "05 / 11", label: "Blade up" });
+  assert.deepEqual(seen.baseKept, { count: `05 / ${two(BASES.length)}`, label: "Blade up" });
 });
 
 test("in a browser, the Creator edits a copy of a scene the way the page always has", { skip, timeout: 120_000 }, async () => {
@@ -360,7 +361,7 @@ test("in a browser, scenes are saved on this device, listed in the library with 
   assert.deepEqual(seen.kept, { event: "Kept while away", count: "02 / 02", showing: ["stage", "scene", "phrase", "step", "adjust", "poses"] }, "the Creator is as it was left");
 
   const card = "Lunge to the headPair · 2 steps · 0.8 sClub night, October";
-  assert.deepEqual(seen.listed, { saved: [card, card], builtIn: 4, emptyHidden: true, pressed: 1 });
+  assert.deepEqual(seen.listed, { saved: [card, card], builtIn: PRESETS.length, emptyHidden: true, pressed: 1 });
   assert.deepEqual(seen.savedDetail, {
     title: "Lunge to the head",
     kind: "Saved on this device",
@@ -376,7 +377,8 @@ test("in a browser, scenes are saved on this device, listed in the library with 
     deleteHidden: false,
     count: "01 / 02",
     camera: "33",
-    saved: 4,
+    // The first saved card comes after the built-in scenes.
+    saved: PRESETS.length,
   });
 
   // What is stored is not to be trusted: the link that is a script is no link, and markup is only words.
@@ -402,7 +404,7 @@ test("in a browser, scenes are saved on this device, listed in the library with 
 
   assert.deepEqual(seen.deleteDeclined, { cards: 3, asked: 'Delete "<b>Evil</b>" from this device?' });
   assert.deepEqual(seen.deleted, { cards: 2, stored: 3, title: "Advance, lunge, head cut", focus: "library" });
-  assert.deepEqual(seen.allDeleted, { cards: 0, stored: 1, emptyShown: true, builtIn: 4 }, "all that is left is the entry it cannot show");
+  assert.deepEqual(seen.allDeleted, { cards: 0, stored: 1, emptyShown: true, builtIn: PRESETS.length }, "all that is left is the entry it cannot show");
   assert.deepEqual(seen.elsewhere, { cards: 0, title: "Advance, lunge, head cut" }, "a scene deleted in another tab leaves this one's list");
   const replace = "The scene in the Creator has changes that are not saved. Replace it?";
   assert.deepEqual(seen.asked, [replace, replace, replace, replace, replace, 'Delete "<b>Evil</b>" from this device?', 'Delete "<b>Evil</b>" from this device?', 'Delete "Lunge to the head" from this device?', 'Delete "Lunge to the head" from this device?']);
@@ -410,12 +412,15 @@ test("in a browser, scenes are saved on this device, listed in the library with 
 
 test("in a browser, text that is not a phrase yet keeps the fields still, and what was typed is not lost", { skip, timeout: 120_000 }, async () => {
   const { seen } = await drive();
+  // The controls that edit a scene: twelve fields and buttons for the scene and its step, a slider for each joint and a
+  // button for each pose.
+  const EDITORS = 12 + JOINTS.length + Object.keys(POSE_NAMES).length;
   // A new scene: every control that edits it is on, but for the move time of its first step and removing its only one.
-  assert.deepEqual(seen.fieldsOn, { total: 36, off: 2 });
+  assert.deepEqual(seen.fieldsOn, { total: EDITORS, off: 2 });
   assert.match(seen.onHold.status, /^Not applied: .+\. The fields are on hold until it is\.$/);
   assert.deepEqual({ ...seen.onHold, status: "" }, {
-    total: 36,
-    off: 36,
+    total: EDITORS,
+    off: EDITORS,
     status: "",
     note: "On hold: the phrase data is not applied yet.",
     noteIsWarning: true,
@@ -424,7 +429,7 @@ test("in a browser, text that is not a phrase yet keeps the fields still, and wh
   assert.deepEqual({ ...seen.keptOnHold, status: "" }, { text: '{"name": "Mine", "steps": [', name: "Kept name", count: "01 / 01", same: true, status: "" }, "a change that gets through anyway is dropped");
   assert.match(seen.keptOnHold.status, /^Not applied: /);
   assert.deepEqual(seen.holdSave, { status: "Fix the phrase data first: it is not applied yet.", saved: 0 });
-  assert.deepEqual(seen.resumed, { total: 36, off: 0, status: "Applied: 2 steps, 0.00 s", note: "", name: "Mine", steps: 2 }, "once it is a phrase they are on again, showing it");
+  assert.deepEqual(seen.resumed, { total: EDITORS, off: 0, status: "Applied: 2 steps, 0.00 s", note: "", name: "Mine", steps: 2 }, "once it is a phrase they are on again, showing it");
   assert.deepEqual(seen.resumedEdit, { name: '  "name": "Mine, renamed",', text: ["{", '  "name": "Mine, renamed",', '  "steps": ['] });
 });
 
