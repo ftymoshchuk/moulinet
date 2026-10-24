@@ -5,7 +5,7 @@ import { POSES } from "./library.js";
 // Where each fencer stands until a phrase places them.
 const START = { A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 310 } };
 // Values that are angles, so a move between two of them takes the short way round.
-const ANGLES = new Set(["lean", "turn", "arm", "fore", "blade", "yaw", "rArm", "rFore"]);
+const ANGLES = new Set(["lean", "turn", "arm", "fore", "blade", "yaw", "rArm", "rFore", "toeBack", "kneeOut"]);
 // What a pose can hold. An adjustment to anything else is ignored.
 const POSE_KEYS = new Set(Object.keys(POSES.guard));
 // The text a scene carries about itself, and the order the data shows it in:

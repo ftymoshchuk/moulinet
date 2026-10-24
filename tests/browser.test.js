@@ -114,7 +114,7 @@ test("in a browser, the page opens on the practice library and builds its contro
   assert.equal(count(/class="figure__fill figure__fill--trousers"/g), 4, "two legs for each fencer");
   assert.equal(count(/class="figure__fill figure__fill--jersey"/g), 6, "the jersey and both arms for each");
   assert.equal(count(/class="figure__fill figure__fill--face"/g), 2, "and a face for each");
-  assert.equal(count(/<input type="range" id="joint-/g), 13, "joint sliders");
+  assert.equal(count(/<input type="range" id="joint-/g), 15, "joint sliders");
   assert.match(dom, /id="step-count"[^>]*>\d\d \/ 08</);
   // The panels of the other modes are there, and out of sight.
   assert.match(dom, /class="panel panel--poses hidden"/);
@@ -411,11 +411,11 @@ test("in a browser, scenes are saved on this device, listed in the library with 
 test("in a browser, text that is not a phrase yet keeps the fields still, and what was typed is not lost", { skip, timeout: 120_000 }, async () => {
   const { seen } = await drive();
   // A new scene: every control that edits it is on, but for the move time of its first step and removing its only one.
-  assert.deepEqual(seen.fieldsOn, { total: 36, off: 2 });
+  assert.deepEqual(seen.fieldsOn, { total: 38, off: 2 });
   assert.match(seen.onHold.status, /^Not applied: .+\. The fields are on hold until it is\.$/);
   assert.deepEqual({ ...seen.onHold, status: "" }, {
-    total: 36,
-    off: 36,
+    total: 38,
+    off: 38,
     status: "",
     note: "On hold: the phrase data is not applied yet.",
     noteIsWarning: true,
@@ -424,7 +424,7 @@ test("in a browser, text that is not a phrase yet keeps the fields still, and wh
   assert.deepEqual({ ...seen.keptOnHold, status: "" }, { text: '{"name": "Mine", "steps": [', name: "Kept name", count: "01 / 01", same: true, status: "" }, "a change that gets through anyway is dropped");
   assert.match(seen.keptOnHold.status, /^Not applied: /);
   assert.deepEqual(seen.holdSave, { status: "Fix the phrase data first: it is not applied yet.", saved: 0 });
-  assert.deepEqual(seen.resumed, { total: 36, off: 0, status: "Applied: 2 steps, 0.00 s", note: "", name: "Mine", steps: 2 }, "once it is a phrase they are on again, showing it");
+  assert.deepEqual(seen.resumed, { total: 38, off: 0, status: "Applied: 2 steps, 0.00 s", note: "", name: "Mine", steps: 2 }, "once it is a phrase they are on again, showing it");
   assert.deepEqual(seen.resumedEdit, { name: '  "name": "Mine, renamed",', text: ["{", '  "name": "Mine, renamed",', '  "steps": ['] });
 });
 

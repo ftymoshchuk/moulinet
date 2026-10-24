@@ -5,6 +5,10 @@
 // degrees, where 0 points at the opponent and 90 straight up:
 //   hipX, hipY    hips forward of the back foot, and their height
 //   footF         front foot reach; liftF and liftB lift a foot off the floor
+//   toeBack       how far the toe of the foot behind is turned back from pointing
+//                 straight at the camera: 0 makes an exact L with the foot in front
+//   kneeOut       how far the knee of the leg behind is turned out toward the camera
+//                 from bending straight back: 0 is flat, in the plane of the piste
 //   lean          torso lean, forward positive
 //   turn          how far the shoulders are turned toward the camera, 0 side on
 //   arm, fore     sword arm: upper arm and forearm
@@ -20,7 +24,7 @@
 // plates draw it. The poses that move the weight from there keep the knees over
 // the feet to within a few centimetres.
 export const POSES = {
-  guard: { hipX: 40, hipY: 76, footF: 77, liftF: 0, liftB: 0, lean: 3, turn: 58, arm: -34, fore: 16, blade: 34, yaw: 0, rArm: -134, rFore: -32 },
+  guard: { hipX: 40, hipY: 76, footF: 77, liftF: 0, liftB: 0, lean: 3, turn: 58, arm: -34, fore: 16, blade: 34, yaw: 0, rArm: -134, rFore: -32, toeBack: 14, kneeOut: 40 },
   advLift: { hipX: 44, hipY: 81, footF: 103, liftF: 9 },
   advLand: { hipX: 49, hipY: 77, footF: 107 },
   prep: { hipX: 42, lean: 4, arm: 15, fore: 30, blade: 85 },
@@ -129,6 +133,8 @@ export const JOINTS = [
   { key: "liftF", label: "Front foot lift", min: 0, max: 30, unit: " cm" },
   { key: "hipX", label: "Hips forward", min: 5, max: 90, unit: " cm" },
   { key: "hipY", label: "Hip height", min: 48, max: 96, unit: " cm" },
+  { key: "toeBack", label: "Back foot turned back", min: 0, max: 45, unit: "°" },
+  { key: "kneeOut", label: "Back knee turned out", min: 0, max: 90, unit: "°" },
   { key: "lean", label: "Torso lean", min: -25, max: 35, unit: "°" },
   { key: "turn", label: "Shoulder turn toward camera", min: 0, max: 90, unit: "°" },
   { key: "arm", label: "Upper arm", min: -90, max: 120, unit: "°" },

@@ -65,9 +65,9 @@ The base postures stand still, so they have neither.
 In the Creator there is more:
 - **This step:** its label, how long it takes to move into it and to stay on
   it, and whether it moves smoothly, snaps or keeps one speed.
-- **Adjust this moment:** thirteen sliders reshape either fencer on the current
-  step, from where they stand on the piste to the turn of the shoulders, the
-  rear arm and the angle and turn of the blade.
+- **Adjust this moment:** fifteen sliders reshape either fencer on the current
+  step, from where they stand on the piste, through the turn of the back foot
+  and knee, the shoulders and the rear arm, to the angle and turn of the blade.
 - **Poses:** eleven named poses to put on any step.
 - **Phrase data:** the whole scene as text. Edit it in place or paste one in;
   it applies as you type, and says why when it can't. The fields above it and
@@ -91,13 +91,14 @@ shoulders and narrow at the waist, and the camera swings it as it swings the
 piste. The sleeve of the arm on your side begins on the jersey itself, and the
 other arm lies behind it, set on the shoulder at the front of the chest and as
 long as an arm. The foot in front points at the opponent, and the foot behind
-is turned across, its toe at you, so that the two make an L, as the stance is
-taught. That shoe is a few domes standing on the floor, which the camera turns
-with the piste, so it is seen end on, from a quarter or from the side as the
-camera moves. Each knee is over its own foot: the front shin stands upright, and
-the knee of the leg behind bends back and is turned out toward you, over the
-foot, so side on its shin leans a little forward and the leg is seen shorter, as
-the plates draw it. Together they give the guard its wide stance.
+is turned across, its toe at you and turned back a little by the pose's
+`toeBack`, so that the two make an L, as the stance is taught. That shoe is a
+few domes standing on the floor, which the camera turns with the piste, so it is
+seen end on, from a quarter or from the side as the camera moves. Each knee is
+over its own foot: the front shin stands upright, and the knee of the leg behind
+bends back and is turned out toward you by the pose's `kneeOut`, over the foot,
+so side on its shin leans a little forward and the leg is seen shorter, as the
+plates draw it. Together they give the guard its wide stance.
 
 A young fencer wears knickerbockers and long stockings, an older one loose
 trousers gathered at the ankle, a belly and narrower shoulders. The strokes are
@@ -168,6 +169,8 @@ points at the opponent and 90 straight up.
 | `hipX`, `hipY` | Hips: how far forward of the back foot, and how high |
 | `footF` | Front foot: how far forward of the back foot |
 | `liftF`, `liftB` | How far the front or back foot is off the floor |
+| `toeBack` | How far the toe of the foot behind is turned back from pointing at the camera: 0 makes an exact L with the front foot |
+| `kneeOut` | How far the knee behind is turned out toward the camera, from bending straight back: 0 is flat, 90 straight at the camera |
 | `lean` | Torso lean, forward positive |
 | `turn` | How far the shoulders are turned toward the camera: 0 is side on, 90 square to it |
 | `arm`, `fore` | Sword arm: upper arm and forearm |

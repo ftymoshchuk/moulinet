@@ -156,6 +156,48 @@ test("the knee behind is turned out toward the camera over the foot, with thigh 
   assert.ok(lifted[2] > 5 && lifted.every(Number.isFinite));
 });
 
+test("how far the knee behind is turned out is the pose's: 0 is the flat knee, and the more, the further toward the camera", () => {
+  const turns = [0, 20, 40, 70, 90];
+  const poses = turns.map((kneeOut) => skeleton(resolvePose({ pose: "guard", adj: { kneeOut } })));
+  // At 0 the knee is in the plane of the piste, where it was before it could turn.
+  const [flat] = poses;
+  const bent = knee(flat.hip[0], flat.hip[1], flat.ankB[0], flat.ankB[1], -1);
+  assert.equal(flat.kB[2], 0, "no depth");
+  assert.ok(Math.abs(flat.kB[0] - bent[0]) < 1e-9 && Math.abs(flat.kB[1] - bent[1]) < 1e-9, "at the knee a leg bends to");
+  poses.reduce((before, J, i) => {
+    assert.ok(J.kB[2] > before.kB[2], `${turns[i]}°: nearer the camera than at the turn before`);
+    return J;
+  });
+  // However far it is turned, thigh and shin are as long as ever.
+  poses.forEach((J, i) => {
+    const [kx, ky, kz] = J.kB;
+    assert.ok(Math.abs(Math.hypot(kx - J.hip[0], ky - J.hip[1], kz) - 44) < 1e-9, `${turns[i]}°: the thigh is 44 cm`);
+    assert.ok(Math.abs(Math.hypot(kx - J.ankB[0], ky - J.ankB[1], kz) - 46) < 1e-9, `${turns[i]}°: and the shin 46`);
+  });
+  // At 90° all of the knee's offset is toward the camera: side on, it is on the line from hip to ankle.
+  const J = poses.at(-1);
+  const off = (J.kB[0] - J.hip[0]) * (J.ankB[1] - J.hip[1]) - (J.kB[1] - J.hip[1]) * (J.ankB[0] - J.hip[0]);
+  assert.ok(Math.abs(off) < 1e-6, `side on, it is ${off} off the line from hip to ankle`);
+});
+
+test("the motion ghosts use the knee the pose turns, as the drawing does", () => {
+  const ghost = (kneeOut, camera) => stickFigure(resolvePose({ pose: "guard", adj: { kneeOut } }), 1, camera).body;
+  for (const camera of [0, 30, -60]) assert.notEqual(ghost(0, camera), ghost(40, camera), `${camera}°: the ghost's knee turns with the pose`);
+});
+
+test("the foot's turn and the knee's turn reach the drawing: the leg behind changes, the head and the blade do not, and the floor round the foot follows the foot alone", () => {
+  const drawn = (adj) => inkFigure(resolvePose({ pose: "guard", adj }), 1, 28, { backView: true });
+  const guard = drawn({});
+  const changes = (figure) => Object.keys(figure).filter((key) => JSON.stringify(figure[key]) !== JSON.stringify(guard[key]));
+  for (const adj of [{ toeBack: 40 }, { kneeOut: 70 }]) {
+    const changed = changes(drawn(adj));
+    assert.ok(changed.length > 0, `${JSON.stringify(adj)}: the drawing changes`);
+    for (const part of ["head", "blade"]) assert.ok(!changed.includes(part), `${JSON.stringify(adj)}: but not the ${part}`);
+  }
+  assert.notEqual(drawn({ toeBack: 40 }).ground, guard.ground, "the strokes on the floor go round the foot as it turns");
+  assert.equal(drawn({ kneeOut: 70 }).ground, guard.ground, "and not round the knee");
+});
+
 test("an advance lands the front foot where the next guard has it, so no foot slides when the back foot follows", () => {
   const { steps } = buildTimeline(PRESETS[0].phrase);
   const step = (text) => steps.find((s) => s.label.includes(text));
