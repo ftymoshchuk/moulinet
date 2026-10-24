@@ -3,7 +3,7 @@
 // One stage serves three modes. The practice library plays a scene and says
 // where it was noted. The base postures show one fencer in one posture at a
 // time, in words as well as lines. The Creator makes new scenes.
-import { BASES, BASE_GROUPS, basePhrase } from "./bases.js";
+import { BASES, BASE_BLADE, BASE_GROUPS, basePhrase } from "./bases.js";
 import { DEFAULT_FRAME, bladePaths, floorPath, frameOf, inkFigure, stickFigure } from "./figure.js";
 import { JOINTS, POSE_NAMES, POSES, PRESETS } from "./library.js";
 import {
@@ -38,7 +38,7 @@ const PARTS = { l1: "jersey", l2: "trousers", l3: "trousers", l4: "jersey", head
 // The sabre, back to front, as inkFigure names its parts: the blade when it is behind the guard; the guard's line of
 // ink and its steel; seen into, the inside of the cup, the far half of its lip and the shade deep in it, the fist in it,
 // the near wall of the cup and the near half of its lip; the shading; and the blade when it is in front of the guard.
-const BLADE = [
+const SABRE = [
   ["back", "blade__steel"],
   ["o", "blade__outline"],
   ["g", "blade__guard"],
@@ -632,7 +632,7 @@ function createFencer(id) {
   return {
     layers,
     ground: document.getElementById(`ground-${id}`),
-    blade: BLADE.map(([, className]) => svgPath(blade, className)),
+    blade: SABRE.map(([, className]) => svgPath(blade, className)),
     ghostBodies,
     ghostBlades,
   };
@@ -893,14 +893,16 @@ function drawFencer(parts, figure) {
     setAttr(layer.ink, "d", shape.k ?? "");
   }
   setAttr(parts.ground, "d", figure.ground);
-  BLADE.forEach(([key], i) => setAttr(parts.blade[i], "d", key.split(".").reduce((part, name) => part[name], figure.blade)));
+  SABRE.forEach(([key], i) => setAttr(parts.blade[i], "d", key.split(".").reduce((part, name) => part[name], figure.blade)));
 }
 
-// The Creator keeps one view as a scene is reshaped; the library and the postures
-// look as close as keeps everyone in.
+// The Creator keeps one view as a scene is reshaped; the library looks as close as
+// keeps everyone and their whole blades in; the postures, as close as keeps the
+// fencer and most of the blade in.
 function frameFor() {
   if (state.mode === "creator") return DEFAULT_FRAME;
-  if (framed.timeline !== timeline) framed = { timeline, frame: frameOf(timeline) };
+  const blade = state.mode === "base" ? BASE_BLADE : undefined;
+  if (framed.timeline !== timeline || framed.blade !== blade) framed = { timeline, blade, frame: frameOf(timeline, blade) };
   return framed.frame;
 }
 

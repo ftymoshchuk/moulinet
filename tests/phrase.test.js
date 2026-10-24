@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { POSES, PRESETS } from "../site/js/library.js";
+import { JOINTS, POSES, PRESETS } from "../site/js/library.js";
 import {
   MAX_STEP_MS,
   TEXT_KEYS,
@@ -192,6 +192,20 @@ test("how far the shoulders are turned is an angle like the others: a phrase can
   });
   assert.equal(poseAt(timeline, 200).A.turn, 38, "halfway from 58 to 18");
   assert.equal(mixPoses({ turn: 170 }, { turn: -170 }, 0.5).turn, 180, "the short way round");
+});
+
+test("each slider moves a joint the poses have, and reaches the value every pose gives it", () => {
+  const keys = JOINTS.map(({ key }) => key);
+  assert.equal(new Set(keys).size, keys.length, "no slider twice");
+  for (const { key, min, max } of JOINTS) {
+    // The position is the fencer's own, not a joint of the pose.
+    if (key === "x") continue;
+    assert.ok(key in POSES.guard, `${key} is not a joint of the guard, so the pose would ignore the slider`);
+    for (const name of Object.keys(POSES)) {
+      const value = resolvePose({ pose: name })[key];
+      assert.ok(value >= min && value <= max, `${name}: ${key} is ${value}, outside the slider's ${min} to ${max}`);
+    }
+  }
 });
 
 test("phrase text keeps one setting per line and one step per line, and reads back the same", () => {

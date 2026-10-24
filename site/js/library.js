@@ -160,8 +160,11 @@ export const JOINTS = [
   { key: "hipX", label: "Hips forward", min: 5, max: 90, unit: " cm" },
   { key: "hipY", label: "Hip height", min: 48, max: 96, unit: " cm" },
   { key: "lean", label: "Torso lean", min: -25, max: 35, unit: "°" },
-  { key: "arm", label: "Upper arm", min: -90, max: 120, unit: "°" },
+  { key: "turn", label: "Shoulder turn toward camera", min: 0, max: 90, unit: "°" },
+  { key: "arm", label: "Upper arm", min: -120, max: 120, unit: "°" },
   { key: "fore", label: "Forearm", min: -100, max: 130, unit: "°" },
   { key: "blade", label: "Blade angle", min: -180, max: 180, unit: "°" },
   { key: "yaw", label: "Blade turn toward camera", min: -85, max: 85, unit: "°" },
+  { key: "rArm", label: "Rear upper arm", min: -180, max: 180, unit: "°" },
+  { key: "rFore", label: "Rear forearm", min: -180, max: 180, unit: "°" },
 ];

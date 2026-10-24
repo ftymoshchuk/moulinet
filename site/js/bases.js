@@ -11,6 +11,12 @@ export const BASE_X = 60;
 // Turned a little from side on, so a blade held across the body, as in parry 5,
 // is not seen end on.
 export const BASE_CAMERA = 25;
+// How far along the blade from the hand (cm) the stage must keep in view. All of
+// it would let the blade held up in "Blade up" set the height of the view for
+// every posture and leave the fencer small. This much lets only the point of
+// that one run off the top, about a tenth of its length, and keeps every other
+// blade whole. The library keeps whole blades in view.
+export const BASE_BLADE = 60;
 
 // `text` says what the posture is and what it is for. `points` are the parts
 // worth looking at, as [what, how].

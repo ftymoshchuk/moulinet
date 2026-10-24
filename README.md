@@ -50,10 +50,12 @@ another tab changed or deleted after you opened it, yours is kept as a new scene
 beside theirs, and the Creator says so, so neither is lost.
 
 All three share the stage, and its **camera**, which turns the view up to 60°
-either way to see a blade come toward you or swing away. The library and the
-base postures look as close as keeps everyone in view, and turning the camera
-never zooms; the Creator keeps one view while you reshape a scene. The library
-and the Creator, which play scenes, add:
+either way to see a blade come toward you or swing away. The library looks as
+close as keeps everyone and their whole blades in view; the base postures, as
+close as keeps the fencer and most of the blade in view, so the point of the
+blade held up in Blade up runs off the top. Turning the camera never zooms, and
+the Creator keeps one view while you reshape a scene. The library and the
+Creator, which play scenes, add:
 - **Playback** at ¼, ½ or full speed, a step at a time, or scrubbed along the
   timeline, looped or once through.
 - **Motion ghosts and blade paths** show how each moment was reached: four
@@ -65,8 +67,9 @@ The base postures stand still, so they have neither.
 In the Creator there is more:
 - **This step:** its label, how long it takes to move into it and to stay on
   it, and whether it moves smoothly, snaps or keeps one speed.
-- **Adjust this moment:** ten sliders reshape either fencer on the current
-  step, from where they stand on the piste to the angle and turn of the blade.
+- **Adjust this moment:** thirteen sliders reshape either fencer on the current
+  step, from where they stand on the piste to the turn of the shoulders, the
+  rear arm and the angle and turn of the blade.
 - **Poses:** fourteen named poses to put on any step.
 - **Phrase data:** the whole scene as text. Edit it in place or paste one in;
   it applies as you type, and says why when it can't. The fields above it and
@@ -193,7 +196,7 @@ points at the opponent and 90 straight up.
 | `footF` | Front foot: how far forward of the back foot |
 | `liftF`, `liftB` | How far the front or back foot is off the floor |
 | `lean` | Torso lean, forward positive |
-| `turn` | How far the shoulders are turned toward the camera: 0 is side on |
+| `turn` | How far the shoulders are turned toward the camera: 0 is side on, 90 square to it |
 | `arm`, `fore` | Sword arm: upper arm and forearm |
 | `blade` | Blade angle |
 | `yaw` | Blade turned toward the camera |
