@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { bladePart, crotch, footSpan, headPart, legPart, place, rearArm, segment, shoe, shoeAcross, swordArm, torsoFrame, trunk } from "../site/js/body.js";
+import { bladePart, crotch, footSpan, headFrame, headPart, legPart, place, rearArm, segment, shoe, shoeAcross, swordArm, torsoFrame, trunk } from "../site/js/body.js";
 import { projector, skeleton } from "../site/js/figure.js";
 import { area, dist, inside } from "../site/js/ink.js";
 import { handParts, headParts, shoeAcrossParts, shoeParts } from "../site/js/parts.js";
@@ -439,9 +439,25 @@ test("the head sits where the skeleton puts it, and turns older with the hair", 
   const oldCentre = [(oldBox.minX + oldBox.maxX) / 2, (oldBox.minY + oldBox.maxY) / 2];
   assert.ok(oldCentre[0] > centre[0] + 0.5 && oldCentre[1] > centre[1] + 0.5, "lower and further forward");
 
+  // A head is nearly as wide as it is long, so seen 60° round from side on it narrows a little, and not to a sliver as a
+  // flat profile would.
   const turned = headPart(J, projector(posed().pose, 1, 60), false);
   const narrow = boxOf(readPath(turned.g));
-  assert.ok(narrow.maxX - narrow.minX < (box.maxX - box.minX) * 0.7, "seen from the side it is turned away from");
+  const ratio = (narrow.maxX - narrow.minX) / (box.maxX - box.minX);
+  assert.ok(ratio > 0.7 && ratio < 0.9, `seen from 60° round it is ${ratio} as wide`);
+  near(narrow.maxY - narrow.minY, box.maxY - box.minY, 0.5, "and as tall");
+});
+
+test("the head nods only a little as the body leans, so the eyes stay level", () => {
+  // The line from the back of the head to the tip of the nose, on the page.
+  const facing = (lean) => {
+    const { J, W } = posed("guard", { lean });
+    const H = headFrame(J, W, false);
+    const [back, nose] = [H([-11.2, 0.6]), H([12.2, -3.9])];
+    return (Math.atan2(back[1] - nose[1], nose[0] - back[0]) * 180) / Math.PI;
+  };
+  assert.ok(Math.abs(facing(30) - facing(0)) < 6, `leaning 30°, the head turns down only ${facing(30) - facing(0)}°`);
+  assert.ok(facing(30) < facing(0), "though a little, with the body");
 });
 
 test("the sabre is a blade 83 cm long from the cup, a cup over the blade, and a bow back under the fist", () => {

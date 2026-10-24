@@ -96,20 +96,23 @@ opponent, and the foot behind is turned across, its toe at you, so that the two
 make an L, as the stance is taught. That shoe is a few domes standing on the
 floor, which the camera turns with the piste, so it is seen end on, from a
 quarter or from the side as the camera moves. Each knee is over its own foot:
-the front shin stands upright, and the knee of the leg behind bends back and is
-turned out toward you, over the foot, so side on its shin leans a little
-forward and the leg is seen shorter, as the plates draw it. Together they give
-the guard its wide stance.
+the front shin stands upright, and the knee of the leg behind is turned out
+toward you, over the foot, so side on that leg is seen nearly straight, as the
+plates draw it. The stance is the plates' too: upright and not deep, the knees
+a little bent. In the lunge the back leg is straight and the body stays nearly
+upright over the front leg.
 
 The head is drawn as the plates draw it: a long skull and a short, square face,
-carried forward on a thick neck. The hair is strokes of the pen, combed in rows
-round the crown, up off the forehead, back over the top and down the back of
-the head, sparse on top where the light falls and heavier at the back, and its
-strokes make the edge of the head where it grows. The shading is drawn the same
-way: a fan of folds from the crotch, the cloth bloused over the belt and
-gathered under it, shadow on the insides of the legs, where each faces the
-other, and under the cloth that hangs over the band below the knee, and folds
-from the armpits and at the elbows.
+carried forward on a thick neck. The neck takes only part of the body's lean
+and the head hardly any, so however the body leans the head is held up and the
+eyes look ahead. The hair is strokes of the pen, combed in rows round the
+crown, up off the forehead, back over the top and down the back of the head,
+sparse on top where the light falls and heavier at the back, and its strokes
+make the edge of the head where it grows. The shading is drawn the same way: a
+fan of folds from the crotch, the cloth bloused over the belt and gathered
+under it, shadow on the insides of the legs, where each faces the other, and
+under the cloth that hangs over the band below the knee, and folds from the
+armpits and at the elbows.
 
 A young fencer wears knickerbockers and long stockings, an older one loose
 trousers gathered at the ankle, a belly and narrower shoulders. The strokes are

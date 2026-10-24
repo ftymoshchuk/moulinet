@@ -164,13 +164,19 @@ test("in the guard each knee is over its own foot: the front shin is upright, th
   };
   const [front, back] = over("guard");
   assert.ok(Math.abs(front) < 2, `the front shin is upright in the guard (${front})`);
-  // The knee behind is turned toward the camera, over a foot that points there, so side on its shin leans a little, as the plates have it.
-  const lean = (back / (skeleton(resolvePose({ pose: "guard" })).kB[1] - 8)) * (180 / Math.PI);
-  assert.ok(lean > 1.5 && lean < 8, `the shin behind leans a few degrees (${lean})`);
+  // The knee behind is turned toward the camera, over a foot that points there, so side on the leg behind is seen nearly
+  // straight, as the plates draw it: its shin leans forward a little, and thigh and shin are near the line from hip to foot.
+  const J = skeleton(resolvePose({ pose: "guard" }));
+  const degrees = (dx, dy) => (Math.atan2(dx, dy) * 180) / Math.PI;
+  const shin = degrees(back, J.kB[1] - 8);
+  const thigh = degrees(J.hipB[0] - J.kB[0], J.hipB[1] - J.kB[1]);
+  const leg = degrees(J.hipB[0] - J.ankB[0], J.hipB[1] - J.ankB[1]);
+  assert.ok(shin > 5 && shin < 20, `the shin behind leans forward a little (${shin})`);
+  assert.ok(Math.abs(thigh - leg) < 12 && Math.abs(shin - leg) < 12, `and the leg is seen nearly straight (${thigh}, ${shin}, ${leg})`);
   // The poses that move the weight from there keep the knees over the feet to within a few centimetres.
   for (const name of ["prep", "extend", "parry3", "parry5"]) {
     const [f, b] = over(name);
-    assert.ok(Math.abs(f) < 5 && b > -1 && b < 8, `${name}: the knees stay over the feet (${f}, ${b})`);
+    assert.ok(Math.abs(f) < 5 && b > 2 && b < 14, `${name}: the knees stay over the feet (${f}, ${b})`);
   }
   for (const name of ["lungeHead", "lungeChest"]) assert.ok(Math.abs(over(name)[0]) < 0.5, `${name}: the front knee is over the front ankle`);
 });
@@ -212,6 +218,21 @@ test("an advance lands the front foot where the next guard has it, so no foot sl
   // The leg that lands is straight, as a foot comes down on its heel.
   const J = skeleton(landed.A);
   assert.ok(Math.hypot(J.hipF[0] - J.ankF[0], J.hipF[1] - J.ankF[1], J.hipF[2]) >= 89.95, "on a straight leg");
+});
+
+test("the neck takes only part of the body's lean, so the head is held up however the body leans", () => {
+  const upright = skeleton(resolvePose({ pose: "guard", adj: { lean: 0 } }));
+  const leaning = skeleton(resolvePose({ pose: "guard", adj: { lean: 30 } }));
+  const angle = ([x, y]) => (Math.atan2(x, y) * 180) / Math.PI;
+  near(angle(upright.nu), 0, 1e-9, "upright, the neck is upright");
+  assert.ok(angle(leaning.nu) > 3 && angle(leaning.nu) < 15, `leaning 30°, the neck leans ${angle(leaning.nu)}°`);
+  // The head is on the neck, so it stays well up over the base of the neck: higher than it would be on a neck that leant
+  // all the way with the body.
+  const rise = (J) => J.hd[1] - J.nk[1];
+  const [up, forward] = [upright.hd[1] - upright.nk[1], upright.hd[0] - upright.nk[0]];
+  const tipped = up * Math.cos(Math.PI / 6) - forward * Math.sin(Math.PI / 6);
+  assert.ok(rise(leaning) > tipped + 2, `the head is still held up over it (${rise(leaning)} against ${tipped})`);
+  near(Math.hypot(leaning.hd[0] - leaning.nk[0], leaning.hd[1] - leaning.nk[1]), Math.hypot(upright.hd[0] - upright.nk[0], upright.hd[1] - upright.nk[1]), 1e-9, "on a neck as long");
 });
 
 test("the sword arm is set on the shoulder turned away, at the front of the chest, and is as long as an arm", () => {

@@ -21,7 +21,7 @@ export const BASES = [
     text: "The ready position every action starts from and returns to. The knees are bent and the weight is shared between both legs, so a step, a parry or a lunge can begin without first shifting your weight.",
     points: [
       ["Feet", "The front foot points at the opponent. The back foot sits behind it, turned across to face you, so that the two feet make an L, a little more than a shoulder's width apart."],
-      ["Legs", "Both knees bent, each over its own foot: the front shin stands upright, and the back knee is turned out toward you, over the back foot. The torso is upright and the weight shared evenly."],
+      ["Legs", "Both knees a little bent, each over its own foot: the front shin stands upright, and the back knee is turned out toward you, over the back foot, so from the side the back leg looks almost straight. The torso is upright and the weight shared evenly."],
       ["Sword arm", "Bent, the hand ahead of the body and a little below shoulder height."],
       ["Blade", "Angled up and forward, in tierce: it covers the high outside line."],
       ["Rear arm", "Bent and held back, out of the way. Here the hand rests on the hip."],
@@ -86,7 +86,7 @@ export const BASES = [
       ["Front leg", "Bent, the knee over the front foot, the foot flat."],
       ["Back leg", "Straight, the back foot flat."],
       ["Sword arm", "Raised and extended, taking the blade up to head height."],
-      ["Torso", "Leans forward over the front leg, with the rear arm held back."],
+      ["Torso", "Nearly upright over the front leg, the head up and the rear arm held back."],
     ],
   },
   {

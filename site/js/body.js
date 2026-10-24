@@ -117,10 +117,11 @@ export function trunk(J, W, older, frame = torsoFrame(J, W, older)) {
   const back = rows.map(([up]) => slice(up).back).reverse();
   front[0] = [...front[0], 1];
   back[back.length - 1] = [...back[back.length - 1], 1];
+  // The neck runs up from the collar to under the head, which it carries.
   const [headUp, headForward] = older ? OLDER_HEAD : YOUNGER_HEAD;
   const neck = older
-    ? segment(J.T(56.5, 2.2), J.T(headUp - 3, headForward - 1.5), [7.0, 6.6], [7.0, 6.4], J.f)
-    : segment(J.T(56.5, 2.2), J.T(headUp - 3, headForward - 1.5), [6.6, 6.2], [6.6, 6.0], J.f);
+    ? segment(J.T(56.5, 2.2), J.N(headUp - 3, headForward - 1.5), [7.0, 6.6], [7.0, 6.4], J.nf)
+    : segment(J.T(56.5, 2.2), J.N(headUp - 3, headForward - 1.5), [6.6, 6.2], [6.6, 6.0], J.nf);
   const [collarFrom, collarTo] = [J.T(53, 1.6), J.T(58.6, 3.2)];
   const collar = segment(collarFrom, collarTo, [7.4, 7.2, 7.0], [7.6, 7.4, 7.2], J.f, [0.3, 0.3]);
   // The hem is not ruled across: it hangs a little lower in the middle, as the belt goes round the body.
@@ -133,9 +134,11 @@ export function trunk(J, W, older, frame = torsoFrame(J, W, older)) {
   const ca = unit(collarFrom, collarTo);
   const rim = (along, out) => W(place(collarTo, ca, along, out));
   const d = line([rim(1.2, -7.0), rim(-0.6, -1.0), rim(-0.9, 3.4), rim(0.2, 7.2)]);
-  // The shadow the jaw throws on the neck, and the cord of the neck from behind the ear down to the front of the collar.
-  const jaw = brush([T(headUp - 8.8, headForward + 2.2), T(headUp - 10, headForward - 1.6), T(headUp - 10.8, headForward - 5.8)].map(W), 1.5, 0.5);
-  const cord = brush([T(headUp - 5.6, headForward - 3.8), T(headUp - 9.6, headForward - 2.6), T(headUp - 12.6, headForward - 1.0)].map(W), 0.8, 0.4);
+  // The shadow the jaw throws on the neck, and the cord of the neck from behind the ear down to the front of the collar,
+  // set on the page with the head.
+  const H = headFrame(J, W, older);
+  const jaw = brush([H([2.2, -8.8]), H([-1.6, -10]), H([-5.8, -10.8])], 1.5, 0.5);
+  const cord = brush([H([-3.8, -5.6]), H([-2.6, -9.6]), H([-1.0, -12.6])], 0.8, 0.4);
   return { ...shapes, d, k: torsoFolds(across, 4, older) + waistband(across) + jaw + cord };
 }
 
@@ -551,11 +554,32 @@ export function legPart(J, W, ank, knee, { front, seat, near = false, older }) {
 
 // ---------- Head and sabre ----------
 
-// The head is drawn at the size of the points of parts.js.
-const HEAD_SIZE = 1;
-// Where the middle of the head is in the torso's frame, up the spine and forward of it. An older man carries his head lower and thrust further forward.
-const YOUNGER_HEAD = [72.5, 9];
-const OLDER_HEAD = [71.2, 10.6];
+// Where the middle of the head is in the neck's frame, up the neck from its base and forward of it. An older man carries
+// his head lower and thrust further forward.
+const YOUNGER_HEAD = [15.5, 6.5];
+const OLDER_HEAD = [14.2, 8.1];
+// How much of the body's lean the head nods with: little, so the eyes stay level.
+const NOD = 0.15;
+
+/**
+ * Where the head is on the page: `H(q)` sets a point of the head's own frame, in parts.js, on the page. The head is
+ * carried on the neck and nods only a little with the body. A head is nearly as wide as it is long, so it narrows
+ * only a little as the camera turns from side on, where a profile set on the piste would narrow to a sliver.
+ */
+export function headFrame(J, W, older) {
+  const centre = J.N(...(older ? OLDER_HEAD : YOUNGER_HEAD));
+  // An older man's head is a little larger for his height.
+  const size = older ? 1.07 : 1;
+  const nod = J.lean * NOD * RAD;
+  const hf = [Math.cos(nod), -Math.sin(nod)];
+  const hu = [Math.sin(nod), Math.cos(nod)];
+  const c = W(centre);
+  const look = (W.camera ?? 0) * RAD;
+  // The way across the page the head faces, and how much of its length the camera sees across it.
+  const facing = Math.sign(W([centre[0] + 1, centre[1]])[0] - c[0]) || 1;
+  const narrow = facing * Math.hypot(Math.cos(look), 0.75 * Math.sin(look));
+  return (q) => [c[0] + size * narrow * (hf[0] * q[0] + hu[0] * q[1]), c[1] - size * (hf[1] * q[0] + hu[1] * q[1])];
+}
 
 /**
  * The head in profile: the face, the hair drawn in strokes of the pen, the ear
@@ -563,15 +587,8 @@ const OLDER_HEAD = [71.2, 10.6];
  * line round it, so the strokes of the hair make its edge.
  */
 export function headPart(J, W, older) {
-  const lean = (J.lean * 0.35 * Math.PI) / 180;
-  const hf = [Math.cos(lean), -Math.sin(lean)];
-  const hu = [Math.sin(lean), Math.cos(lean)];
   const parts = headParts(older);
-  // An older man's head is a little larger for his height.
-  const size = HEAD_SIZE * (older ? 1.07 : 1);
-  const centre = J.T(...(older ? OLDER_HEAD : YOUNGER_HEAD));
-  // A point in the head's own frame, set on the body and turned for the camera.
-  const H = (q) => W([centre[0] + (hf[0] * q[0] + hu[0] * q[1]) * size, centre[1] + (hf[1] * q[0] + hu[1] * q[1]) * size]);
+  const H = headFrame(J, W, older);
   const Hs = (list) =>
     list.map((q) => {
       const o = H(q);

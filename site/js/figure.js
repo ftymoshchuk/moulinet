@@ -24,7 +24,9 @@ const SHOULDER = 22;
 const PELVIS = 8;
 const HIPS = 0.85;
 // How far the knee of the leg behind is turned from bending straight back toward the camera (degrees): over the back foot, which points at the camera.
-const KNEE_OUT = 60;
+const KNEE_OUT = 80;
+// How much of the body's lean the neck takes. The rest it takes back, so the head is held up and the eyes stay level, as in the plates.
+const NECK = 0.3;
 
 function fmt(point) {
   return `${point[0].toFixed(1)} ${point[1].toFixed(1)}`;
@@ -109,9 +111,15 @@ export function skeleton(p) {
   const back = SHOULDER * Math.sin(p.turn * RAD);
   // The sword shoulder is the one turned away, at the front of the chest.
   const sh = [...T(50, back * 0.9), -across];
+  // The base of the neck is on the torso, and the neck leans only part of the way the torso does.
   const nk = T(57, 2.5);
-  // The head is thrust forward of the shoulders on a neck, as the plates have it.
-  const hd = T(72.5, 9);
+  const neck = p.lean * NECK * RAD;
+  const nu = [Math.sin(neck), Math.cos(neck)];
+  const nf = [nu[1], -nu[0]];
+  // A point of the neck's frame: `a` up the neck from its base and `b` forward of it.
+  const N = (a, b) => [nk[0] + nu[0] * a + nf[0] * b, nk[1] + nu[1] * a + nf[1] * b];
+  // The head is carried forward of the shoulders on the neck, as the plates have it.
+  const hd = N(15.5, 6.5);
   const el = [sh[0] + UPPER_ARM * Math.cos(p.arm * RAD), sh[1] + UPPER_ARM * Math.sin(p.arm * RAD), sh[2]];
   const hn = [el[0] + FOREARM * Math.cos(p.fore * RAD), el[1] + FOREARM * Math.sin(p.fore * RAD), sh[2]];
   const bp = p.blade * RAD;
@@ -123,7 +131,7 @@ export function skeleton(p) {
   const rs = [...T(48, -back), across];
   const re = [rs[0] + 30 * Math.cos(ra), rs[1] + 30 * Math.sin(ra), rs[2]];
   const rh = [re[0] + 25 * Math.cos(rf), re[1] + 25 * Math.sin(rf), rs[2]];
-  return { hip, hipF, hipB, ankB, ankF, kB, kF, u, f, T, sh, nk, hd, el, hn, bp, at, tip: at(88), rs, re, rh, lean: p.lean, turn: p.turn };
+  return { hip, hipF, hipB, ankB, ankF, kB, kF, u, f, T, sh, nk, nu, nf, N, hd, el, hn, bp, at, tip: at(88), rs, re, rh, lean: p.lean, turn: p.turn };
 }
 
 /**
