@@ -227,15 +227,15 @@ export function headParts(older = false) {
 // shield over the fist.
 const GUARD = {
   stations: [
-    [0.2, -4.4, 1.6], // the lip over the thumb
-    [1.6, -3.0, 3.6],
-    [2.6, -1.2, 5.0],
-    [3.1, 0.8, 6.0], // the blade comes through here
-    [2.9, 2.8, 6.3],
-    [1.9, 4.6, 5.8],
-    [0.2, 5.8, 4.4],
-    [-2.2, 6.1, 2.4], // in front of the middle knuckles
-    [-5.0, 5.9, 1.5],
+    [0.2, -4.4, 2.4], // the lip over the thumb
+    [1.6, -3.0, 4.6],
+    [2.6, -1.2, 5.8],
+    [3.1, 0.8, 6.4], // the blade comes through here
+    [2.9, 2.8, 6.6],
+    [1.9, 4.6, 6.4],
+    [0.2, 5.8, 5.8],
+    [-1.8, 6.2, 3.6], // in front of the middle knuckles, where the bell narrows to the bow
+    [-4.2, 6.0, 1.7],
     [-8.0, 5.3, 1.2], // the knuckle bow
     [-10.8, 4.0, 1.0],
     [-12.6, 1.5, 0.8], // into the pommel
