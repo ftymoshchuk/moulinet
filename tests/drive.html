@@ -71,7 +71,7 @@
         const showing = () => ({
           chosen: $$("[data-mode]").filter((b) => b.getAttribute("aria-pressed") === "true").map((b) => b.dataset.mode),
           panels: $$("main section.panel").filter(visible).map(panelName),
-          controls: ["#play-button", ".speed", "#timeline", "#steps", "#timecode", "[data-toggle=ghosts]", "[data-toggle=trail]", "[data-toggle=ink]", "[data-toggle=loop]", "#camera"].filter((selector) => visible($(selector))),
+          controls: ["#play-button", ".speed", "#timeline", "#steps", "#timecode", "[data-toggle=ghosts]", "[data-toggle=trail]", "[data-toggle=ink]", "[data-toggle=loop]", "[data-toggle=closeUp]", "#camera"].filter((selector) => visible($(selector))),
         });
 
         // ---------- The practice library ----------
@@ -223,6 +223,39 @@
         button("Creator").click();
         button("Base postures").click();
         seen.baseKept = { count: text("#step-count"), label: text("#base-name") };
+
+        // ---------- The close-up of the hand ----------
+
+        // It looks at A's sword hand from outside the arm, follows it from posture to posture and as the camera
+        // turns, and stays on from mode to mode until it is turned off.
+        input($("#camera"), 25);
+        $$(".base-button")[0].click();
+        const wholeFloor = $("#floor").getAttribute("d");
+        button("Hand close-up").click();
+        seen.closeUp = {
+          pressed: $("[data-toggle=closeUp]").getAttribute("aria-pressed"),
+          guard: $("#stage").getAttribute("viewBox"),
+          floorTurned: $("#floor").getAttribute("d") !== wholeFloor,
+        };
+        checkPaths();
+        $$(".base-button")[11].click();
+        seen.closeUp.parry5 = $("#stage").getAttribute("viewBox");
+        checkPaths();
+        input($("#camera"), -20);
+        seen.closeUp.turned = $("#stage").getAttribute("viewBox");
+        checkPaths();
+        input($("#camera"), 25);
+        button("Practice library").click();
+        $$(".scene-button")[0].click();
+        seen.closeUp.library = { view: $("#stage").getAttribute("viewBox"), pressed: $("[data-toggle=closeUp]").getAttribute("aria-pressed") };
+        for (const step of $$(".step-button")) {
+          step.click();
+          checkPaths();
+        }
+        button("Hand close-up").click();
+        seen.closeUp.off = { view: $("#stage").getAttribute("viewBox"), pressed: $("[data-toggle=closeUp]").getAttribute("aria-pressed") };
+        button("Base postures").click();
+        $$(".base-button")[4].click();
 
         // ---------- The Creator ----------
 

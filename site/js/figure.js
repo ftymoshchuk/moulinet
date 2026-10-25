@@ -144,7 +144,7 @@ export function skeleton(p) {
   const rs = [...T(48, -back), across];
   const re = [rs[0] + 30 * Math.cos(ra), rs[1] + 30 * Math.sin(ra), rs[2]];
   const rh = [re[0] + 25 * Math.cos(rf), re[1] + 25 * Math.sin(rf), rs[2]];
-  return { hip, hipF, hipB, ankB, ankF, kB, kF, u, f, T, sh, nk, nu, nf, N, hd, el, hn, bp, at, tip: at(BLADE), rs, re, rh, lean: p.lean, turn: p.turn, toeBack: p.toeBack };
+  return { hip, hipF, hipB, ankB, ankF, kB, kF, u, f, T, sh, nk, nu, nf, N, hd, el, hn, bp, at, tip: at(BLADE), rs, re, rh, lean: p.lean, turn: p.turn, toeBack: p.toeBack, hand: p.hand };
 }
 
 /**
@@ -188,7 +188,8 @@ export function stickFigure(p, dir, camera) {
 /**
  * The pen-and-ink fencer. Each layer is a merged silhouette (`g`) with its thin
  * lines (`d`) and its brush strokes (`k`); l1 is drawn first and l6 last, with
- * the head between l4 and l6. The blade goes over both fencers.
+ * the head between l4 and l6. The sabre, with the hand that holds it, goes over
+ * both fencers.
  *
  * `backView` draws the sword arm on the far side, as the camera sees the
  * fencer facing right; `older` draws an older man, balding, in loose trousers
@@ -214,7 +215,7 @@ function draw(p, dir, camera, backView, older) {
   const hands = handParts();
   const frame = torsoFrame(J, W, older);
   const torso = trunk(J, W, older, frame);
-  const sword = swordArm(J, W, hands.fist, frame);
+  const sword = swordArm(J, W, frame);
   const rear = rearArm(J, W, hands.hip, frame);
   // The front of the trousers belongs to the leg further from the camera, and the leg drawn over it parts from it only below the crotch.
   const legF = legPart(J, W, J.ankF, J.kF, { front: true, seat: backView, near: !backView, older });
@@ -235,7 +236,7 @@ function draw(p, dir, camera, backView, older) {
     l4: order[3],
     head: headPart(J, W, older),
     l6: order[4],
-    blade: bladePart(J, W, hands.fist),
+    blade: bladePart(J, W),
     ground: ground(J.ankF, true) + ground(J.ankB, false),
   };
 }
@@ -288,6 +289,27 @@ export function frameOf(timeline, blade = BLADE) {
   const x = (minX + maxX) / 2 - w / 2;
   const y = maxY + 6 - h;
   return [x, y, w, h].map((v) => Math.round(v * 10) / 10);
+}
+
+// How wide the close-up of a hand is, in the page's units.
+const HAND_VIEW = 54;
+
+/**
+ * Where the stage looks for a close-up of a fencer's sword hand: a box in the
+ * shape of every view round the hand as the camera sees it, centred between the
+ * wrist and the forte of the blade, so the fist, the hilt and the start of the
+ * blade are all in it.
+ */
+export function handFrame(p, dir, camera) {
+  const J = skeleton(p);
+  const W = projector(p, dir, camera);
+  const [fx, fy] = [J.hn[0] - J.el[0], J.hn[1] - J.el[1]];
+  const l = Math.hypot(fx, fy) || 1;
+  const wrist = W([J.hn[0] - (12 * fx) / l, J.hn[1] - (12 * fy) / l, J.hn[2]]);
+  const forte = W(J.at(14));
+  const [w, h] = [HAND_VIEW, HAND_VIEW / FRAME_SHAPE];
+  const [cx, cy] = [(wrist[0] + forte[0]) / 2, (wrist[1] + forte[1]) / 2];
+  return [cx - w / 2, cy - h / 2, w, h].map((v) => Math.round(v * 10) / 10);
 }
 
 /** The piste: a floor line with a tick every 50 cm and a longer one at the centre. */

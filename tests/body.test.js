@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { bladePart, crotch, footSpan, headFrame, headPart, hull, legPart, place, rearArm, segment, shoe, shoeAcross, swordArm, torsoFrame, trunk } from "../site/js/body.js";
+import { bladePart, contour, crotch, footSpan, gripFrame, headFrame, headPart, hull, legPart, place, rearArm, segment, shoe, shoeAcross, swordArm, torsoFrame, trunk } from "../site/js/body.js";
 import { projector, skeleton } from "../site/js/figure.js";
 import { area, dist, inside, lerp, unit } from "../site/js/ink.js";
 import { POSES } from "../site/js/library.js";
-import { handParts, headParts, shoeAcrossParts, shoeParts } from "../site/js/parts.js";
+import { handParts, headParts, hiltParts, shoeAcrossParts, shoeParts } from "../site/js/parts.js";
 import { resolvePose } from "../site/js/phrase.js";
 import { boxOf, readPath } from "./path-data.js";
 
@@ -75,13 +75,40 @@ test("an older man has the same face and a balding man's hair", () => {
   assert.deepEqual(headParts(), young, "the young man is the default");
 });
 
-test("the sword hand is behind the guard and the rear hand starts at the wrist", () => {
-  const { fist, hip } = handParts();
-  for (const [x] of [...fist.shape, ...fist.lines.flat()]) assert.ok(x <= 0, "the fist reaches back from the grip");
-  assert.ok(Math.max(...fist.shape.map((p) => p[0])) > -3, "and its front is at the grip");
+test("the hilt and the fist are laid out along the grip: the guard in front of the fingers and under them, the thumb along its back", () => {
+  const { guard, grip, pommel, fingers, thumb } = hiltParts();
+  const { stations } = guard;
+  // The guard runs from a lip over the thumb, on the back of the grip, forward through the line of the blade, round in
+  // front of the fingers and back under them, on the side of the edge, to the pommel at the end of the grip.
+  assert.ok(stations[0][1] < -3, "the lip is over the thumb");
+  assert.ok(stations.some(([x, y]) => x > 2.5 && Math.abs(y) < 1.5), "it is in front of the hand where the blade comes through");
+  const [endX] = stations.at(-1);
+  assert.ok(endX < grip.to && endX > pommel.to, "it ends at the pommel");
+  assert.ok(stations.every(([, , wide], i) => i === 0 || wide > 0), "and the sheet has a width all along");
+  // Under each finger the knuckle bow clears its middle knuckle, which is on the side of the edge.
+  const bow = stations.slice(stations.findIndex(([, y]) => y > 5));
+  const bowAt = (x) => {
+    const i = bow.findIndex(([bx], k) => k < bow.length - 1 && bx >= x && bow[k + 1][0] <= x);
+    const [a, b] = [bow[i], bow[i + 1]];
+    return a[1] + ((b[1] - a[1]) * (x - a[0])) / (b[0] - a[0]);
+  };
+  for (const { x, r, joints } of fingers) {
+    const [round, out] = joints[1];
+    const knuckle = out * Math.cos((round * Math.PI) / 180) + r;
+    assert.ok(knuckle > 1.5, `the middle knuckle ${x} cm along is on the side of the edge`);
+    assert.ok(bowAt(x) > knuckle + 1, `the bow clears it (${bowAt(x)} against ${knuckle})`);
+  }
+  // The fingers are spread along the grip behind the guard, the forefinger first.
+  const along = fingers.map(({ x }) => x);
+  assert.deepEqual(along, along.toSorted((a, b) => b - a));
+  assert.ok(along[0] < 0 && along.at(-1) > grip.to);
+  // The thumb lies on the back of the grip, opposite the edge, its tip just behind the guard.
+  for (const [x, y] of thumb.joints) assert.ok(x < 0 && y < -1.5, `the thumb is on the back of the grip at ${x}`);
+  assert.ok(thumb.joints.at(-1)[0] > -1.5, "its tip is just behind the guard");
+  // The rear hand starts at the wrist and its fingers run along the forearm.
+  const { hip } = handParts();
   assert.ok(Math.min(...hip.shape.map((p) => p[0])) >= -1, "the rear hand starts at the wrist");
   assert.ok(Math.max(...hip.shape.map((p) => p[0])) > 10, "and its fingers run along the forearm");
-  assert.notEqual(handParts().fist, fist, "each call hands back its own copy");
 });
 
 test("the shoe stands on the floor 8 cm below the ankle, toe forward and heel back", () => {
@@ -530,16 +557,17 @@ test("the rear sleeve starts on the jersey itself, so the shoulder is the jersey
   }
 });
 
-test("the arms carry their hands: the fist is at the grip and the other hand on the hip", () => {
+test("the sword arm ends at its gauntlet and its fist is drawn with the sabre, round the grip; the other hand is on the hip", () => {
   const { J, W } = posed();
-  const hands = handParts();
-  const sword = swordArm(J, W, hands.fist);
-  const shapes = readPath(sword.g);
-  assert.equal(shapes.length, 4, "sleeve, forearm, cuff and fist");
-  assert.equal(readPath(sword.d).length, hands.fist.lines.length + 1, "the fingers, and the rim of the gauntlet");
+  const sword = swordArm(J, W);
+  assert.equal(readPath(sword.g).length, 3, "sleeve, forearm and cuff");
+  assert.equal(readPath(sword.d).length, 1, "and the rim of the gauntlet");
+  const fist = readPath(bladePart(J, W).fist.g);
+  assert.equal(fist.length, 1, "the fist is one shape");
   const grip = W(J.hn);
-  for (const p of shapes[3].points) assert.ok(dist(p, grip) < 15, "the fist is round the grip");
+  for (const p of fist[0].points) assert.ok(dist(p, grip) < 16, "round the grip");
 
+  const hands = handParts();
   const rear = rearArm(J, W, hands.hip);
   assert.equal(readPath(rear.g).length, 4, "sleeve, forearm, hand and the point of the elbow");
   const hip = W(J.rh);
@@ -587,56 +615,135 @@ test("the head nods only a little as the body leans, so the eyes stay level", ()
   assert.ok(facing(30) < facing(0), "though a little, with the body");
 });
 
-test("the sabre is a blade from the top of its guard to the tip, and the guard a steel cup round the front of the fist", () => {
+test("the sabre is a blade from where it comes through the guard to the tip, a guard round the front of the fist and a pommel on the grip", () => {
   const { J, W } = posed();
-  const blade = bladePart(J, W, handParts().fist);
+  const blade = bladePart(J, W);
   // The blade is drawn behind the guard or in front of it, never both.
   assert.ok(Boolean(blade.back) !== Boolean(blade.front));
   const [taper] = readPath(blade.back || blade.front);
   assert.equal(taper.points.length, 4);
-  near(dist(taper.points[0], taper.points[1]), 88 - 1.6, 0.5, "from the top of the guard, 1.6 cm out, to the tip");
+  near(dist(taper.points[0], taper.points[1]), 85, 1, "from where it comes through the guard, about 3 cm out, to the tip");
   assert.ok(dist(taper.points[0], taper.points[3]) > dist(taper.points[1], taper.points[2]) * 2, "thicker at the guard than at the tip");
-  // The cup is a round shape as wide as a hand and a little more, and the grip is in it.
-  const [cup] = readPath(blade.g);
-  assert.ok(cup.closed);
-  const box = boxOf([cup]);
-  assert.ok(box.maxY - box.minY > 12 && box.maxY - box.minY < 16, `about 14 cm across (${box.maxY - box.minY})`);
-  assert.ok(inside(cup.points, W(J.hn)), "round the grip");
-  assert.match(blade.o, /^M.*Z$/, "with a line of ink round it");
+  // The guard, the outside and the inside the camera sees together, is as wide as a hand and a little more.
+  const guard = [...readPath(blade.g), ...readPath(blade.inside.g)];
+  assert.ok(guard.length && guard.every((shape) => shape.closed));
+  const box = boxOf(guard);
+  assert.ok(box.maxY - box.minY > 11 && box.maxY - box.minY < 16, `about 13 cm across (${box.maxY - box.minY})`);
+  assert.match(blade.o + blade.inside.o, /^M.*Z/, "with a line of ink round it");
+  // The pommel is a nut at the end of the grip, on the line of the blade, behind the hand.
+  const nut = boxOf(readPath(blade.pommel.g || blade.butt.g));
+  const middle = [(nut.minX + nut.maxX) / 2, (nut.minY + nut.maxY) / 2];
+  const [h, along] = [W(J.hn), unit(W(J.hn), W(J.tip))];
+  const [dx, dy] = [middle[0] - h[0], middle[1] - h[1]];
+  near(dx * along[0] + dy * along[1], -12.5, 1, "the pommel is 12.5 cm behind the hand");
+  near(dx * -along[1] + dy * along[0], 0, 0.5, "on the line of the blade");
+  assert.match(blade.grip, /^M.*Z$/, "and the grip runs to it");
 });
 
-test("the cup opens toward the camera's side of the piste, so from there the fist is seen in it, and from the other side its dome", () => {
-  const parts = (camera, dir = 1) => {
-    const pose = resolvePose({ pose: "guard" });
-    const J = skeleton(pose);
-    return { J, W: projector(pose, dir, camera), blade: bladePart(J, projector(pose, dir, camera), handParts().fist) };
-  };
-  // Side on and from the default view, for either fencer, as the plates draw both: the blade behind the cup, its inside
-  // shaded, the fist drawn again in it, and the near wall and lip of the cup over the fingers.
-  for (const [camera, dir] of [[0, 1], [25, 1], [0, -1], [-25, -1]]) {
-    const { blade } = parts(camera, dir);
-    const where = `camera ${camera}, facing ${dir}`;
-    assert.ok(blade.back && !blade.front, `${where}: the blade is behind the cup`);
-    assert.match(blade.inside.g, /^M.*Z$/, `${where}: the inside of the cup`);
-    assert.match(blade.fist.g, /^M.*Z$/, `${where}: the fist in it`);
-    assert.match(blade.d, /^M/, `${where}: the near half of the lip`);
-    assert.match(blade.inside.d, /^M/, `${where}: and the far half`);
-    // The near wall is part of the cup: in it, or on its edge.
-    const shell = readPath(blade.g)[0].points;
-    const toEdge = (p) =>
-      Math.min(
-        ...shell.slice(0, -1).map((a, i) => {
-          const b = shell[i + 1];
-          const [dx, dy] = [b[0] - a[0], b[1] - a[1]];
-          const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / (dx * dx + dy * dy || 1)));
-          return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy);
-        }),
-      );
-    if (blade.wall) for (const p of readPath(blade.wall)[0].points) assert.ok(inside(shell, p) || toEdge(p) < 0.2, `${where}: the wall is on the cup`);
+test("the hand position turns the hand about the blade: the edge down in the third, out in the second, up in the first, in in the fourth", () => {
+  for (const dir of [1, -1]) {
+    const frame = (hand) => {
+      const pose = resolvePose({ pose: "extend", adj: { hand, blade: 0 } });
+      const J = skeleton(pose);
+      const W = projector(pose, dir, 0);
+      return { G: gripFrame(J, W), W };
+    };
+    const where = `facing ${dir}`;
+    const { G, W } = frame(0);
+    // The frame is square: along the blade, the way the edge faces and the way the palm faces.
+    for (const [a, b] of [[G.a, G.e], [G.e, G.s], [G.s, G.a]]) near(a[0] * b[0] + a[1] * b[1] + a[2] * b[2], 0, 1e-9, `${where}: square`);
+    near(G.a[0], 1, 1e-9, `${where}: the blade points at the opponent`);
+    // The third position: thumb up, so the edge faces down, and the palm faces in, to the camera's side of the piste.
+    near(G.e[1], -1, 1e-9, `${where}: third, the edge down`);
+    near(W.depth(G.s), 1, 1e-9, `${where}: third, the palm in`);
+    // The second: palm down and the edge out, away from the camera, as the sword arm is on the far side.
+    const second = frame(-90);
+    near(second.W.depth(second.G.e), -1, 1e-9, `${where}: second, the edge out`);
+    near(second.G.s[1], -1, 1e-9, `${where}: second, the palm down`);
+    // The first: turned right over, thumb down and the edge up.
+    near(frame(-180).G.e[1], 1, 1e-9, `${where}: first, the edge up`);
+    // The fourth: palm up and the edge in.
+    const fourth = frame(90);
+    near(fourth.W.depth(fourth.G.e), 1, 1e-9, `${where}: fourth, the edge in`);
+    near(fourth.G.s[1], 1, 1e-9, `${where}: fourth, the palm up`);
+    // Half way between the second and the third, the edge faces down and out.
+    const half = frame(-45).G.e;
+    near(half[1], -Math.SQRT1_2, 1e-9, `${where}: 2/3, the edge half way down`);
   }
-  // From the other side the dome faces the camera: the blade comes out of it in front, and the fist is behind it.
-  const { blade } = parts(-60);
-  assert.ok(blade.front && !blade.back, "the blade is in front of the dome");
-  assert.equal(blade.fist.g + blade.inside.g + blade.wall + blade.d, "", "nothing of the inside is seen");
-  assert.match(blade.k, /^M/, "and the dome is shaded on the side away from the light");
+});
+
+test("from the side the edge faces the camera sees the outside of the guard, and from the thumb's side it looks into it", () => {
+  const shapes = (d) => readPath(d).reduce((sum, shape) => sum + Math.abs(area(shape.points)) / 2, 0);
+  for (const dir of [1, -1]) {
+    const parts = (hand) => {
+      const pose = resolvePose({ pose: "extend", adj: { hand, blade: 0 } });
+      const J = skeleton(pose);
+      return bladePart(J, projector(pose, dir, 0));
+    };
+    // The fourth position turns the edge, and with it the knuckle bow, to the camera: a shield over the fist.
+    const fourth = parts(90);
+    assert.ok(shapes(fourth.g) > 2.5 * shapes(fourth.inside.g), `facing ${dir}: in the fourth, the outside of the guard`);
+    // The second turns it away, and the camera looks into the guard from the side of the thumb.
+    const second = parts(-90);
+    assert.ok(shapes(second.inside.g) > 2.5 * shapes(second.g), `facing ${dir}: in the second, the inside`);
+    // In the third and the first the edge is down or up, and side on the guard is a crescent: some of each.
+    for (const hand of [0, -180]) {
+      const side = parts(hand);
+      const [outside, inside] = [shapes(side.g), shapes(side.inside.g)];
+      assert.ok(outside > 0.5 * inside && inside > 0.5 * outside, `facing ${dir}, hand ${hand}: both sides of the crescent`);
+      assert.ok(Boolean(side.back) !== Boolean(side.front), "and the blade once");
+    }
+  }
+  // The inside is in shadow, the outside shaded where it turns from the light.
+  const pose = resolvePose({ pose: "guard" });
+  const blade = bladePart(skeleton(pose), projector(pose, 1, 25));
+  assert.match(blade.inside.k, /^M.*z$/, "strokes in the shadow inside the guard");
+});
+
+test("the knuckle bow runs under the fist on the side of the edge: below it in the third position, over it in the first", () => {
+  for (const [hand, below] of [[0, true], [-180, false]]) {
+    const pose = resolvePose({ pose: "extend", adj: { hand, blade: 0 } });
+    const J = skeleton(pose);
+    const W = projector(pose, 1, 0);
+    const G = gripFrame(J, W);
+    for (const [x, y] of hiltParts().guard.stations.filter(([x]) => x < -3 && x > -12)) {
+      const [bow, grip] = [W(G.point([x, y, 0])), W(G.point([x, 0, 0]))];
+      assert.ok(below ? bow[1] > grip[1] + 3 : bow[1] < grip[1] - 3, `hand ${hand}: the bow ${x} cm along is ${below ? "below" : "above"} the grip`);
+    }
+  }
+});
+
+test("the fist bends at the wrist to reach the gauntlet, whichever way the blade points", () => {
+  for (const blade of [-60, 0, 34, 95]) {
+    const { J, W } = posed("guard", { blade });
+    const fist = readPath(bladePart(J, W).fist.g);
+    assert.equal(fist.length, 1, `blade ${blade}: one shape`);
+    // The wrist is 10 cm behind the hand along the forearm, just inside the mouth of the gauntlet.
+    const [fx, fy] = [J.hn[0] - J.el[0], J.hn[1] - J.el[1]];
+    const l = Math.hypot(fx, fy);
+    const wrist = W([J.hn[0] - (10 * fx) / l, J.hn[1] - (10 * fy) / l, J.hn[2]]);
+    assert.ok(Math.min(...fist[0].points.map((p) => dist(p, wrist))) < 2.5, `blade ${blade}: the fist reaches the wrist`);
+  }
+});
+
+test("the fist has lines inside it where its fingers and thumb lie over one another, and only where they are seen", () => {
+  for (const camera of [0, 180]) {
+    const pose = resolvePose({ pose: "extend", adj: { hand: 0, blade: 35 } });
+    const J = skeleton(pose);
+    const fist = bladePart(J, projector(pose, 1, camera)).fist;
+    const outline = readPath(fist.g)[0].points;
+    const lines = readPath(fist.d);
+    assert.ok(lines.length >= 4, `from ${camera}°: the fingers and the thumb, ${lines.length} lines`);
+    for (const l of lines) for (const p of l.points) assert.ok(inside(outline, p) || outline.some((q) => dist(p, q) < 1), `from ${camera}°: a line is inside the fist`);
+  }
+});
+
+test("the outline round a field is traced as closed loops through where it crosses 0", () => {
+  const round = (c, r) => (p) => r - Math.hypot(p[0] - c[0], p[1] - c[1]);
+  const [one] = contour(round([0, 0], 3), [-4, -4, 4, 4], 0.25);
+  assert.ok(one.length > 30);
+  for (const p of one) near(Math.hypot(p[0], p[1]), 3, 0.05, "on the circle");
+  const two = contour((p) => Math.max(round([-5, 0], 2)(p), round([5, 0], 2)(p)), [-8, -3, 8, 3], 0.25);
+  assert.equal(two.length, 2, "two apart, two loops");
+  assert.deepEqual(contour(() => -1, [0, 0, 2, 2], 0.5), [], "and nothing where it is nowhere above 0");
 });

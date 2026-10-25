@@ -83,6 +83,43 @@ export function inside(points, [x, y]) {
   return hit;
 }
 
+/**
+ * The points of a line that its shape needs: those that stand more than `tolerance` off the straight line between the
+ * points kept either side of them (Ramer-Douglas-Peucker). A closed shape is first cut in two at the point furthest
+ * from its first. The first point is always kept, and the last of an open line.
+ */
+export function simplify(points, tolerance, closed = false) {
+  if (points.length < 3) return points.slice();
+  if (closed) {
+    let far = 1;
+    for (let i = 1; i < points.length; i++) if (dist(points[0], points[i]) > dist(points[0], points[far])) far = i;
+    const there = simplify(points.slice(0, far + 1), tolerance);
+    const back = simplify([...points.slice(far), points[0]], tolerance);
+    return [...there, ...back.slice(1, -1)];
+  }
+  const keep = new Array(points.length).fill(false);
+  keep[0] = keep[points.length - 1] = true;
+  const stack = [[0, points.length - 1]];
+  while (stack.length) {
+    const [a, b] = stack.pop();
+    const [p, q] = [points[a], points[b]];
+    const [dx, dy] = [q[0] - p[0], q[1] - p[1]];
+    const l = Math.hypot(dx, dy);
+    let worst = -1;
+    let off = tolerance;
+    for (let k = a + 1; k < b; k++) {
+      const r = points[k];
+      const d = l < 1e-9 ? Math.hypot(r[0] - p[0], r[1] - p[1]) : Math.abs((r[0] - p[0]) * dy - (r[1] - p[1]) * dx) / l;
+      if (d > off) [off, worst] = [d, k];
+    }
+    if (worst >= 0) {
+      keep[worst] = true;
+      stack.push([a, worst], [worst, b]);
+    }
+  }
+  return points.filter((_, k) => keep[k]);
+}
+
 /** The points wound one way, whichever way they came, so shapes drawn together merge as one. */
 export function wound(points) {
   return area(points) < 0 ? points.slice().reverse() : points;

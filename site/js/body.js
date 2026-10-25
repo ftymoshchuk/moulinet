@@ -4,8 +4,8 @@
 // back `{ g, d, k }`: the shapes that make the silhouette, the thin lines, and
 // the brush strokes.
 import { crotchFan, crotchFolds, cuffGathers, kneeFolds, kneePuckers, sleeveFolds, sockWrinkles, thighFolds, torsoFolds, waistband } from "./folds.js";
-import { add, blob, brush, curve, dist, inside, lerp, line, mul, perp, pt, ribbon, rotate, solid, sub, unit } from "./ink.js";
-import { headParts, shoeAcrossParts, shoeParts, torsoParts } from "./parts.js";
+import { add, area, blob, brush, dist, inside, lerp, line, mul, perp, pt, ribbon, rotate, simplify, solid, sub, unit } from "./ink.js";
+import { headParts, hiltParts, shoeAcrossParts, shoeParts, torsoParts } from "./parts.js";
 
 /**
  * A limb segment from `a` to `b`, as the points of a smooth shape: rounded at
@@ -145,13 +145,12 @@ export function trunk(J, W, older, frame = torsoFrame(J, W, older)) {
 // ---------- Arms ----------
 
 /**
- * The sword arm: a long loose sleeve, the cuff of a gauntlet, and the fist round
- * the grip. `fist` are the fist's points in the frame of the forearm. The arm is
- * on the far side of the body, so the sleeve comes out from behind the jersey:
- * its top runs on from the line of the shoulder, and its underside from the
- * armpit.
+ * The sword arm: a long loose sleeve and the cuff of a gauntlet, up to the wrist;
+ * the hand is drawn with the sabre it holds (bladePart). The arm is on the far
+ * side of the body, so the sleeve comes out from behind the jersey: its top runs
+ * on from the line of the shoulder, and its underside from the armpit.
  */
-export function swordArm(J, W, fist, frame = torsoFrame(J, W, false)) {
+export function swordArm(J, W, frame = torsoFrame(J, W, false)) {
   // The arm lies in a plane, at its shoulder's distance from the camera.
   const Wa = (q) => W([q[0], q[1], J.sh[2]]);
   const fu = unit(J.el, J.hn);
@@ -168,11 +167,10 @@ export function swordArm(J, W, fist, frame = torsoFrame(J, W, false)) {
   const fore = segment(J.el, sub(J.hn, mul(fu, 15)), [6.8, 6.2, 5.6, 5.0], [6.6, 5.9, 5.2, 4.6], up);
   // The gauntlet, flaring from the forearm to where it meets the fist.
   const cuff = segment(sub(J.hn, mul(fu, 20.5)), sub(J.hn, mul(fu, 10.4)), [5.6, 6.3, 6.9], [5.6, 6.3, 6.9], up, [0.2, 0.15]);
-  const hand = fist.shape.map(([x, y]) => Wa(place(J.hn, fu, x, y)));
-  const shapes = drawn([sleeve, ...[fore, cuff].map((s) => s.map(Wa)), hand]);
+  const shapes = drawn([sleeve, ...[fore, cuff].map((s) => s.map(Wa))]);
   const atHand = ([x, y]) => Wa(place(J.hn, fu, x, y));
-  // The fingers, and the rim of the gauntlet where the sleeve goes into it.
-  const d = [...fist.lines, [[-20.2, 5.5], [-19.0, 0.4], [-20.2, -5.5]]].map((l) => line(l.map(atHand))).join("");
+  // The rim of the gauntlet, where the sleeve goes into it.
+  const d = line([[-20.2, 5.5], [-19.0, 0.4], [-20.2, -5.5]].map(atHand));
   return { ...shapes, d, k: sleeveFolds(Wa, J.sh, J.el, sub(J.hn, mul(fu, 20.5)), 6) };
 }
 
@@ -637,136 +635,514 @@ export function headPart(J, W, older) {
   };
 }
 
-// The bell guard, a steel cup over the front of the fist: how wide its rim is (the radius), how deep the cup is from
-// its rim to the top of its dome, where the blade comes out, how far along the blade from the grip that is, and how far
-// the cup is turned from the blade toward the outside of the hand, so that it opens back toward the hand and in toward
-// the thumb, as a sabre's guard wraps the outside of the hand (cm and degrees).
-const BELL = { rim: 7.0, depth: 5.0, at: 1.6, tilt: 38 };
+// ---------- The sabre in the hand ----------
+
+// Points and steps in depth, for the hand and the sabre, which are worked out in three dimensions before they are set on
+// the page.
+const add3 = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+const sub3 = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const mul3 = (a, k) => [a[0] * k, a[1] * k, a[2] * k];
+const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const cross3 = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const lerp3 = (a, b, t) => add3(a, mul3(sub3(b, a), t));
+const dist3 = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+function unit3(a) {
+  const l = Math.hypot(...a) || 1;
+  return [a[0] / l, a[1] / l, a[2] / l];
+}
+
+// How far the wrist, where the forearm ends and the hand begins, is behind the hand's point on the blade, along the
+// forearm (cm): just inside the mouth of the gauntlet.
+const WRIST = 10;
 
 /**
- * The sabre: a tapered blade and the bell guard, a steel cup over the front of the fist, light with a line of ink
- * round it, as the plates draw it. The cup is worked out in three dimensions. From one side the camera sees into it:
- * the blade is behind it, the fist goes into it, and the near wall and lip of the cup are over the fingers in it, as
- * the inside of a bowl seen from above shows what is in it only through its opening. From the other side the camera
- * sees its dome, the blade coming out of it toward the camera and the fist behind it. `fist` is the fist's points in
- * the frame of the forearm.
+ * The frame of the hand on the blade, which the hilt and the fist are worked out in (parts.js): `a` along the blade
+ * toward its point, `e` the way the edge faces and `s` the way the palm faces, each a step in the body's frame.
+ * `point(q)` sets a point q = [x, y, z] of that frame, x cm along the blade, y toward the edge and z toward the palm, in
+ * the body's frame; `step(v)` does the same for a step.
  *
- * Returns the blade, `back` of the guard or in `front` of it; the guard's shape `g` and line of ink `o`; and, seen
- * into: the `inside` of the cup (its shape, the far half of its lip and the shade deep in it), the `fist` again, the
- * near `wall` of the cup over it and the near half of the lip `d`. `k` is the shading over everything: the fingers
- * in the shadow of the cup, or the dome on the side away from the light.
+ * In the third position the edge faces the way the blade turns as it cuts in the plane of the arm: down from a blade
+ * held forward, forward from one held up. The pose's `hand` turns it about the blade from there, toward the camera's
+ * side of the piste as it grows, which is the inside of the sword arm as both fencers are drawn: the second position,
+ * at -90, has the palm down and the edge out; the fourth, at 90, the palm up and the edge in; and the first, at -180,
+ * the thumb down and the edge up.
  */
-export function bladePart(J, W, fist) {
-  const { rim, depth, at, tilt } = BELL;
-  const v3 = {
-    add: (a, b) => a.map((v, i) => v + b[i]),
-    sub: (a, b) => a.map((v, i) => v - b[i]),
-    mul: (a, k) => a.map((v) => v * k),
-    dot: (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
-    cross: (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]],
-    unit: (a) => {
-      const l = Math.hypot(...a) || 1;
-      return a.map((v) => v / l);
-    },
-  };
-  const along = v3.unit(v3.sub(J.at(1), J.at(0)));
-  // The outside of the hand is away from the body, square to the blade; with the blade along that, the guard faces down.
-  // Both fencers are drawn with the sword arm on the far side, as the plates draw them, so for either it is away from
-  // the camera's side of the piste.
-  const away = [0, 0, -(W.dir ?? 1)];
-  let outside = v3.add(away, v3.mul(along, -v3.dot(along, away)));
-  if (Math.hypot(...outside) < 0.2) outside = [0, -1, 0];
-  outside = v3.unit(outside);
-  const axis = v3.unit(v3.add(v3.mul(along, Math.cos(tilt * RAD)), v3.mul(outside, Math.sin(tilt * RAD))));
-  const e1 = v3.unit(v3.cross(axis, Math.abs(axis[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0]));
-  const e2 = v3.cross(axis, e1);
-  // The cup is a cap of a sphere: the top of its dome, where the blade comes out, and its rim, a circle round the fist.
-  const top = J.at(at);
-  const radius = (rim * rim + depth * depth) / (2 * depth);
-  const centre = v3.add(top, v3.mul(axis, -radius));
-  const widest = Math.acos((radius - depth) / radius);
-  const ring = (phi, n) =>
-    Array.from({ length: n }, (_, i) => {
-      const t = (2 * Math.PI * i) / n;
-      const out = v3.add(v3.mul(e1, Math.cos(t)), v3.mul(e2, Math.sin(t)));
-      return v3.add(centre, v3.mul(v3.add(v3.mul(axis, Math.cos(phi)), v3.mul(out, Math.sin(phi))), radius));
-    });
-  const lip3 = ring(widest, 20);
-  const lip = lip3.map(W);
-  const shell = hull([...lip, ...[0.4, 0.75].flatMap((k) => ring(widest * k, 12)).map(W), W(top)]);
-  // Seen into, the dome is further from the camera than the rim.
-  const into = W.depth(axis) < 0;
-  const mouth = v3.add(top, v3.mul(axis, -depth));
-  const middle = W(mouth);
-  const near = lip3.map((q) => W.depth(v3.sub(q, mouth)) > 0);
+export function gripFrame(J, W) {
+  const a = unit3(sub3(J.at(1), J.at(0)));
+  const third = [Math.sin(J.bp), -Math.cos(J.bp), 0];
+  const inward = mul3(cross3(third, a), W.dir ?? 1);
+  const t = (J.hand ?? 0) * RAD;
+  const e = add3(mul3(third, Math.cos(t)), mul3(inward, Math.sin(t)));
+  const s = add3(mul3(third, -Math.sin(t)), mul3(inward, Math.cos(t)));
+  const step = ([x, y, z]) => add3(add3(mul3(a, x), mul3(e, y)), mul3(s, z));
+  return { a, e, s, step, point: (q) => add3(J.hn, step(q)) };
+}
 
-  const b0 = W(top);
+// A point `t` of the way along a smooth curve through `stations`, each a list of numbers, as a list of numbers.
+function through(stations, t) {
+  const last = stations.length - 1;
+  const at = Math.max(0, Math.min(last, t * last));
+  const i = Math.min(last - 1, Math.floor(at));
+  const f = at - i;
+  const [p0, p1, p2, p3] = [stations[Math.max(0, i - 1)], stations[i], stations[i + 1], stations[Math.min(last, i + 2)]];
+  return p1.map((b, k) => {
+    const [a, c, d] = [p0[k], p2[k], p3[k]];
+    return b + 0.5 * f * (c - a + f * (2 * a - 5 * b + 4 * c - d + f * (3 * (b - c) + d - a)));
+  });
+}
+
+/**
+ * The guard's sheet of steel: `rows[i][j]` is a point of the hilt's frame `i / n` of the way along its curve, from the
+ * lip over the thumb to the pommel, and `j / m` of the way across it, and `normals[i][j]` the way its outside faces
+ * there, away from the hand.
+ */
+function guardSheet(guard, n = 26, m = 8) {
+  const rows = [];
+  for (let i = 0; i <= n; i++) {
+    const u = i / n;
+    const [x, y, wide] = through(guard.stations, u);
+    const [x0, y0] = through(guard.stations, Math.max(0, u - 0.01));
+    const [x1, y1] = through(guard.stations, Math.min(1, u + 0.01));
+    const l = Math.hypot(x1 - x0, y1 - y0) || 1;
+    // Toward the hand, square to the curve, and how far the edges of the sheet are bent that way.
+    const inward = [-(y1 - y0) / l, (x1 - x0) / l];
+    const sag = (wide * wide) / (2 * guard.bowl);
+    const row = [];
+    for (let j = 0; j <= m; j++) {
+      const v = -1 + (2 * j) / m;
+      row.push([x + v * v * sag * inward[0], y + v * v * sag * inward[1], v * wide]);
+    }
+    rows.push(row);
+  }
+  const normals = rows.map((row, i) =>
+    row.map((_, j) => unit3(cross3(sub3(rows[Math.min(n, i + 1)][j], rows[Math.max(0, i - 1)][j]), sub3(row[Math.min(m, j + 1)], row[Math.max(0, j - 1)])))),
+  );
+  return { rows, normals, n, m };
+}
+
+/**
+ * The parts of the guard's sheet the camera sees from one side: the outside, where `facing` is above 0, or the inside,
+ * where it is below. On each row across the sheet that side is one run, from one edge to where the sheet turns away
+ * (it never turns twice across a row); a run of rows that each have some of it makes one shape, closed at either end
+ * along the row, which follows the bend of the sheet across. Returns the shapes, as lists of [i, v]: how far along the
+ * sheet, by row, and how far across it, from -1 to 1.
+ */
+function sheetSide(facing, m, sign) {
+  const shapes = [];
+  let runs = [];
+  // Across row `i` from `from` to `to`, through the points of the row between them.
+  const across = (i, from, to) => {
+    const points = [[i, from]];
+    const step = to > from ? 1 : -1;
+    for (let j = 0; j <= m; j++) {
+      const v = -1 + (2 * (step > 0 ? j : m - j)) / m;
+      if ((v - from) * step > 1e-6 && (to - v) * step > 1e-6) points.push([i, v]);
+    }
+    points.push([i, to]);
+    return points;
+  };
+  const close = () => {
+    if (runs.length > 1) {
+      const [first, last] = [runs[0], runs[runs.length - 1]];
+      shapes.push([
+        ...across(first.i, first.hi, first.lo),
+        ...runs.slice(1, -1).map(({ i, lo }) => [i, lo]),
+        ...across(last.i, last.lo, last.hi),
+        ...runs.slice(1, -1).reverse().map(({ i, hi }) => [i, hi]),
+      ]);
+    }
+    runs = [];
+  };
+  facing.forEach((row, i) => {
+    const f = row.map((v) => v * sign);
+    const seen = f.map((v) => v > 0);
+    const first = seen.indexOf(true);
+    if (first < 0) return close();
+    const last = seen.lastIndexOf(true);
+    // Where the facing passes 0 between point j and the next, from -1 to 1 across the row.
+    const cross = (j) => -1 + (2 * (j + f[j] / (f[j] - f[j + 1]))) / m;
+    runs.push({ i, lo: first === 0 ? -1 : cross(first - 1), hi: last === m ? 1 : cross(last) });
+  });
+  close();
+  return shapes;
+}
+
+// A circle in depth round `c`, `r` cm round, square to the step `axis`, as `n` points of the body's frame.
+function ring3(c, axis, r, n = 16) {
+  const a = unit3(axis);
+  const u = unit3(cross3(a, Math.abs(a[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0]));
+  const v = cross3(a, u);
+  return Array.from({ length: n }, (_, i) => {
+    const t = (2 * Math.PI * i) / n;
+    return add3(c, add3(mul3(u, r * Math.cos(t)), mul3(v, r * Math.sin(t))));
+  });
+}
+
+// A circle on the page round `c`, as `n` points.
+function circle(c, r, n = 14) {
+  return Array.from({ length: n }, (_, i) => [c[0] + r * Math.cos((2 * Math.PI * i) / n), c[1] + r * Math.sin((2 * Math.PI * i) / n)]);
+}
+
+/**
+ * The fist round the grip, in the frame of the hand on the blade: each finger as its three bones, curled round the grip
+ * as `hilt.fingers` says; the thumb along its back, from the ball of the thumb by the wrist to its tip; and the hand
+ * behind them, from the knuckles to the wrist, which is where the forearm ends, so the hand bends at the wrist to meet
+ * the forearm however the blade is held. Returns the fingers and the thumb as chains of joints, points of the body's
+ * frame, with how thick each is at each joint; and the hand as balls, [where, how thick].
+ */
+function fistBones(J, G, hilt) {
+  // The middle of the grip beside a point of the body's frame.
+  const onGrip = (q) => G.point([dot3(sub3(q, J.hn), G.a), 0, 0]);
+  const fingers = hilt.fingers.map(({ x, r, joints }) => ({
+    at: joints.map(([round, out]) => G.point([x, out * Math.cos(round * RAD), out * Math.sin(round * RAD)])),
+    r: joints.map((_, k) => r * (1 - 0.06 * k)),
+  }));
+  // The wrist is on the forearm, and its sides are toward the thumb and away from it, square to the forearm.
+  const fu = unit3(sub3(J.hn, J.el));
+  const wrist = sub3(J.hn, mul3(fu, WRIST));
+  const radial = unit3(sub3(mul3(G.e, -1), mul3(fu, -dot3(G.e, fu))));
+  const { wrist: half, wristR, heel, ball } = hilt.palm;
+  const [thumbSide, littleSide] = [add3(wrist, mul3(radial, half)), sub3(wrist, mul3(radial, half))];
+  const joints = hilt.thumb.joints.map(G.point);
+  // Its line runs back from the knuckle into the ball of the thumb, leaning a little toward the wrist.
+  const back = add3(joints[0], mul3(unit3(sub3(joints[0], joints[1])), 2.2));
+  const thumb = { at: [lerp3(back, thumbSide, 0.25), ...joints], r: [hilt.thumb.r[0] * 1.15, ...hilt.thumb.r] };
+  // The knuckles of the hand stand a little proud of the fingers' first joints, and the back of the hand is rounded.
+  const knuckles = fingers.map(({ r, at }) => [add3(at[0], mul3(unit3(sub3(at[0], onGrip(at[0]))), 0.25)), r[0] + 0.25]);
+  const across = lerp3(knuckles[1][0], knuckles[2][0], 0.5);
+  const palm = [
+    ...knuckles,
+    [add3(lerp3(across, wrist, 0.5), mul3(G.s, -0.6)), 2.3],
+    [joints[0], hilt.thumb.r[0] + 0.1],
+    [lerp3(fingers[3].at[0], littleSide, 0.5), heel],
+    [lerp3(joints[0], thumbSide, 0.55), ball],
+    [thumbSide, wristR],
+    [littleSide, wristR],
+  ];
+  return { fingers, thumb, palm, onGrip };
+}
+
+// Points along a chain of joints, about every `step` cm, each [where, how thick].
+function alongChain({ at, r }, step = 0.4) {
+  const points = [];
+  for (let k = 0; k < at.length - 1; k++) {
+    const n = Math.max(1, Math.ceil(dist3(at[k], at[k + 1]) / step));
+    for (let s = 0; s < n; s++) points.push([lerp3(at[k], at[k + 1], s / n), r[k] + ((r[k + 1] - r[k]) * s) / n]);
+  }
+  points.push([at[at.length - 1], r[r.length - 1]]);
+  return points;
+}
+
+/**
+ * The fist as it is seen: all its parts merged into one shape `g` with its line of ink `o`; inside it, the lines `d`
+ * where a finger or the thumb lies over another part of the hand, each drawn as one tube round from its knuckle to its
+ * tip and back, wherever nothing nearer hides it; and the creases of the middle knuckles that face the camera, `k`.
+ */
+function fistPart(J, W, G, hilt) {
+  const { fingers, thumb, palm, onGrip } = fistBones(J, G, hilt);
+  const chains = [...fingers, thumb];
+  // Every part as the camera sees it, with how near the camera it is: each bone of each chain, a rounded rod on the
+  // page between the circles round its ends, and the hand, the smallest shape round its balls.
+  const bones = chains.flatMap((chain, c) =>
+    chain.at.slice(1).map((q, k) => {
+      const [a, b] = [W(chain.at[k]), W(q)];
+      const [ra, rb] = [chain.r[k], chain.r[k + 1]];
+      const box = [Math.min(a[0] - ra, b[0] - rb), Math.min(a[1] - ra, b[1] - rb), Math.max(a[0] + ra, b[0] + rb), Math.max(a[1] + ra, b[1] + rb)];
+      return { chain: c, a, b, ra, rb, box, depth: W.depth(lerp3(chain.at[k], q, 0.5)) };
+    }),
+  );
+  const hand = hull(palm.flatMap(([c, r]) => circle(W(c), r, 10)));
+  const handBox = [Math.min(...hand.map((p) => p[0])), Math.min(...hand.map((p) => p[1])), Math.max(...hand.map((p) => p[0])), Math.max(...hand.map((p) => p[1]))];
+  // How far inside a bone a point of the page is: its thickness there, less how far the point is from its line.
+  const into = ({ a, b, ra, rb }, p) => {
+    const [dx, dy] = [b[0] - a[0], b[1] - a[1]];
+    const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / (dx * dx + dy * dy || 1)));
+    return ra + (rb - ra) * t - Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy);
+  };
+  const within = (box, p, m = 0) => p[0] >= box[0] - m && p[0] <= box[2] + m && p[1] >= box[1] - m && p[1] <= box[3] + m;
+  // How far inside the hand a point is, or outside it, below 0: the hand is the smallest shape round its balls, so it
+  // has no hollow, and that is how far the point is inside the nearest of the lines along its edges.
+  const middle = hand.reduce((sum, p) => add(sum, mul(p, 1 / hand.length)), [0, 0]);
+  const edges = hand.map((a, i) => {
+    const b = hand[(i + 1) % hand.length];
+    let n = perp(unit(a, b));
+    if (dot(n, sub(middle, a)) < 0) n = mul(n, -1);
+    return [a, n];
+  });
+  const intoHand = (p) => {
+    let f = Infinity;
+    for (const [a, n] of edges) f = Math.min(f, (p[0] - a[0]) * n[0] + (p[1] - a[1]) * n[1]);
+    return f;
+  };
+  // The balls of the hand as the camera sees them: where, how big, and how near the camera.
+  const palmSeen = palm.map(([c, r]) => [W(c), r, W.depth(c)]);
+
+  // The silhouette: the line round everywhere inside some part, traced on a grid.
+  const lo = [Math.min(handBox[0], ...bones.map((bn) => bn.box[0])), Math.min(handBox[1], ...bones.map((bn) => bn.box[1]))];
+  const hi = [Math.max(handBox[2], ...bones.map((bn) => bn.box[2])), Math.max(handBox[3], ...bones.map((bn) => bn.box[3]))];
+  const field = (p) => {
+    let f = within(handBox, p, 0.5) ? intoHand(p) : -1;
+    for (const bn of bones) if (within(bn.box, p, 0.5)) f = Math.max(f, into(bn, p));
+    return f;
+  };
+  // Its outer edges only: a gap the parts close round, or a speck where two fingers barely part, is part of the fist.
+  const loops = contour(field, [lo[0] - 0.6, lo[1] - 0.6, hi[0] + 0.6, hi[1] + 0.6], 0.42)
+    .map((loop) => [loop, Math.abs(area(loop))])
+    .sort((a, b) => b[1] - a[1]);
+  const outline = [];
+  for (const [loop, size] of loops) if (size > 1 && !outline.some((outer) => inside(outer, loop[0]))) outline.push(loop);
+
+  // Whether a point of a chain's edge, as near the camera as `depth`, is hidden by another part, and whether it lies
+  // over one, so that it is a line inside the fist and not its outline.
+  const seen = (p, depth, chain) => {
+    let over = false;
+    for (const other of bones) {
+      if (other.chain === chain || !within(other.box, p, 0.35)) continue;
+      // Fingers lie side by side and touch, so a finger's edge against the next one is a line inside the fist.
+      const d = into(other, p);
+      if (d > 0 && other.depth > depth + 0.3) return false;
+      if (d > -0.35) over = true;
+    }
+    if (within(handBox, p) && intoHand(p) > 0) {
+      // The hand is only as near the camera as the balls it is made of, where the point is on one of them.
+      for (const [c, r, near] of palmSeen) if (near > depth + 0.3 && dist(c, p) < r) return false;
+      over = true;
+    }
+    return over;
+  };
+  const lines = [];
+  chains.forEach((chain, c) => {
+    const points = alongChain(chain, 0.35);
+    const page = points.map(([q]) => W(q));
+    // Down one side, round the tip and back up the other: the edge of the tube, with how near the camera each point is.
+    const left = [];
+    const right = [];
+    let along = [1, 0];
+    page.forEach((p, i) => {
+      const step = sub(page[Math.min(page.length - 1, i + 1)], page[Math.max(0, i - 1)]);
+      if (Math.hypot(...step) > 0.05) along = unit([0, 0], step);
+      const n = perp(along);
+      const [q, r] = points[i];
+      left.push([add(p, mul(n, r)), W.depth(q)]);
+      right.push([sub(p, mul(n, r)), W.depth(q)]);
+    });
+    const [tip, r] = points[points.length - 1];
+    const n = perp(along);
+    const cap = Array.from({ length: 5 }, (_, s) => {
+      const a = (Math.PI * (s + 1)) / 6;
+      return [add(W(tip), add(mul(n, r * Math.cos(a)), mul(along, r * Math.sin(a)))), W.depth(tip)];
+    });
+    let run = [];
+    for (const [p, depth] of [...left, ...cap, ...right.reverse()]) {
+      if (seen(p, depth, c)) run.push(p);
+      else if (run.length) {
+        if (run.length > 1) lines.push(run);
+        run = [];
+      }
+    }
+    if (run.length > 1) lines.push(run);
+  });
+  // The middle knuckles, where they face the camera: a short crease across each finger.
+  let k = "";
+  for (const finger of fingers) {
+    const knuckle = finger.at[1];
+    const out = unit3(sub3(knuckle, onGrip(knuckle)));
+    if (W.depth(out) < 0.45) continue;
+    const c = W(knuckle);
+    const across = perp(unit(W(finger.at[0]), W(finger.at[2])));
+    const bulge = sub(W(add3(knuckle, out)), c);
+    k += brush([add(c, mul(across, finger.r[1] * 0.55)), add(c, mul(bulge, finger.r[1] * 0.2)), sub(c, mul(across, finger.r[1] * 0.55))], 0.32, 0.5);
+  }
+  // Shade along the edge of the fist where it turns from the light, the lower right of the page: short strokes in from
+  // the edge, every centimetre or so.
+  const silhouette = outline.map((loop) => simplify(loop, 0.08, true));
+  for (const loop of silhouette) {
+    const middle = loop.reduce((sum, p) => add(sum, mul(p, 1 / loop.length)), [0, 0]);
+    let since = Infinity;
+    loop.forEach((p, i) => {
+      const next = loop[(i + 1) % loop.length];
+      since += dist(loop[(i + loop.length - 1) % loop.length], p);
+      let n = perp(unit(p, next));
+      if (dot(n, sub(middle, p)) > 0) n = mul(n, -1);
+      if (since < 1.1 || dot(n, [0.6, 0.8]) < 0.55) return;
+      since = 0;
+      const into = sub(mul(n, -1), mul(unit(p, next), 0.35));
+      k += brush([add(p, mul(into, 0.15)), add(p, mul(into, 0.75)), add(p, mul(into, 1.35))], 0.3, 0.4);
+    });
+  }
+  return { ...drawn(silhouette, 0.2, 0.55), d: lines.map((l) => line(simplify(l, 0.05))).join(""), k };
+}
+
+/**
+ * The line round where `field` is above 0 within `box`, [left, top, right, bottom] on the page, traced on a grid
+ * `step` apart (marching squares) with each crossing found between the grid's points: closed loops of points, without
+ * points closer than a third of a step.
+ */
+export function contour(field, [x0, y0, x1, y1], step) {
+  const nx = Math.ceil((x1 - x0) / step) + 1;
+  const ny = Math.ceil((y1 - y0) / step) + 1;
+  const v = new Float64Array(nx * ny);
+  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) v[j * nx + i] = field([x0 + i * step, y0 + j * step]);
+  // Where the line crosses each edge of the grid: the edge from point (i, j) to the right is 2(j nx + i), and down
+  // 2(j nx + i) + 1; and the two crossings each crossing is joined to, -1 for none yet.
+  const size = 2 * nx * ny;
+  const xs = new Float64Array(size);
+  const ys = new Float64Array(size);
+  const links = new Int32Array(2 * size).fill(-1);
+  const crossing = (i, j, down) => {
+    const id = 2 * (j * nx + i) + (down ? 1 : 0);
+    const a = v[j * nx + i];
+    const b = down ? v[(j + 1) * nx + i] : v[j * nx + i + 1];
+    const f = a / (a - b);
+    xs[id] = x0 + (down ? i : i + f) * step;
+    ys[id] = y0 + (down ? j + f : j) * step;
+    return id;
+  };
+  const link = (a, b) => {
+    links[2 * a + (links[2 * a] < 0 ? 0 : 1)] = b;
+    links[2 * b + (links[2 * b] < 0 ? 0 : 1)] = a;
+  };
+  const sides = [0, 0, 0, 0];
+  for (let j = 0; j < ny - 1; j++) {
+    for (let i = 0; i < nx - 1; i++) {
+      const k = j * nx + i;
+      const c0 = v[k] > 0;
+      const c1 = v[k + 1] > 0;
+      const c2 = v[k + nx + 1] > 0;
+      const c3 = v[k + nx] > 0;
+      if (c0 === c1 && c1 === c2 && c2 === c3) continue;
+      let n = 0;
+      if (c0 !== c1) sides[n++] = crossing(i, j, false);
+      if (c1 !== c2) sides[n++] = crossing(i + 1, j, true);
+      if (c2 !== c3) sides[n++] = crossing(i, j + 1, false);
+      if (c3 !== c0) sides[n++] = crossing(i, j, true);
+      if (n === 2) link(sides[0], sides[1]);
+      else if (n === 4) {
+        // A saddle: the middle of the cell decides which corners are joined.
+        if (v[k] + v[k + 1] + v[k + nx + 1] + v[k + nx] > 0 === c0) {
+          link(sides[0], sides[1]);
+          link(sides[2], sides[3]);
+        } else {
+          link(sides[0], sides[3]);
+          link(sides[1], sides[2]);
+        }
+      }
+    }
+  }
+  const loops = [];
+  const done = new Uint8Array(size);
+  for (let first = 0; first < size; first++) {
+    if (done[first] || links[2 * first] < 0) continue;
+    const loop = [];
+    let [previous, current] = [-1, first];
+    while (current >= 0 && !done[current]) {
+      done[current] = 1;
+      const p = [xs[current], ys[current]];
+      if (!loop.length || dist(loop[loop.length - 1], p) > step / 3) loop.push(p);
+      const [a, b] = [links[2 * current], links[2 * current + 1]];
+      [previous, current] = [current, a === previous ? b : a];
+    }
+    if (loop.length > 2) loops.push(loop);
+  }
+  return loops;
+}
+
+/**
+ * The sabre and the hand that holds it, as the plates draw them. The blade is a tapered line of ink. The guard is a
+ * sheet of steel, light with a line of ink round it, from a lip over the thumb round the front of the fingers and back
+ * under them as the knuckle bow to the pommel (parts.js), worked out in three dimensions in the frame of the hand,
+ * which the pose's hand position turns about the blade: from the side of the edge the camera sees the outside of it, a
+ * shield over the fist with the blade coming out of it; from the side of the thumb it looks into it, and sees the fist
+ * in it; and side on it is a crescent in front of and under the fingers.
+ *
+ * Returns, back to front: the blade when its root is behind the guard, `back`; the inside of the guard the camera sees,
+ * `inside` (its line of ink `o`, its shape `g`, shaded `k`); the grip, a dark rod, `grip`; the pommel, `pommel`, when it
+ * is behind the fist; the fist, `fist` (`o`, `g`, its lines `d`, `k`); the pommel again, `butt`, when it is in front of
+ * the fist; the outside of the guard the camera sees, its line of ink `o`, its shape `g` and its shading `k`; and the
+ * blade, `front`, when its root is in front of the guard.
+ */
+export function bladePart(J, W, hilt = hiltParts()) {
+  const G = gripFrame(J, W);
+  const sheet = guardSheet(hilt.guard);
+  const facing = sheet.normals.map((row) => row.map((n) => W.depth(G.step(n))));
+  // A point of the sheet, `i` rows along it and `v` across it, on the page.
+  const sheetAt = (i, v) => {
+    const row = sheet.rows[i];
+    const at = ((v + 1) / 2) * sheet.m;
+    const j = Math.min(sheet.m - 1, Math.floor(at));
+    const q = add3(mul3(row[j], 1 - (at - j)), mul3(row[j + 1], at - j));
+    return W(G.point(q));
+  };
+  const [outsideAt, insideAt] = [sheetSide(facing, sheet.m, 1), sheetSide(facing, sheet.m, -1)];
+  const [outsideShapes, insideShapes] = [outsideAt, insideAt].map((shapes) => shapes.map((shape) => simplify(shape.map(([i, v]) => sheetAt(i, v)), 0.06, true)));
+
+  // The blade comes out of the sheet where the curve crosses its line, and is drawn in front of the guard if the camera
+  // sees the outside of the sheet there.
+  const { rows } = sheet;
+  const middle = sheet.m / 2;
+  let exit = 1;
+  while (exit < rows.length - 1 && rows[exit][middle][1] < 0) exit++;
+  const [r0, r1] = [rows[exit - 1][middle], rows[exit][middle]];
+  const cut = r0[1] / (r0[1] - r1[1]);
+  const root = G.point([r0[0] + (r1[0] - r0[0]) * cut, 0, 0]);
+  const b0 = W(root);
   const b1 = W(J.tip);
   const n = perp(unit(b0, b1));
   const steel = `M${[add(b0, mul(n, 0.62)), add(b1, mul(n, 0.18)), sub(b1, mul(n, 0.18)), sub(b0, mul(n, 0.62))].map(pt).join("L")}Z`;
-  const shape = { g: blob(shell), o: ribbon(shell, 0.22, 0.75) };
-  if (!into) {
-    // The dome: strokes toward its top on the side away from the light, which is the lower right of the page.
-    const deep = W(top);
-    let k = "";
-    for (const p of shell.filter((q) => dot(unit(middle, q), [0.6, 0.8]) > 0.55).filter((_, i) => i % 2 === 0)) {
-      k += brush([p, lerp(p, deep, 0.2), lerp(p, deep, 0.38)], 0.4, 0.35);
-    }
-    return { back: "", front: steel, ...shape, inside: { g: "", d: "", k: "" }, fist: { g: "", o: "", d: "" }, wall: "", d: "", k };
-  }
+  const inFront = facing[exit][middle] > 0;
 
-  // The near wall: what of the cup is seen outside its opening, between the near half of the lip and the dome.
-  const onShell = lip.map((p) => shell.includes(p));
-  const wall = [];
-  const start = shell.findIndex((p, i) => !lip.includes(p) && lip.includes(shell[(i + shell.length - 1) % shell.length]));
-  if (start >= 0) {
-    const from = lip.indexOf(shell[(start + shell.length - 1) % shell.length]);
-    let i = start;
-    while (!lip.includes(shell[i % shell.length])) wall.push(shell[i++ % shell.length]);
-    const to = lip.indexOf(shell[i % shell.length]);
-    // Back along the lip from where the wall leaves it to where it began, the way that is not round the outside.
-    const arc = (step) => {
-      const list = [];
-      for (let j = to; j !== from; j = (j + step + lip.length) % lip.length) list.push(j);
-      return [...list, from];
-    };
-    const inner = [arc(1), arc(-1)].find((list) => list.slice(1, -1).every((j) => !onShell[j])) ?? arc(1);
-    wall.unshift(lip[from]);
-    wall.push(...inner.map((j) => lip[j]));
-  }
-  // The lip, in its near and far halves, each a run round the circle.
-  const half = (keep) => {
-    const first = lip.findIndex((_, i) => keep(i) && !keep((i + lip.length - 1) % lip.length));
-    if (first < 0) return lip.some((_, i) => keep(i)) ? curve(lip, true) : "";
-    const run = [];
-    for (let i = first; keep(i % lip.length) && run.length < lip.length; i++) run.push(lip[i % lip.length]);
-    return run.length > 1 ? line(run) : "";
+  // The grip, dark, and the pommel, a nut of steel at its end, flat where it meets the grip and domed at the end, with
+  // a ring round it by the flat face; in front of the fist where it is nearer the camera than the heel of the hand.
+  const { grip, pommel } = hilt;
+  const rod = hull([grip.from, grip.to].flatMap((x) => ring3(G.point([x, 0, 0]), G.a, grip.radius).map(W)));
+  const face = G.point([pommel.from, 0, 0]);
+  const nut = drawn([hull([...ring3(face, G.a, pommel.radius).map(W), ...circle(W(G.point([pommel.to + pommel.radius * 0.8, 0, 0])), pommel.radius * 0.92)])], 0.2, 0.6);
+  // The near half of the ring, which the camera sees.
+  const ringAt = ring3(G.point([pommel.from - 0.3, 0, 0]), G.a, pommel.radius * 1.01, 24);
+  const centre = G.point([pommel.from - 0.3, 0, 0]);
+  const near = ringAt.map((q) => W.depth(sub3(q, centre)) >= -0.05);
+  const start = near.findIndex((seen, i) => seen && !near[(i + ringAt.length - 1) % ringAt.length]);
+  const ringLine = [];
+  if (start >= 0) for (let i = start; near[i % ringAt.length] && ringLine.length < ringAt.length; i++) ringLine.push(W(ringAt[i % ringAt.length]));
+  const butt = W.depth(sub3(G.point([pommel.to, 0, 0]), G.point([-8, 0, 0]))) > 2.5;
+  const pommelPart = { ...nut, d: ringLine.length > 1 ? line(ringLine) : "" };
+  const none = { o: "", g: "", d: "" };
+
+  const fist = fistPart(J, W, G, hilt);
+
+  // Shading along the rim of the sheet, as the plates hatch the steel: long strokes a little in from the edge, on the
+  // inside the camera sees, which is in shadow, and on the outside where it turns from the light, the lower right of
+  // the page. Each runs along a stretch of rows where the shape's edge is the rim.
+  const hatch = (shapes, keep) => {
+    let strokes = "";
+    for (const shape of shapes) {
+      for (const edge of [-1, 1]) {
+        const rows = shape.filter(([, v]) => v === edge).map(([i]) => i).sort((a, b) => a - b);
+        for (let s = 0; s + 2 < rows.length; s += 3) {
+          const [i0, i1, i2] = [rows[s], rows[s + 1], rows[s + 2]];
+          if (i2 - i0 !== 2) continue;
+          const points = [sheetAt(i0, edge * 0.8), sheetAt(i1, edge * 0.8), sheetAt(i2, edge * 0.8)];
+          if (keep(points, sheetAt(i1, edge))) strokes += brush(points, 0.32, 0.5);
+        }
+      }
+    }
+    return strokes;
   };
-  // Deep in the cup it is in shadow: strokes in from the far half of the lip, which the fist covers where it is in front.
-  let shade = "";
-  lip.forEach((p, i) => {
-    if (!near[i] && i % 2 === 0) shade += brush([p, lerp(p, middle, 0.25), lerp(p, middle, 0.45)], 0.45, 0.35);
-  });
-  // The fingers in the cup are in its shadow: strokes in from the near half of the lip, over the fist.
-  let k = "";
-  lip.forEach((p, i) => {
-    if (near[i] && i % 2 === 1) k += brush([p, lerp(p, middle, 0.2), lerp(p, middle, 0.36)], 0.4, 0.35);
-  });
-  let held = { g: "", o: "", d: "" };
-  if (fist) {
-    const fu = unit(J.el, J.hn);
-    const set = ([x, y]) => W([...place(J.hn, fu, x, y), J.hn[2]]);
-    // In the shadow of the cup its line is lighter than out in the light.
-    held = { ...drawn([fist.shape.map(set)], 0.2, 0.55), d: fist.lines.map((l) => line(l.map(set))).join("") };
-  }
+  const shade = hatch(insideAt, () => true);
+  // On the outside, only where the steel turns from the light: where the rim is down and to the right of the stroke.
+  const k2 = hatch(outsideAt, (points, edge) => dot(sub(edge, points[1]), [0.6, 0.8]) > 0);
+  const outer = drawn(outsideShapes, 0.22, 0.75);
+  const inner = drawn(insideShapes, 0.2, 0.6);
   return {
-    back: steel,
-    front: "",
-    ...shape,
-    inside: { g: blob(lip), d: half((i) => !near[i]), k: shade },
-    fist: held,
-    wall: wall.length > 2 ? blob(wall) : "",
-    d: half((i) => near[i]),
-    k,
+    back: inFront ? "" : steel,
+    inside: { o: inner.o, g: inner.g, k: shade },
+    grip: rod.length > 2 ? blob(rod) : "",
+    pommel: butt ? none : pommelPart,
+    fist,
+    butt: butt ? pommelPart : none,
+    o: outer.o,
+    g: outer.g,
+    k: k2,
+    front: inFront ? steel : "",
   };
 }

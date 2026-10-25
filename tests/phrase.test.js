@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { JOINTS, POSES, PRESETS } from "../site/js/library.js";
+import { HAND_POSITIONS, JOINTS, POSES, PRESETS } from "../site/js/library.js";
 import {
   MAX_STEP_MS,
   TEXT_KEYS,
@@ -219,6 +219,27 @@ test("the turns of the foot and the knee behind are angles like the others: the 
   assert.equal(halfway.toeBack, 24, "halfway from 14 to 34");
   assert.equal(halfway.kneeOut, 50, "and from 40 to 60");
   assert.equal(mixPoses({ kneeOut: 350 }, { kneeOut: 10 }, 0.5).kneeOut, 360, "the short way round");
+});
+
+test("the hand turns through its positions in order, never the short way round past the fourth to the first", () => {
+  // From the fourth, palm up, to the first, thumb down, the hand turns back through the third and the second.
+  assert.equal(mixPoses({ hand: 90 }, { hand: -180 }, 0.5).hand, -45, "half way is the 2/3");
+  assert.equal(mixPoses({ hand: -45 }, { hand: -180 }, 1 / 3).hand, -90, "from the guard toward parry 5, through the second");
+});
+
+test("the hand position's slider steps onto the positions the books name, and says which it is on", () => {
+  const slider = JOINTS.find(({ key }) => key === "hand");
+  assert.equal(slider.names, HAND_POSITIONS);
+  // The four positions a quarter turn apart, from the first to the fourth, and the halves between them.
+  const named = Object.entries(HAND_POSITIONS).map(([value, name]) => [Number(value), name]).sort((a, b) => a[0] - b[0]);
+  assert.deepEqual(named, [[-180, "1st"], [-135, "1/2"], [-90, "2nd"], [-45, "2/3"], [0, "3rd"], [45, "3/4"], [90, "4th"]]);
+  for (const [value, name] of Object.entries(HAND_POSITIONS)) {
+    assert.ok(Number(value) >= slider.min && Number(value) <= slider.max, `${name} is on the slider`);
+    assert.ok(Number(value) % slider.step === 0, `and the slider steps onto ${name}`);
+  }
+  assert.deepEqual([slider.min, slider.max], [-180, 90], "from the first position to the fourth");
+  // Every pose holds the sabre in a position the books name.
+  for (const name of Object.keys(POSES)) assert.ok(HAND_POSITIONS[resolvePose({ pose: name }).hand], `${name}: a named position`);
 });
 
 test("each slider moves a joint the poses have, and reaches the value every pose gives it", () => {

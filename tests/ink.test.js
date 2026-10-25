@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { along, crotchFan, crotchFolds, cuffGathers, groundStrokes, kneeFolds, kneePuckers, sleeveFolds, sockWrinkles, thighFolds, torsoFolds, waistband } from "../site/js/folds.js";
-import { area, blob, brush, curve, dist, inside, lerp, line, perp, ribbon, rotate, solid, unit, wound } from "../site/js/ink.js";
+import { area, blob, brush, curve, dist, inside, lerp, line, perp, ribbon, rotate, simplify, solid, unit, wound } from "../site/js/ink.js";
 import { boxOf, readPath } from "./path-data.js";
 
 // Path data is written to a tenth of a unit, so a point is that close to where it was given.
@@ -184,6 +184,24 @@ test("the vector helpers", () => {
   nearPoint(rotate([2, 3], 360), [2, 3], 1e-12);
   assert.deepEqual(lerp([0, 0], [10, 20], 0.25), [2.5, 5]);
   assert.equal(area([[0, 0], [1, 0], [1, 1], [0, 1]]), 2, "twice the area, signed");
+});
+
+test("a line keeps only the points its shape needs", () => {
+  // Points along a straight line are not needed; the ends are.
+  const straight = Array.from({ length: 11 }, (_, i) => [i, 0.01 * (i % 2)]);
+  assert.deepEqual(simplify(straight, 0.05), [straight[0], straight[10]]);
+  // A corner is kept, and a point off the line by more than the tolerance.
+  const corner = [[0, 0], [1, 0.01], [2, 0], [2, 1], [2.01, 2]];
+  assert.deepEqual(simplify(corner, 0.05), [[0, 0], [2, 0], [2.01, 2]]);
+  const bump = [[0, 0], [1, 0.2], [2, 0]];
+  assert.deepEqual(simplify(bump, 0.1), bump);
+  assert.deepEqual(simplify(bump, 0.3), [[0, 0], [2, 0]]);
+  // A closed shape keeps its corners, whichever point it starts from.
+  const square = [[0, 0], [1, 0], [2, 0], [2, 1], [2, 2], [1, 2], [0, 2], [0, 1]];
+  const kept = simplify(square, 0.05, true);
+  assert.equal(kept.length, 4);
+  for (const c of [[0, 0], [2, 0], [2, 2], [0, 2]]) assert.ok(kept.some((p) => p[0] === c[0] && p[1] === c[1]), `the corner ${c}`);
+  assert.deepEqual(simplify([[0, 0], [1, 1]], 0.1), [[0, 0], [1, 1]], "two points are a line already");
 });
 
 test("a point is inside a polygon or not, however the polygon is wound", () => {

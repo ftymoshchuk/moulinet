@@ -30,6 +30,7 @@ export const BASES = [
       ["Legs", "Both knees bent, each over its own foot, so both shins stand upright; the back knee is turned out toward you a little, over the back foot. The torso is upright and the weight shared evenly."],
       ["Sword arm", "Nearly straight, reaching forward, the hand at the height of the chest."],
       ["Blade", "Angled up and forward, in tierce: it covers the high outside line."],
+      ["Hand", "Half way between the second position and the third, the 2/3: the thumb on the back of the grip, and the edge turned down and out, so the knuckle bow covers the fingers from below and outside."],
       ["Rear arm", "Bent, the elbow out behind, and the hand resting on the hip at the belt."],
     ],
   },
@@ -60,6 +61,7 @@ export const BASES = [
     points: [
       ["Sword arm", "Straight, at about shoulder height, with no tension in the shoulder."],
       ["Blade", "In line with the arm, pointing forward and a little up."],
+      ["Hand", "In the third position, thumb up and the edge down, ready to cut."],
       ["Legs", "Still in guard. Nothing below the hips has moved."],
     ],
   },
@@ -70,6 +72,7 @@ export const BASES = [
     points: [
       ["Sword arm", "The elbow bent and the hand lifted above shoulder height."],
       ["Blade", "Nearly vertical, the point to the ceiling."],
+      ["Hand", "In the third position, so the edge faces forward, ready to come down onto the head."],
       ["Legs", "Still in guard."],
     ],
   },
@@ -93,6 +96,7 @@ export const BASES = [
       ["Back leg", "Straight, the back foot flat."],
       ["Sword arm", "Raised and extended, taking the blade up to head height."],
       ["Torso", "Nearly upright over the front leg, the head up and the rear arm held back."],
+      ["Hand", "In the third position, the edge coming down onto the head."],
     ],
   },
   {
@@ -103,6 +107,7 @@ export const BASES = [
       ["Legs", "As in the lunge to the head: front knee bent, back leg straight."],
       ["Sword arm", "Extended and nearly level, at about the height of the opponent's chest."],
       ["Blade", "Close to level, pointing at the target."],
+      ["Hand", "Turned to the fourth position, palm up, so the edge comes across into the chest."],
     ],
   },
   {
@@ -114,6 +119,7 @@ export const BASES = [
       ["Blade", "Near vertical, the point up."],
       ["Body", "Stays behind the blade, the weight a little back."],
       ["Covers", "The high line on the sword-arm side."],
+      ["Hand", "In the second position, palm down, so the edge faces out to meet the cut."],
     ],
   },
   {
@@ -125,6 +131,7 @@ export const BASES = [
       ["Hips", "Back over the back foot."],
       ["Torso", "Upright, or a little back, behind the blade."],
       ["Blade", "As in tierce: near vertical in front of the body, the point up."],
+      ["Hand", "As in tierce: in the second position, the edge out."],
     ],
   },
   {
@@ -136,6 +143,7 @@ export const BASES = [
       ["Blade", "Slanting forward and up, about halfway between level and upright, across the line to the face."],
       ["Legs", "Standing up, the front foot drawn back toward the back foot, the body upright behind the blade."],
       ["Covers", "The face, on the side of the sword arm."],
+      ["Hand", "In the second position, the edge turned out to meet the cut."],
     ],
   },
   {
@@ -147,6 +155,7 @@ export const BASES = [
       ["Blade", "Roughly level and turned across, like a roof over the head."],
       ["Body", "A little back and under the blade. The legs stay in guard."],
       ["Covers", "The head."],
+      ["Hand", "Turned right over, to the first position: thumb down, so the edge faces up at the cut."],
     ],
   },
   {
@@ -158,6 +167,7 @@ export const BASES = [
       ["Sword arm", "Raised, the hand just above the head, the elbow bent."],
       ["Blade", "Level and turned across, like a roof over the head."],
       ["Covers", "The head, with the body drawn back out of reach."],
+      ["Hand", "As in quinte: in the first position, the edge up."],
     ],
   },
   {
@@ -169,6 +179,7 @@ export const BASES = [
       ["Sword arm", "Straight and level, thrown forward at once."],
       ["Blade", "Level or a little below the hand, the cut dropping onto the target."],
       ["Body", "Leans into the cut, the hips travelling forward."],
+      ["Hand", "Back in the third position, the edge coming down onto the head."],
     ],
   },
 ];

@@ -14,6 +14,11 @@
 //   turn          how far the shoulders are turned toward the camera, 0 side on
 //   arm, fore     sword arm: upper arm and forearm
 //   blade         the sabre; yaw turns it toward the camera
+//   hand          how far the sword hand is turned about the blade, in the hand
+//                 positions of the old sabre books: 0 is the third, thumb up and the
+//                 edge down; -90 the second, palm down and the edge out; -180 the
+//                 first, thumb down and the edge up; 90 the fourth, palm up and the
+//                 edge in; and the halves between them, -45 the 2/3
 //   rArm, rFore   rear arm, hand on the hip
 // A pose fills in whatever it leaves out from the guard.
 //
@@ -34,21 +39,29 @@
 // back toward the back foot, the hand low in front of the chest and the blade
 // slanting forward across the line to the face, as the plate of an outside face
 // cut draws it.
+//
+// The hand holds the sabre in the guard half way between the second position and
+// the third, the 2/3, so the edge faces down and out, and turns it to meet each
+// action with the edge: to the third for the cuts to the head, where the edge comes
+// down; to the fourth for the cut to the chest, so the edge comes across into it;
+// to the second for the parries that meet a cut from the outside, parry 3 and face
+// protection; and right over, to the first, for parry 5, so the edge faces up at a
+// cut to the head.
 export const POSES = {
-  guard: { hipX: 41, hipY: 77, footF: 84, liftF: 0, liftB: 0, lean: 0, turn: 58, arm: -24, fore: -4, blade: 34, yaw: 0, rArm: -140, rFore: -28, toeBack: 14, kneeOut: 40 },
+  guard: { hipX: 41, hipY: 77, footF: 84, liftF: 0, liftB: 0, lean: 0, turn: 58, arm: -24, fore: -4, blade: 34, yaw: 0, hand: -45, rArm: -140, rFore: -28, toeBack: 14, kneeOut: 40 },
   advLift: { hipX: 44, hipY: 79, footF: 103, liftF: 4 },
   advLand: { hipX: 52.5, hipY: 79, footF: 114 },
-  prep: { hipX: 42, lean: 1, arm: 15, fore: 30, blade: 85 },
-  lungeFly: { hipX: 60, hipY: 70, footF: 124, liftF: 5, lean: 6, arm: 16, fore: 16, blade: 30 },
-  lungeHead: { hipX: 83.1, hipY: 54.6, footF: 133, lean: 6, arm: 18, fore: 16, blade: 20 },
-  lungeChest: { hipX: 83.1, hipY: 54.6, footF: 133, lean: 15, arm: 2, fore: 2, blade: 10 },
-  parry3: { hipX: 38, hipY: 78, lean: -3, arm: -110, fore: -4, blade: 95 },
-  parry3Back: { hipX: 24, hipY: 80, lean: -6, arm: -110, fore: -4, blade: 95 },
-  faceParry: { hipX: 30, hipY: 82, footF: 56, lean: 0, arm: -97, fore: 8, blade: 53 },
-  parry5: { hipX: 38, hipY: 78, lean: -4, arm: 20, fore: 112, blade: 6, yaw: 70 },
-  parry5Back: { hipX: 24, hipY: 80, lean: -7, arm: 20, fore: 112, blade: 6, yaw: 70 },
-  riposte: { hipX: 50, hipY: 77, footF: 100, lean: 8, arm: 0, fore: 0, blade: -6 },
-  extend: { hipX: 42, lean: 1, arm: 4, fore: 4, blade: 14 },
+  prep: { hipX: 42, lean: 1, arm: 15, fore: 30, blade: 85, hand: 0 },
+  lungeFly: { hipX: 60, hipY: 70, footF: 124, liftF: 5, lean: 6, arm: 16, fore: 16, blade: 30, hand: 0 },
+  lungeHead: { hipX: 83.1, hipY: 54.6, footF: 133, lean: 6, arm: 18, fore: 16, blade: 20, hand: 0 },
+  lungeChest: { hipX: 83.1, hipY: 54.6, footF: 133, lean: 15, arm: 2, fore: 2, blade: 10, hand: 90 },
+  parry3: { hipX: 38, hipY: 78, lean: -3, arm: -110, fore: -4, blade: 95, hand: -90 },
+  parry3Back: { hipX: 24, hipY: 80, lean: -6, arm: -110, fore: -4, blade: 95, hand: -90 },
+  faceParry: { hipX: 30, hipY: 82, footF: 56, lean: 0, arm: -97, fore: 8, blade: 53, hand: -90 },
+  parry5: { hipX: 38, hipY: 78, lean: -4, arm: 20, fore: 112, blade: 6, yaw: 70, hand: -180 },
+  parry5Back: { hipX: 24, hipY: 80, lean: -7, arm: 20, fore: 112, blade: 6, yaw: 70, hand: -180 },
+  riposte: { hipX: 50, hipY: 77, footF: 100, lean: 8, arm: 0, fore: 0, blade: -6, hand: 0 },
+  extend: { hipX: 42, lean: 1, arm: 4, fore: 4, blade: 14, hand: 0 },
 };
 
 export const POSE_NAMES = {
@@ -170,8 +183,14 @@ export const PRESETS = [
   },
 ];
 
+// The hand positions the books name, by how far the hand is turned (see `hand`
+// above), so the slider can say which one it is on.
+export const HAND_POSITIONS = { "-180": "1st", "-135": "1/2", "-90": "2nd", "-45": "2/3", 0: "3rd", 45: "3/4", 90: "4th" };
+
 // The sliders under "Adjust this moment", in order. `x` is where the fencer
-// stands on the piste; every other key overrides a value of the pose.
+// stands on the piste; every other key overrides a value of the pose. A slider
+// moves in steps of `step`, or of one, and says the name in `names` of a value
+// that has one.
 export const JOINTS = [
   { key: "x", label: "Position on the piste", min: -70, max: 300, unit: " cm" },
   { key: "footF", label: "Front foot reach", min: 30, max: 135, unit: " cm" },
@@ -186,6 +205,7 @@ export const JOINTS = [
   { key: "fore", label: "Forearm", min: -100, max: 130, unit: "°" },
   { key: "blade", label: "Blade angle", min: -180, max: 180, unit: "°" },
   { key: "yaw", label: "Blade turn toward camera", min: -85, max: 85, unit: "°" },
+  { key: "hand", label: "Hand position", min: -180, max: 90, step: 15, unit: "°", names: HAND_POSITIONS },
   { key: "rArm", label: "Rear upper arm", min: -180, max: 180, unit: "°" },
   { key: "rFore", label: "Rear forearm", min: -180, max: 180, unit: "°" },
 ];
