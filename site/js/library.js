@@ -71,6 +71,12 @@ export const POSE_NAMES = {
 // A phrase is a list of steps. Each step moves into its poses over `ms`, then
 // holds them for `hold`; a fencer a step leaves out keeps the previous spec.
 //
+// A sword arm lies in a plane of its own, about 12 cm to one side of the line
+// between the fencers, so two blades that cross in the side view can still pass
+// each other in depth. At a parry the step turns each blade toward that line
+// (`yaw`) until they touch where they cross. B's parry 5 turns less than the
+// pose does: its 70° would have them meet out near the points, not on B's forte.
+//
 // These are the scenes the practice library starts with. A scene may also say
 // where it was noted, with an `event` and a `reference` link; these do not,
 // because there is no real bout behind them to point to.
@@ -101,7 +107,7 @@ export const PRESETS = [
       camera: 0,
       steps: [
         { label: "En garde", hold: 600, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 310 } },
-        { label: "A lunges to the chest, B takes parry 3", ms: 280, hold: 600, ease: "snap", A: { pose: "lungeChest", x: 0 }, B: { pose: "parry3", x: 310 } },
+        { label: "A lunges to the chest, B takes parry 3", ms: 280, hold: 600, ease: "snap", A: { pose: "lungeChest", x: 0, adj: { yaw: 18 } }, B: { pose: "parry3", x: 310, adj: { yaw: 24 } } },
         { label: "B ripostes to the head", ms: 220, hold: 700, ease: "snap", A: { pose: "lungeChest", x: 0, adj: { arm: 2, blade: 18 } }, B: { pose: "riposte", x: 310 } },
         { label: "Both recover", ms: 420, hold: 500, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 310 } },
       ],
@@ -116,7 +122,7 @@ export const PRESETS = [
       steps: [
         { label: "En garde", hold: 600, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 310 } },
         { label: "A raises the blade", ms: 220, hold: 40, A: { pose: "prep", x: 0 } },
-        { label: "A lunges to the head, B takes parry 5", ms: 260, hold: 500, ease: "snap", A: { pose: "lungeHead", x: 0, adj: { arm: 28, fore: 24, blade: 42 } }, B: { pose: "parry5", x: 310 } },
+        { label: "A lunges to the head, B takes parry 5", ms: 260, hold: 500, ease: "snap", A: { pose: "lungeHead", x: 0, adj: { arm: 28, fore: 24, blade: 42, yaw: 10 } }, B: { pose: "parry5", x: 310, adj: { yaw: 24 } } },
         { label: "B ripostes to the head", ms: 200, hold: 700, ease: "snap", A: { pose: "lungeHead", x: 0, adj: { arm: 26, fore: 20, blade: 52 } }, B: { pose: "riposte", x: 310 } },
         { label: "Both recover", ms: 420, hold: 500, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 310 } },
       ],
@@ -131,7 +137,7 @@ export const PRESETS = [
       steps: [
         { label: "En garde", hold: 600, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 306 } },
         { label: "A extends the arm", ms: 220, hold: 60, A: { pose: "extend", x: 0 } },
-        { label: "A cuts at the face, B takes face protection", ms: 260, hold: 700, ease: "snap", A: { pose: "lungeHead", x: 0, adj: { arm: 8, fore: 10, blade: 22 } }, B: { pose: "faceParry", x: 306 } },
+        { label: "A cuts at the face, B takes face protection", ms: 260, hold: 700, ease: "snap", A: { pose: "lungeHead", x: 0, adj: { arm: 8, fore: 10, blade: 22, yaw: 12 } }, B: { pose: "faceParry", x: 306, adj: { yaw: 28 } } },
         { label: "Both recover", ms: 420, hold: 500, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 306 } },
       ],
     },
