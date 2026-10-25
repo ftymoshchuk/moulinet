@@ -241,6 +241,53 @@ test("in the outside face cut, the cut crosses the parrying blade on its forte, 
   assert.ok(a.to[1] - head[1] > 0 && a.to[1] - head[1] < 12, `below the eyes and above the chin (${a.to[1] - head[1]} cm under the middle of the head)`);
 });
 
+test("at each parry the blades meet in three dimensions, not only from the side: within 2 cm, on the forte of the parrying blade", () => {
+  // Each sword arm lies in a plane of its own, about 12 cm to one side of the line between the fencers, so blades that
+  // cross on the page from the side can still pass each other in depth. At each parry the scene turns them (`yaw`)
+  // toward that line until they touch where they cross.
+  const PARRIES = [
+    ["chest-cut-parry-3", "parry3"],
+    ["head-attack-parry-5", "parry5"],
+    ["outside-face-cut-face-protection", "faceParry"],
+  ];
+  // A blade as a line of points from just off the hand to the tip, a quarter of a centimetre apart, placed on the
+  // piste: along it and up as the camera sees them from the side, and across it as it sees them from the end.
+  const SAMPLES = 350;
+  const line = (pose, dir) => {
+    const J = skeleton(pose);
+    const [side, end] = [projector(pose, dir, 0), projector(pose, dir, 90)];
+    const [from, to] = [J.at(1.6), J.tip];
+    return Array.from({ length: SAMPLES + 1 }, (_, i) => {
+      const q = from.map((v, k) => v + ((to[k] - v) * i) / SAMPLES);
+      const [x, y] = side(q);
+      return [x, -y, end(q)[0] - PIVOT];
+    });
+  };
+  const apart = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+  // Which side of the line from o to p the point q is on, seen from the side.
+  const orientation = (o, p, q) => Math.sign((p[0] - o[0]) * (q[1] - o[1]) - (p[1] - o[1]) * (q[0] - o[0]));
+
+  for (const [id, parry] of PARRIES) {
+    const phrase = PRESETS.find((preset) => preset.id === id).phrase;
+    const step = buildTimeline(phrase).steps.find((s) => s.specB.pose === parry);
+    assert.ok(step, `${id}: B takes ${parry}`);
+    const [a, b] = [line(step.A, 1), line(step.B, -1)];
+    let nearest = { distance: Infinity };
+    for (const p of a) {
+      for (const [j, q] of b.entries()) {
+        const distance = apart(p, q);
+        if (distance < nearest.distance) nearest = { distance, j };
+      }
+    }
+    assert.ok(nearest.distance < 2, `${id}: the blades come within 2 cm of each other (${nearest.distance} cm)`);
+    const out = apart(b[0], b[nearest.j]);
+    assert.ok(out < 35, `${id}: they meet on the forte of B's blade, not toward its point (${out} cm out)`);
+    // And from the side, where they meet is where they cross.
+    const [a0, a1, b0, b1] = [a[0], a.at(-1), b[0], b.at(-1)];
+    assert.ok(orientation(a0, a1, b0) !== orientation(a0, a1, b1) && orientation(b0, b1, a0) !== orientation(b0, b1, a1), `${id}: the blades cross from the side`);
+  }
+});
+
 test("the knee behind is turned out toward the camera over the foot, with thigh and shin as long as ever", () => {
   for (const name of ["guard", "parry3", "advLift", "lungeFly", "riposte"]) {
     const J = skeleton(resolvePose({ pose: name }));
