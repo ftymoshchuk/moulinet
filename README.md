@@ -22,7 +22,9 @@ at and a link to a reference, such as a video of the bout. Pick a scene and it
 plays; the five built in are an advance, lunge and head cut; a chest cut
 parried in 3 and riposted; a head attack parried in 5 and riposted to the head;
 a cut at the outside of the face met with face protection, as an old plate
-draws it; and the moulinet, solo. The built-in scenes have no event or link,
+draws it; and the moulinet, solo. In the pairs the older man holds a guard of
+his own, standing a little higher, with the sword arm bent and tucked in, so
+the two do not stand as mirror images. The built-in scenes have no event or link,
 because there is no real bout behind them. Scenes you save in the Creator are
 listed below them, with whatever you noted, and a link opens in a new tab. They
 live in your browser's storage, so one saved or deleted in another tab of the
