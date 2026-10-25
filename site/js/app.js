@@ -4,7 +4,7 @@
 // where it was noted. The base postures show one fencer in one posture at a
 // time, in words as well as lines. The Creator makes new scenes.
 import { BASES, BASE_BLADE, BASE_GROUPS, basePhrase } from "./bases.js";
-import { DEFAULT_FRAME, bladePaths, floorPath, frameOf, inkFigure, stickFigure } from "./figure.js";
+import { DEFAULT_FRAME, bladePaths, floorPath, frameOf, handFrame, inkFigure, stickFigure } from "./figure.js";
 import { JOINTS, POSE_NAMES, POSES, PRESETS } from "./library.js";
 import {
   TEXT_KEYS,
@@ -169,6 +169,8 @@ const state = {
   ghosts: true,
   trail: true,
   ink: true,
+  // A close-up of the sword hand, from outside the arm.
+  closeUp: false,
   camera: 0,
   fencer: "A",
   // The step on show while paused on one; null when the time decides.
@@ -907,22 +909,38 @@ function drawFencer(parts, figure) {
 // The Creator keeps one view as a scene is reshaped; the library looks as close as
 // keeps everyone and their whole blades in; the postures, as close as keeps the
 // fencer and most of the blade in.
-function frameFor() {
+//
+// A close-up looks at a sword hand instead, and follows it as it moves: the hand
+// of the fencer being reshaped in the Creator, and A's elsewhere.
+function frameFor(now) {
+  if (state.closeUp) {
+    const who = state.mode === "creator" ? editingFencer() : "A";
+    return handFrame(now[who], who === "A" ? 1 : -1, viewCamera());
+  }
   if (state.mode === "creator") return DEFAULT_FRAME;
   const blade = state.mode === "base" ? BASE_BLADE : undefined;
   if (framed.timeline !== timeline || framed.blade !== blade) framed = { timeline, blade, frame: frameOf(timeline, blade) };
   return framed.frame;
 }
 
+// Where the camera looks from. The close-up comes round to the other side of the
+// piste, outside the sword arm, which is where the old books draw the grip and
+// the hand positions from; the camera turns it from there.
+function viewCamera() {
+  return state.camera + (state.closeUp ? 180 : 0);
+}
+
 function drawStage(now) {
-  const camera = state.camera;
-  setAttr(stageEl, "viewBox", frameFor().join(" "));
+  const camera = viewCamera();
+  setAttr(stageEl, "viewBox", frameFor(now).join(" "));
   // The postures stand still, so they have no motion to show.
   const moving = state.mode !== "base";
   stagePanelEl.classList.toggle("is-solo", timeline.solo);
   setAttr(floorEl, "d", floorPath(camera));
-  drawFencer(fencers.A, inkFigure(now.A, 1, camera, { backView: true }));
-  drawFencer(fencers.B, inkFigure(now.B, -1, camera, { backView: true, older: true }));
+  // From outside the sword arm, in the close-up, the arm is in front of the body.
+  const backView = !state.closeUp;
+  drawFencer(fencers.A, inkFigure(now.A, 1, camera, { backView }));
+  drawFencer(fencers.B, inkFigure(now.B, -1, camera, { backView, older: true }));
   if (state.ink) setAttr(inkEl, "filter", "url(#ink-texture)");
   else inkEl.removeAttribute("filter");
 

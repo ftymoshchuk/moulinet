@@ -291,6 +291,27 @@ export function frameOf(timeline, blade = BLADE) {
   return [x, y, w, h].map((v) => Math.round(v * 10) / 10);
 }
 
+// How wide the close-up of a hand is, in the page's units.
+const HAND_VIEW = 54;
+
+/**
+ * Where the stage looks for a close-up of a fencer's sword hand: a box in the
+ * shape of every view round the hand as the camera sees it, centred between the
+ * wrist and the forte of the blade, so the fist, the hilt and the start of the
+ * blade are all in it.
+ */
+export function handFrame(p, dir, camera) {
+  const J = skeleton(p);
+  const W = projector(p, dir, camera);
+  const [fx, fy] = [J.hn[0] - J.el[0], J.hn[1] - J.el[1]];
+  const l = Math.hypot(fx, fy) || 1;
+  const wrist = W([J.hn[0] - (12 * fx) / l, J.hn[1] - (12 * fy) / l, J.hn[2]]);
+  const forte = W(J.at(14));
+  const [w, h] = [HAND_VIEW, HAND_VIEW / FRAME_SHAPE];
+  const [cx, cy] = [(wrist[0] + forte[0]) / 2, (wrist[1] + forte[1]) / 2];
+  return [cx - w / 2, cy - h / 2, w, h].map((v) => Math.round(v * 10) / 10);
+}
+
 /** The piste: a floor line with a tick every 50 cm and a longer one at the centre. */
 export function floorPath(camera) {
   const c = Math.cos(camera * RAD);

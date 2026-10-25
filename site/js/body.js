@@ -953,7 +953,24 @@ function fistPart(J, W, G, hilt) {
     const bulge = sub(W(add3(knuckle, out)), c);
     k += brush([add(c, mul(across, finger.r[1] * 0.55)), add(c, mul(bulge, finger.r[1] * 0.2)), sub(c, mul(across, finger.r[1] * 0.55))], 0.32, 0.5);
   }
-  return { ...drawn(outline.map((loop) => simplify(loop, 0.08, true)), 0.2, 0.55), d: lines.map((l) => line(simplify(l, 0.05))).join(""), k };
+  // Shade along the edge of the fist where it turns from the light, the lower right of the page: short strokes in from
+  // the edge, every centimetre or so.
+  const silhouette = outline.map((loop) => simplify(loop, 0.08, true));
+  for (const loop of silhouette) {
+    const middle = loop.reduce((sum, p) => add(sum, mul(p, 1 / loop.length)), [0, 0]);
+    let since = Infinity;
+    loop.forEach((p, i) => {
+      const next = loop[(i + 1) % loop.length];
+      since += dist(loop[(i + loop.length - 1) % loop.length], p);
+      let n = perp(unit(p, next));
+      if (dot(n, sub(middle, p)) > 0) n = mul(n, -1);
+      if (since < 1.1 || dot(n, [0.6, 0.8]) < 0.55) return;
+      since = 0;
+      const into = sub(mul(n, -1), mul(unit(p, next), 0.35));
+      k += brush([add(p, mul(into, 0.15)), add(p, mul(into, 0.75)), add(p, mul(into, 1.35))], 0.3, 0.4);
+    });
+  }
+  return { ...drawn(silhouette, 0.2, 0.55), d: lines.map((l) => line(simplify(l, 0.05))).join(""), k };
 }
 
 /**

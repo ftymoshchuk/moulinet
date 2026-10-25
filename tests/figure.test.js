@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { BASE_BLADE, basePhrase } from "../site/js/bases.js";
-import { DEFAULT_FRAME, PIVOT, bladePaths, bladeTip, floorPath, frameOf, inkFigure, knee, knee3, kneeBehind, projector, skeleton, stickFigure } from "../site/js/figure.js";
+import { DEFAULT_FRAME, PIVOT, bladePaths, bladeTip, floorPath, frameOf, handFrame, inkFigure, knee, knee3, kneeBehind, projector, skeleton, stickFigure } from "../site/js/figure.js";
 import { area } from "../site/js/ink.js";
 import { POSES, PRESETS } from "../site/js/library.js";
 import { buildTimeline, poseAt, resolvePose } from "../site/js/phrase.js";
@@ -543,6 +543,37 @@ test("the postures are looked at closer than their whole blades allow, with the 
       }
     }
   }
+});
+
+test("a close-up looks at the sword hand: the fist, the hilt and the forte of the blade, in the shape of every view", () => {
+  const holds = ([x, y, w, h], [px, py]) => px > x && px < x + w && py > y && py < y + h;
+  for (const name of Object.keys(POSES)) {
+    for (const [dir, camera] of [[1, 180], [1, 205], [1, 120], [-1, 180], [-1, 240]]) {
+      const pose = resolvePose({ pose: name, x: dir > 0 ? 0 : 310 });
+      const frame = handFrame(pose, dir, camera);
+      near(frame[2] / frame[3], DEFAULT_FRAME[2] / DEFAULT_FRAME[3], 0.01, `${name}: the shape of every view`);
+      assert.ok(frame[2] < DEFAULT_FRAME[2] / 5, `${name}: close`);
+      const J = skeleton(pose);
+      const W = projector(pose, dir, camera);
+      for (const [what, q] of [["hand", J.hn], ["forte", J.at(14)], ["blade's root", J.at(3)]]) assert.ok(holds(frame, W(q)), `${name} facing ${dir} from ${camera}°: the ${what} is in view`);
+    }
+  }
+});
+
+test("seen from outside the sword arm, as the close-up sees it, every pose draws clean paths, with the hand toward the camera", () => {
+  for (const name of Object.keys(POSES)) {
+    for (const camera of [120, 155, 180, 205, 240]) {
+      for (const [dir, options] of [[1, {}], [-1, { older: true }]]) {
+        const figure = inkFigure(resolvePose({ pose: name }), dir, camera, options);
+        for (const d of allPaths(figure)) assert.doesNotMatch(d, BAD_NUMBER, `${name} from ${camera}°`);
+      }
+    }
+  }
+  // Round there, the hand position that turns the edge out, away from the camera in the stage's own view, turns it to
+  // the camera: the outside of the guard is what is seen of it.
+  const area2 = (d) => readPath(d).reduce((sum, shape) => sum + Math.abs(area(shape.points)) / 2, 0);
+  const second = inkFigure(resolvePose({ pose: "extend", adj: { hand: -90, blade: 0 } }), 1, 180, {}).blade;
+  assert.ok(area2(second.g) > 2.5 * area2(second.inside.g), "the second position, from outside the arm: a shield");
 });
 
 test("a frame holds the blade only as far as it is told, and all of it unless told less", () => {

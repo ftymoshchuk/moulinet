@@ -56,8 +56,15 @@ either way to see a blade come toward you or swing away. The library looks as
 close as keeps everyone and their whole blades in view; the base postures, as
 close as keeps the fencer and most of the blade in view, so the point of the
 blade held up in Blade up runs off the top. Turning the camera never zooms, and
-the Creator keeps one view while you reshape a scene. The library and the
-Creator, which play scenes, add:
+the Creator keeps one view while you reshape a scene.
+
+**Hand close-up**, in every mode, looks closely at the sword hand instead, and
+follows it as it moves: A's, or in the Creator the fencer you are reshaping. It
+looks from the other side of the piste, outside the sword arm, which is where the
+old books draw the grip and the hand positions from, so the blade points the way
+it does in their plates; the camera turns it from there.
+
+The library and the Creator, which play scenes, add:
 - **Playback** at ¼, ½ or full speed, a step at a time, or scrubbed along the
   timeline, looped or once through.
 - **Motion ghosts and blade paths** show how each moment was reached: four

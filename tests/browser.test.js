@@ -14,9 +14,9 @@ import { test } from "node:test";
 import { promisify } from "node:util";
 
 import { BASES, BASE_BLADE, BASE_GROUPS, basePhrase } from "../site/js/bases.js";
-import { frameOf } from "../site/js/figure.js";
+import { frameOf, handFrame } from "../site/js/figure.js";
 import { JOINTS, POSE_NAMES, PRESETS } from "../site/js/library.js";
-import { buildTimeline } from "../site/js/phrase.js";
+import { buildTimeline, resolvePose } from "../site/js/phrase.js";
 import { siteHandler } from "../scripts/serve.js";
 
 const run = promisify(execFile);
@@ -96,7 +96,7 @@ function drive() {
   return driven;
 }
 
-const CONTROLS = ["#play-button", ".speed", "#timeline", "#steps", "#timecode", "[data-toggle=ghosts]", "[data-toggle=trail]", "[data-toggle=ink]", "[data-toggle=loop]", "#camera"];
+const CONTROLS = ["#play-button", ".speed", "#timeline", "#steps", "#timecode", "[data-toggle=ghosts]", "[data-toggle=trail]", "[data-toggle=ink]", "[data-toggle=loop]", "[data-toggle=closeUp]", "#camera"];
 const two = (n) => String(n).padStart(2, "0");
 
 test("in a browser, the page opens on the practice library and builds its controls", { skip, timeout: 120_000 }, async () => {
@@ -163,7 +163,8 @@ test("in a browser, the practice library plays each scene and says what it is", 
     // A advances and has all four ghosts, a body and a blade each; B holds the guard and has none.
     ghosts: { A: 8, B: 0 },
   });
-  assert.deepEqual(seen.toggledOff, { pressed: ["false", "false", "false", "false"], ghostsHidden: true, trailsHidden: true, inkFilter: null });
+  // (The close-up of the hand starts off, and is not one of the four.)
+  assert.deepEqual(seen.toggledOff, { pressed: ["false", "false", "false", "false", "false"], ghostsHidden: true, trailsHidden: true, inkFilter: null });
   assert.equal(seen.inkFilter, "url(#ink-texture)");
   assert.deepEqual(seen.camera, { shown: "-40°", floorTurned: true });
   assert.deepEqual(seen.speed, ["true", "false", "false"]);
@@ -182,11 +183,25 @@ test("in a browser, a scene is looked at with its whole blades in view, and the 
   assert.equal(seen.sceneViews.length, PRESETS.length);
   PRESETS.forEach(({ phrase }, i) => lookedAt(seen.sceneViews[i], frameOf(buildTimeline(phrase)), phrase.name));
   lookedAt(seen.baseView, frameOf(buildTimeline(basePhrase()), BASE_BLADE), "the postures");
+
+  // The close-up looks at A's sword hand from outside the arm, round on the other side of the piste, wherever the hand
+  // is and however the camera is turned; turned off, the stage looks at the scene again.
+  const posture = (i) => buildTimeline(basePhrase()).steps[i].A;
+  assert.equal(seen.closeUp.pressed, "true");
+  assert.equal(seen.closeUp.floorTurned, true, "the piste turns round with the camera");
+  lookedAt(seen.closeUp.guard, handFrame(posture(0), 1, 25 + 180), "the hand in guard");
+  lookedAt(seen.closeUp.parry5, handFrame(posture(11), 1, 25 + 180), "the hand in parry 5");
+  lookedAt(seen.closeUp.turned, handFrame(posture(11), 1, -20 + 180), "the hand with the camera turned");
+  // A scene opens with the camera it was seen from, side on for this one.
+  lookedAt(seen.closeUp.library.view, handFrame(resolvePose(PRESETS[0].phrase.steps[0].A), 1, PRESETS[0].phrase.camera + 180), "the hand in a scene");
+  assert.equal(seen.closeUp.library.pressed, "true", "it stays on from mode to mode");
+  lookedAt(seen.closeUp.off.view, frameOf(buildTimeline(PRESETS[0].phrase)), "the scene again");
+  assert.equal(seen.closeUp.off.pressed, "false");
 });
 
 test("in a browser, the base postures show one fencer, not a pair, and describe each posture", { skip, timeout: 120_000 }, async () => {
   const { seen } = await drive();
-  assert.deepEqual(seen.baseShows, { chosen: ["base"], panels: ["stage", "detail", "bases"], controls: ["[data-toggle=ink]", "#camera"] });
+  assert.deepEqual(seen.baseShows, { chosen: ["base"], panels: ["stage", "detail", "bases"], controls: ["[data-toggle=ink]", "[data-toggle=closeUp]", "#camera"] });
   assert.deepEqual(seen.baseStage, {
     label: "Guard (tierce)",
     count: `01 / ${two(BASES.length)}`,
