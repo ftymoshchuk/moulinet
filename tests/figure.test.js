@@ -288,6 +288,26 @@ test("at each parry the blades meet in three dimensions, not only from the side:
   }
 });
 
+test("in the built-in scenes the older man holds a guard of his own, not the young man's mirrored, on the same feet, and comes back to it", () => {
+  const apart = (p, q) => Math.hypot(...p.map((v, i) => v - q[i]));
+  const young = skeleton(resolvePose({ pose: "guard" }));
+  for (const { id, phrase } of PRESETS.filter(({ phrase }) => !phrase.solo)) {
+    const guards = buildTimeline(phrase).steps.filter((step) => step.specB.pose === "guard");
+    assert.ok(guards.length >= 2, `${id}: he is in guard at the start, and again later`);
+    for (const step of guards) {
+      const J = skeleton(step.B);
+      // Standing taller, with the sword hand and the point somewhere else.
+      assert.ok(apart(J.hip, young.hip) >= 2, `${id}: his hips are ${apart(J.hip, young.hip)} cm from the young man's`);
+      assert.ok(apart(J.hn, young.hn) >= 5, `${id}: his sword hand is ${apart(J.hn, young.hn)} cm from the young man's`);
+      assert.ok(apart(J.tip, young.tip) >= 5, `${id}: his point is ${apart(J.tip, young.tip)} cm from the young man's`);
+      // No foot is moved, so none slides into his parries.
+      assert.deepEqual([J.ankF, J.ankB], [young.ankF, young.ankB], `${id}: his feet are where the guard has them`);
+      // It is one guard, whenever he is in it.
+      assert.deepEqual({ ...step.B, x: 0 }, { ...guards[0].B, x: 0 }, `${id}: the same guard every time`);
+    }
+  }
+});
+
 test("the knee behind is turned out toward the camera over the foot, with thigh and shin as long as ever", () => {
   for (const name of ["guard", "parry3", "advLift", "lungeFly", "riposte"]) {
     const J = skeleton(resolvePose({ pose: name }));
