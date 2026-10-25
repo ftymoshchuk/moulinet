@@ -602,17 +602,27 @@ test("the shapes of a figure are wound one way and its strokes another, so shape
     for (const name of ["guard", "lungeChest", "parry5"]) {
       const figure = inkFigure(resolvePose({ pose: name }), dir, 25, options);
       const where = `${name}, facing ${dir}, ${JSON.stringify(options)}`;
-      const shapes = [figure.l1.g, figure.l2.g, figure.l3.g, figure.l4.g, figure.l6.g, figure.head.g, figure.blade.g, figure.blade.inside.g, figure.blade.fist.g, figure.blade.wall].filter(Boolean).flatMap(readPath);
+      const { blade } = figure;
+      const shapes = [figure.l1.g, figure.l2.g, figure.l3.g, figure.l4.g, figure.l6.g, figure.head.g, blade.g, blade.inside.g, blade.fist.g, blade.pommel.g, blade.butt.g, blade.grip].filter(Boolean).flatMap(readPath);
       assert.ok(shapes.length > 10);
       assert.ok(shapes.every((shape) => shape.closed && area(shape.points) > 0), `silhouettes, ${where}`);
       // (The hair is drawn in strokes of the pen, so it is wound as they are.)
-      for (const layer of [figure.l1.k, figure.l2.k, figure.l3.k, figure.l4.k, figure.l6.k, figure.head.k, figure.head.hair, figure.ground, figure.blade.k, figure.blade.inside.k].filter(Boolean)) {
+      for (const layer of [figure.l1.k, figure.l2.k, figure.l3.k, figure.l4.k, figure.l6.k, figure.head.k, figure.head.hair, figure.ground, blade.k, blade.inside.k, blade.fist.k].filter(Boolean)) {
         const ways = new Set(readPath(layer).map((stroke) => Math.sign(area(stroke.points))));
         assert.equal(ways.size, 1, `strokes, ${where}`);
         assert.ok(!ways.has(0));
       }
     }
   }
+});
+
+test("the hand position reaches the drawing: the sabre and the hand that holds it turn, and the body does not", () => {
+  const drawing = (hand) => inkFigure(resolvePose({ pose: "guard", adj: { hand } }), 1, 25, { backView: true });
+  const [two, four] = [drawing(-90), drawing(90)];
+  for (const layer of ["l1", "l2", "l3", "l4", "head", "l6", "ground"]) assert.deepEqual(two[layer], four[layer], `${layer} is the same`);
+  for (const part of ["g", "inside", "fist"]) assert.notDeepEqual(two.blade[part], four.blade[part], `the sabre's ${part} turns`);
+  // The blade itself lies where it did: its point is where the pose puts it.
+  assert.equal(bladeTip(resolvePose({ pose: "guard", adj: { hand: -90 } }), 1, 25), bladeTip(resolvePose({ pose: "guard", adj: { hand: 90 } }), 1, 25));
 });
 
 test("a pose is drawn once for a view, and when drawn again for another it comes out the same", () => {
@@ -644,7 +654,8 @@ test("a figure's path data stays small enough to draw again on every frame", () 
       for (const [dir, options] of [[1, { backView: true }], [-1, { older: true }], [1, {}], [-1, {}]]) {
         const size = allPaths(inkFigure(resolvePose({ pose: name }), dir, camera, options)).reduce((sum, d) => sum + d.length, 0);
         largest = Math.max(largest, size);
-        assert.ok(size < 36000, `${name} from ${camera}° is ${size} characters`);
+        // (The hand round the hilt, worked out in depth, is some 10,000 of them.)
+        assert.ok(size < 42000, `${name} from ${camera}° is ${size} characters`);
       }
     }
   }

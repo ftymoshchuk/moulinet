@@ -35,21 +35,29 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 const LAYERS = ["l1", "l2", "l3", "l4", "head", "l6"];
 // What each layer is when both fencers are drawn from the back (as the stage draws them): the sword arm, the two legs, the jersey, the head and the rear arm.
 const PARTS = { l1: "jersey", l2: "trousers", l3: "trousers", l4: "jersey", head: "face", l6: "jersey" };
-// The sabre, back to front, as inkFigure names its parts: the blade when it is behind the guard; the guard's line of
-// ink and its steel; seen into, the inside of the cup, the far half of its lip and the shade deep in it, the fist in it,
-// the near wall of the cup and the near half of its lip; the shading; and the blade when it is in front of the guard.
+// The sabre and the hand that holds it, back to front, as inkFigure names their parts: the blade when its root is
+// behind the guard; the inside of the guard the camera sees, its line of ink, its steel in shadow and the shade deep in
+// it; the grip; the pommel when it is behind the fist; the fist, its line of ink, its glove, its lines and its shading;
+// the pommel when it is in front of the fist; the outside of the guard, its line of ink, its steel and its shading;
+// and the blade when its root is in front of the guard.
 const SABRE = [
   ["back", "blade__steel"],
-  ["o", "blade__outline"],
-  ["g", "blade__guard"],
+  ["inside.o", "blade__outline"],
   ["inside.g", "blade__inside"],
-  ["inside.d", "blade__rim"],
   ["inside.k", "blade__shade"],
+  ["grip", "blade__steel"],
+  ["pommel.o", "blade__outline"],
+  ["pommel.g", "blade__guard"],
+  ["pommel.d", "blade__rim"],
   ["fist.o", "figure__outline"],
   ["fist.g", "figure__fill figure__fill--jersey"],
   ["fist.d", "figure__detail"],
-  ["wall", "blade__guard"],
-  ["d", "blade__rim"],
+  ["fist.k", "figure__ink"],
+  ["butt.o", "blade__outline"],
+  ["butt.g", "blade__guard"],
+  ["butt.d", "blade__rim"],
+  ["o", "blade__outline"],
+  ["g", "blade__guard"],
   ["k", "blade__shade"],
   ["front", "blade__steel"],
 ];
@@ -656,7 +664,7 @@ const jointControls = JOINTS.map((joint) => {
   input.id = id;
   input.min = String(joint.min);
   input.max = String(joint.max);
-  input.step = "1";
+  input.step = String(joint.step ?? 1);
   input.addEventListener("input", () => {
     editCurrent((spec) => setJoint(spec, joint.key, Math.round(Number(input.value))));
   });
@@ -1068,7 +1076,8 @@ function renderCreator(index, step) {
     // A blade turned past half a circle shows as the same angle within it.
     if (joint.key === "blade" && (v < -180 || v > 180)) v = ((((v + 180) % 360) + 360) % 360) - 180;
     v = Math.round(v);
-    const text = `${v}${joint.unit}`;
+    const name = joint.names?.[v];
+    const text = `${v}${joint.unit}${name ? ` (${name})` : ""}`;
     setValue(input, v);
     setText(value, text);
     setAttr(input, "aria-valuetext", text);

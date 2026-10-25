@@ -31,8 +31,8 @@ live in your browser's storage, so one saved or deleted in another tab of the
 page appears or goes here too.
 
 **Base postures.** One fencer, never a pair, in one posture at a time, with the
-posture described in words: what it is for, and the parts worth looking at.
-Pick a posture from the list, or use the arrows under the stage. The fourteen
+posture described in words: what it is for, and the parts worth looking at,
+the hand that holds the sabre among them. Pick a posture from the list, or use the arrows under the stage. The fourteen
 postures are the poses of the library, in the order they are learned: the
 guard; the two halves of an advance; the arm extended and the blade up; the
 lunge in flight, to the head and to the chest; parry 3, and parry 3 with the
@@ -69,9 +69,11 @@ The base postures stand still, so they have neither.
 In the Creator there is more:
 - **This step:** its label, how long it takes to move into it and to stay on
   it, and whether it moves smoothly, snaps or keeps one speed.
-- **Adjust this moment:** fifteen sliders reshape either fencer on the current
+- **Adjust this moment:** sixteen sliders reshape either fencer on the current
   step, from where they stand on the piste, through the turn of the back foot
-  and knee, the shoulders and the rear arm, to the angle and turn of the blade.
+  and knee, the shoulders and the rear arm, to the angle and turn of the blade
+  and the position of the hand that holds it, which moves in steps of 15° and
+  says when it is on one of the books' hand positions.
 - **Poses:** fourteen named poses to put on any step.
 - **Phrase data:** the whole scene as text. Edit it in place or paste one in;
   it applies as you type, and says why when it can't. The fields above it and
@@ -110,11 +112,27 @@ the guard, so side on it is seen bent back over the foot, as the plates draw it,
 and further, in proportion, as the weight sits back over that foot. In the lunge
 the back leg is straight and the body stays nearly upright over the front leg.
 
-The sabre's guard is a steel bell over the front of the fist, light, with a line
-of ink round it, as the plates draw it, and worked out in three dimensions: from
-the side the plates draw, you look a little into it, and see the fist in it, the
-cup shaded inside and its near lip over the fingers; turned the other way, its
-dome faces you and the blade comes out of it toward you.
+The sabre is held as the plates of the grip and of the hand positions draw it,
+and is worked out in three dimensions, the hand with it. The thumb lies along the
+back of the grip, its tip just behind the guard, and the fingers curl round the
+grip, the forefinger least; behind them the hand bends at the wrist to meet the
+forearm in the mouth of the gauntlet, however the blade is held, and the grip
+runs on past the heel of the hand to the pommel, a nut at its end. The fist is
+one shape, with a line where one finger lies over the next or over the thumb,
+and a crease at each middle knuckle that faces you.
+
+The guard is one sheet of steel, light, with a line of ink round it: from a lip
+over the thumb it sweeps forward through the blade and round in front of the
+fingers, then back under them, narrowing to the knuckle bow, into the pommel.
+Across, it is bent like a bowl. So side on it is a crescent in front of and under
+the fingers, as in the plate of the grip; from the side the edge faces, a shield
+over the fist with the blade coming out of it; and from the side of the thumb you
+look into it, shaded inside, at the fist. The pose's hand position turns the hand
+and the hilt about the blade, as the books number the positions: in the third the
+thumb is up and the edge down; in the second the palm is down and the edge out; in
+the first the thumb is down and the edge up, with the knuckle bow over the fist;
+in the fourth the palm is up and the edge in; and there are halves between them,
+as the 2/3 of the guard.
 
 The head is drawn as the plates draw it: a long skull and a short, square face,
 carried forward on a thick neck. The neck takes only part of the body's lean
@@ -207,6 +225,7 @@ points at the opponent and 90 straight up.
 | `arm`, `fore` | Sword arm: upper arm and forearm |
 | `blade` | Blade angle |
 | `yaw` | Blade turned toward the camera |
+| `hand` | The hand position, turned about the blade as the books number the positions: 0 is the third, thumb up and the edge down; -90 the second, palm down and the edge out; -180 the first, thumb down and the edge up; 90 the fourth, palm up and the edge in; and the halves between them, -45 the 2/3. A move between two goes through the ones between |
 | `rArm`, `rFore` | Rear arm, hand on the hip |
 
 The poses. Each fills in what it leaves out from the guard. The **Base
@@ -224,6 +243,12 @@ postures** describe each one in words.
 | `faceParry` | Face protection: standing up, the hand low in front and the blade slanting forward across the line to the face |
 | `riposte` | Riposte to the head |
 | `extend` | Arm extended |
+
+Each holds the sabre in a hand position of its own: the guard and the advance in
+the 2/3, with the edge down and out; the arm extended, the blade up, the cuts to
+the head and the riposte in the third; the cut to the chest in the fourth; parry 3
+and face protection in the second, the edge out to meet the cut; and parry 5 in
+the first, turned right over so the edge faces up.
 
 ## Run it on your own computer
 The page is plain HTML, CSS and JavaScript in `site/`, with no build step and
@@ -248,9 +273,9 @@ There is nothing to install: the tests use Node's own test runner. They cover
 the timeline and its maths, the edits the Creator makes to a scene, the saved
 scenes (what they keep and what they leave alone) and the check that a
 reference link is a web address, the base postures, the drawing (the curves and
-brush strokes, the parts of a body, and every phrase and posture at every
-moment from five camera angles, checked for broken path data and for shapes
-that do not merge), and the published files (only relative links to files that
+brush strokes, the parts of a body, the hilt and the hand in each hand position,
+and every phrase and posture at every moment from five camera angles, checked for
+broken path data and for shapes that do not merge), and the published files (only relative links to files that
 exist, no outside requests, every element the scripts need). Thirteen more run
 in a real browser: headless Chrome or Chromium loads the page, then a driver
 page works every control of every mode, with hostile input among it, and checks
@@ -271,8 +296,8 @@ Project layout:
 - `site/js/app.js`: the modes, the controls, and drawing each frame
 - `site/js/phrase.js`: phrases as data: timeline, in-betweens, text, edits
 - `site/js/figure.js`: a pose's skeleton, the camera, where the stage looks, and the fencer drawn from them
-- `site/js/body.js`: the parts of a fencer: jersey, arms, legs, head and sabre
-- `site/js/parts.js`: the head, hands, shoes and the slices of the jersey, drawn by hand: as points, and the shoe behind as a few domes
+- `site/js/body.js`: the parts of a fencer: jersey, arms, legs, head, and the sabre with the hand that holds it
+- `site/js/parts.js`: the head, hands, shoes and the slices of the jersey, drawn by hand: as points, the shoe behind as a few domes, and the hilt and the fist round it in the frame of the hand
 - `site/js/folds.js`: the ink work: cloth folds, creases, hems, stockings, floor strokes
 - `site/js/ink.js`: pen and ink as SVG path data: curves, outlines and tapered brush strokes
 - `site/js/library.js`: the poses, the built-in scenes and the sliders

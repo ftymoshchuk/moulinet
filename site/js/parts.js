@@ -1,7 +1,9 @@
 // The parts of a fencer that are drawn by hand rather than worked out from the
-// bones: the head, with its face and hair. Each is a handful of points in a frame
-// of its own, in centimetres, facing +x with +y up, which figure.js then sets on
-// the body and turns for the camera.
+// bones: the head, with its face and hair, the hands, the shoes, the slices of the
+// jersey, and the sabre's hilt with the fist round it. Each is a handful of points
+// in a frame of its own, in centimetres, facing +x with +y up (the hilt's frame is
+// on the blade, and says so), which figure.js and body.js then set on the body and
+// turn for the camera.
 import { inside } from "./ink.js";
 
 // The head from the side, as the plates draw it: a long skull and a short, square
@@ -209,33 +211,77 @@ export function headParts(older = false) {
   };
 }
 
-// The fist of the sword hand in its glove, seen from the side, in the frame of
-// the forearm with the grip at the origin and x along the forearm toward the
-// blade: the back of the hand and the knuckles on top, the fingers curled round
-// the grip in front and under it, and the heel of the hand below. The shape,
-// and the lines of the knuckles, the fingers and the thumb.
-const FIST = {
-  shape: [
-    [-11.4, 4.4],
-    [-8.0, 5.2],
-    [-4.2, 5.6],
-    [-1.6, 4.9],
-    [-0.4, 2.8],
-    [-0.3, 0.0],
-    [-1.0, -2.8],
-    [-2.6, -4.6],
-    [-5.6, -5.3],
-    [-8.8, -4.9],
-    [-11.4, -4.2],
+// The sabre's hilt and the fist round it, in a frame of their own on the blade
+// (cm): x along the blade toward the point, from where it leaves the grip; y
+// toward the edge; and z toward the palm, which faces that way. body.js sets the
+// frame on the sword hand, turned about the blade as the pose's hand position says.
+//
+// The guard is one sheet of steel swept along a curve in the plane of the blade
+// and the edge: from a lip over the thumb, forward through the blade and round in
+// front of the fingers, then back under them, narrowing into the knuckle bow, to
+// the pommel. At each station along the curve: where it is, [x, y], and how far
+// the sheet reaches either side of it, across the hand. Across, the sheet is bent
+// like a bowl, its edges back toward the hand as far as they would be on a ball
+// `bowl` cm round, so that side on it is a crescent, as the plates draw it, thick
+// in front of the fingers and thin along the bow, and from the side of the edge a
+// shield over the fist.
+const GUARD = {
+  stations: [
+    [0.2, -4.4, 1.6], // the lip over the thumb
+    [1.6, -3.0, 3.6],
+    [2.6, -1.2, 5.0],
+    [3.1, 0.8, 6.0], // the blade comes through here
+    [2.9, 2.8, 6.3],
+    [1.9, 4.6, 5.8],
+    [0.2, 5.8, 4.4],
+    [-2.2, 6.1, 2.4], // in front of the middle knuckles
+    [-5.0, 5.9, 1.5],
+    [-8.0, 5.3, 1.2], // the knuckle bow
+    [-10.8, 4.0, 1.0],
+    [-12.6, 1.5, 0.8], // into the pommel
   ],
-  lines: [
-    [[-3.0, 4.8], [-1.4, 3.2], [-1.0, 0.8]],
-    [[-4.6, 1.6], [-2.8, 1.5], [-1.0, 1.0]],
-    [[-4.8, -0.8], [-2.8, -1.1], [-1.0, -1.4]],
-    [[-4.4, -3.0], [-2.8, -3.4], [-1.8, -3.9]],
-    [[-8.2, 3.6], [-5.4, 3.0], [-3.2, 3.2]],
-  ],
+  bowl: 7,
 };
+
+// The grip, from the guard back to the pommel, and how thick it is; and the
+// pommel, a nut at the end of it.
+const GRIP = { from: -0.3, to: -12.2, radius: 1.0 };
+const POMMEL = { from: -12.2, to: -13.6, radius: 1.2 };
+
+// The fingers curl round the grip from the knuckles of the hand, behind it, under
+// it on the side of the edge, where the middle knuckles are, and up the side the
+// palm faces toward the thumb. For each: how far along the grip it is, how thick,
+// and its joints from the knuckle to the tip, as [how far round the grip from the
+// edge toward the palm (degrees), how far from the middle of the grip]. The
+// forefinger curls least, as it holds the grip against the thumb.
+const FINGERS = [
+  { x: -1.9, r: 0.95, joints: [[-100, 2.9], [8, 2.6], [72, 2.5], [122, 2.2]] },
+  { x: -4.0, r: 1.0, joints: [[-97, 2.9], [14, 2.5], [84, 2.3], [138, 2.0]] },
+  { x: -6.0, r: 0.95, joints: [[-94, 2.85], [17, 2.45], [86, 2.25], [138, 2.0]] },
+  { x: -7.8, r: 0.82, joints: [[-90, 2.7], [22, 2.3], [88, 2.1], [136, 1.9]] },
+];
+
+// The thumb lies along the back of the grip, opposite the edge, its tip just
+// behind the guard: its joints from the knuckle where it leaves the hand to the
+// tip, [x, y, z], and how thick it is at each.
+const THUMB = {
+  joints: [
+    [-6.4, -2.8, -1.0],
+    [-3.4, -2.3, -0.3],
+    [-0.8, -2.05, 0.1],
+  ],
+  r: [1.05, 0.95, 0.85],
+};
+
+// The hand behind them, from the knuckles back to the wrist, which is where the
+// forearm ends: how far either side of its middle the wrist reaches and how thick
+// it is, and how thick the heel of the hand and the ball of the thumb are.
+const PALM = { wrist: 1.7, wristR: 1.6, heel: 1.6, ball: 1.5 };
+
+/** The hilt and the fist round it, in the frame of the hand on the blade. */
+export function hiltParts() {
+  return { guard: GUARD, grip: GRIP, pommel: POMMEL, fingers: FINGERS, thumb: THUMB, palm: PALM };
+}
 
 // The rear hand, resting on the hip: in the frame of the forearm, with the wrist
 // at the origin and the fingers along x.
@@ -261,16 +307,9 @@ const HIP_HAND = {
   ],
 };
 
-// A copy of a hand's points, so a drawing cannot change the ones here.
-function copied(hand) {
-  const copy = ([x, y]) => [x, y];
-  return { shape: hand.shape.map(copy), lines: hand.lines.map((l) => l.map(copy)) };
-}
-
-// The fist sits behind the guard, which is at the front of the grip: its front
-// is at the origin, so it reaches back from there.
+// The rear hand. The sword hand is the fist round the hilt (hiltParts), which body.js works out in depth.
 export function handParts() {
-  return { fist: copied(FIST), hip: HIP_HAND };
+  return { hip: HIP_HAND };
 }
 
 // A lace-up leather shoe seen from the side, in a frame with the ankle at the
