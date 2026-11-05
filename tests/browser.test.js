@@ -343,6 +343,11 @@ test("in a browser, the Creator makes a new scene, and asks before it throws one
   assert.deepEqual(seen.negative, { field: "150", line: seen.timed.line }, "a time that is not one changes nothing, and the field goes back");
   assert.deepEqual(seen.cleared, { line: '    {"A":{"pose":"lungeHead","x":0},"B":{"pose":"guard","x":245}}', label: "", button: "02Step 2" });
   assert.deepEqual(seen.between, { labels: ["01En garde", "02Between", "03Lunge"], count: "02 / 03" });
+  assert.deepEqual(seen.noHold, { hint: "" }, "the step after it jumps, so there is nothing to run on into");
+  assert.deepEqual(seen.passedThrough, {
+    hint: "With no time to stay on it, the move runs on through this step into the next without stopping.",
+    line: '    {"label":"Between","ms":300,"A":{"pose":"guard","x":0},"B":{"pose":"guard","x":245}},',
+  });
   assert.deepEqual(seen.removed, { labels: ["01En garde", "02Lunge"], count: "02 / 02", editing: "Step 2: Lunge. Fencer A." });
   assert.deepEqual(seen.alone, { line: '  "solo": true,', solo: true, bodyB: "none", canEditB: false });
   assert.deepEqual(seen.together, { line: false, solo: false, bodyB: "inline" });

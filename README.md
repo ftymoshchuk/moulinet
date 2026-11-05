@@ -75,7 +75,8 @@ The base postures stand still, so they have neither.
 
 In the Creator there is more:
 - **This step:** its label, how long it takes to move into it and to stay on
-  it, and whether it moves smoothly, snaps or keeps one speed.
+  it, and whether it moves smoothly, snaps or keeps one speed. A step with no
+  time to stay on it is passed through, and says so.
 - **Adjust this moment:** sixteen sliders reshape either fencer on the current
   step, from where they stand on the piste, through the turn of the back foot
   and knee, the shoulders and the rear arm, to the angle and turn of the blade
@@ -126,7 +127,12 @@ grip, the forefinger least; behind them the hand bends at the wrist to meet the
 forearm in the mouth of the gauntlet, however the blade is held, and the grip
 runs on past the heel of the hand to the pommel, a nut at its end. The fist is
 one shape, with a line where one finger lies over the next or over the thumb,
-and a crease at each middle knuckle that faces you.
+and a crease at each middle knuckle that faces you. A blade turned out beyond the
+far side of the sword arm is further from you than the body is, and is drawn
+behind it, as the arm is. So in the moulinet, where the wrist turns the blade out
+beyond the arm as it passes under and behind, and the elbow gives a little so the
+hand rises, the blade goes behind the shoulder and the head, and the wrist bends
+no further than it does in parry 5.
 
 The guard is one sheet of steel, light, with a line of ink round it: from a lip
 over the thumb it sweeps forward through the blade and round in front of the
@@ -203,9 +209,21 @@ Each step:
 |---|---|
 | `label` | The step's name on the stage and on its button, up to 100 characters. A step without one is called "Step" and its number. |
 | `ms` | Milliseconds to move into this step from the one before. The first step is where the phrase starts, so its `ms` is ignored. |
-| `hold` | Milliseconds to stay on the step before the next move. |
-| `ease` | How the move runs: `"snap"` arrives fast and settles, `"linear"` keeps one speed; anything else eases in and out. |
+| `hold` | Milliseconds to stay on the step before the next move. A step with no hold, between two moves, is passed through: the body runs on through it without stopping, as the lunge in flight runs on into the landing. |
+| `ease` | How the move runs: `"snap"` arrives fast and settles, `"linear"` keeps one speed; anything else eases in and out. A move that starts or ends at a step it passes through leaves or arrives at the speed the body has there. |
 | `A`, `B` | Each fencer at the end of the move. A fencer a step leaves out stays as the step before had them. |
+
+Between two steps each joint goes from where one has it to where the next does,
+and never past either. Through a step that is passed through, a joint that goes
+on the same way keeps moving, and one that turns back stops there. The feet and
+the hips move by where they are on the piste, so a foot that is in the same place
+at both ends of a move stays there, however the rest of the body moves. A foot
+that travels along the floor while the other stays where it is, as in a lunge,
+a recovery or the back foot of an advance, is lifted on the way, a tenth as high
+as it travels and no more than 4 cm, and set down where it is going, the foot in
+front heel first. One that moves less than 2 cm slides, and so do both feet when
+both travel. A step that lifts a foot itself, as the advance does, keeps its own
+lift.
 
 A fencer is `{"pose": …, "x": …, "adj": {…}}`:
 
@@ -277,7 +295,9 @@ disk does not work, because browsers load JavaScript modules only over HTTP.
 npm test
 ```
 There is nothing to install: the tests use Node's own test runner. They cover
-the timeline and its maths, the edits the Creator makes to a scene, the saved
+the timeline and its maths, with how the body moves between steps (through a step
+it passes, the feet that stay and the feet that step, and a wrist that never bends
+past what parry 5 asks), the edits the Creator makes to a scene, the saved
 scenes (what they keep and what they leave alone) and the check that a
 reference link is a web address, the base postures, the drawing (the curves and
 brush strokes, the parts of a body, the hilt and the hand in each hand position,

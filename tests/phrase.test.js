@@ -30,6 +30,10 @@ import {
 
 const spans = (timeline) => timeline.steps.map((step) => [step.start, step.holdStart, step.end]);
 
+function near(actual, expected, tolerance, message = "") {
+  assert.ok(Math.abs(actual - expected) <= tolerance, `${message} ${actual} is not within ${tolerance} of ${expected}`);
+}
+
 test("each step moves for its ms, then holds; the first step does not move", () => {
   const timeline = buildTimeline({
     steps: [
@@ -178,6 +182,128 @@ test("two poses are the same when every joint is, so a fencer who is not moving 
   assert.equal(samePose(during.B, timeline.steps[1].B), true, "B has not moved");
   assert.equal(samePose(during.A, timeline.steps[1].A), false, "A is on the way");
   assert.equal(samePose(poseAt(timeline, timeline.steps[1].start + 40).B, during.B), true, "at any moment of the move");
+});
+
+// Where each foot of a fencer is on the piste, behind and in front, and which way the fencer faces.
+const FACING = { A: 1, B: -1 };
+const feetOf = (pose, who) => [pose.x, pose.x + FACING[who] * pose.footF];
+// How far a value read from fencer `who` moves in the millisecond round `t`.
+const speedAt = (timeline, t, who, read) => read(poseAt(timeline, t + 0.5)[who]) - read(poseAt(timeline, t - 0.5)[who]);
+
+test("a step with no hold is passed through: the body runs on through it, and comes to rest only at a step it holds", () => {
+  const arm = (degrees) => ({ pose: "guard", x: 0, adj: { arm: degrees } });
+  const through = buildTimeline({ steps: [{ hold: 100, A: arm(0) }, { ms: 200, A: arm(30) }, { ms: 200, hold: 100, A: arm(60) }] });
+  const held = buildTimeline({ steps: [{ hold: 100, A: arm(0) }, { ms: 200, hold: 1, A: arm(30) }, { ms: 200, hold: 100, A: arm(60) }] });
+  const read = (pose) => pose.arm;
+  // 30 degrees in 200 ms on either side of the step: it goes through at 0.15 degrees a millisecond.
+  near(speedAt(through, through.steps[1].holdStart, "A", read), 0.15, 0.003, "through the step it does not stop");
+  near(speedAt(held, held.steps[1].holdStart - 0.5, "A", read), 0, 0.003, "at a step it holds, it stops");
+  near(speedAt(through, through.steps[2].holdStart - 0.5, "A", read), 0, 0.003, "and at the end it comes to rest");
+  near(speedAt(through, through.steps[0].holdStart + 0.5, "A", read), 0, 0.003, "as it started from rest");
+  // On the way it goes only forward, from one step to the next.
+  let last = -Infinity;
+  for (let t = 0; t <= through.duration; t += 2) {
+    const now = poseAt(through, t).A.arm;
+    assert.ok(now >= last - 1e-9 && now >= 0 && now <= 60, `${now} at ${t} ms`);
+    last = now;
+  }
+  // In the first scene the lunge in flight runs on into the landing, and the advance's lifted foot into its landing.
+  const scene = buildTimeline(PRESETS[0].phrase);
+  const hips = (pose) => pose.x + pose.hipX;
+  for (const label of ["Lunge", "Advance: front foot lifts", "Advance: front foot lands"]) {
+    const step = scene.steps.find((s) => s.label === label);
+    assert.ok(speedAt(scene, step.holdStart, "A", hips) > 0.02, `${label}: the hips go on through it`);
+  }
+});
+
+test("a joint that turns back at a step it passes through stops there, and nothing goes past the steps either side of a move", () => {
+  const timeline = buildTimeline({
+    steps: [
+      { A: { pose: "guard", x: 0, adj: { blade: 30, hipY: 77 } } },
+      { ms: 150, A: { pose: "guard", x: 0, adj: { blade: 80, hipY: 70 } } },
+      { ms: 120, hold: 100, A: { pose: "guard", x: 0, adj: { blade: 40, hipY: 55 } } },
+    ],
+  });
+  near(speedAt(timeline, timeline.steps[1].holdStart, "A", (pose) => pose.blade), 0, 0.003, "the blade turns back, so it stops");
+  assert.ok(speedAt(timeline, timeline.steps[1].holdStart, "A", (pose) => pose.hipY) < -0.05, "the hips go on down through the step");
+  let low = Infinity;
+  for (let t = 0; t <= timeline.duration; t += 1) {
+    const { blade, hipY } = poseAt(timeline, t).A;
+    assert.ok(blade >= 30 - 1e-9 && blade <= 80 + 1e-9, `the blade at ${blade} at ${t} ms`);
+    assert.ok(hipY <= low + 1e-9 && hipY >= 55 - 1e-9, `the hips at ${hipY} at ${t} ms`);
+    low = hipY;
+  }
+});
+
+test("between two steps it holds, a move eases as it always has", () => {
+  const phrase = {
+    steps: [
+      { hold: 100, A: { pose: "guard", x: 20 }, B: { pose: "guard", x: 300 } },
+      { ms: 200, hold: 100, ease: "snap", A: { pose: "parry3", x: 20 }, B: { pose: "parry5", x: 300 } },
+      { ms: 200, hold: 100, ease: "linear", A: { pose: "parry5", x: 20 }, B: { pose: "extend", x: 300 } },
+      { ms: 200, hold: 100, A: { pose: "extend", x: 20 }, B: { pose: "parry3", x: 300 } },
+    ],
+  };
+  const timeline = buildTimeline(phrase);
+  for (let i = 1; i < timeline.steps.length; i++) {
+    const [from, to] = [timeline.steps[i - 1], timeline.steps[i]];
+    for (const u of [0.1, 0.25, 0.5, 0.8, 0.95]) {
+      const at = poseAt(timeline, to.start + u * (to.holdStart - to.start));
+      for (const who of ["A", "B"]) {
+        const expected = mixPoses(from[who], to[who], ease(u, phrase.steps[i].ease));
+        for (const key of Object.keys(expected)) near(at[who][key], expected[key], 1e-9, `${who} ${key} at ${u} of step ${i + 1}`);
+      }
+    }
+  }
+});
+
+test("a foot that stays where it is from one step to the next stays there, however the body moves through the steps round it", () => {
+  for (const { phrase } of PRESETS) {
+    const timeline = buildTimeline(phrase);
+    for (let i = 1; i < timeline.steps.length; i++) {
+      const [from, to] = [timeline.steps[i - 1], timeline.steps[i]];
+      for (const who of ["A", "B"]) {
+        const [before, after] = [feetOf(from[who], who), feetOf(to[who], who)];
+        for (const [foot, lift] of [[0, "liftB"], [1, "liftF"]]) {
+          if (Math.abs(before[foot] - after[foot]) > 1e-9) continue;
+          for (let t = to.start; t < to.holdStart; t += 3) {
+            const pose = poseAt(timeline, t)[who];
+            near(feetOf(pose, who)[foot], before[foot], 1e-9, `${phrase.name}, ${who}, ${lift === "liftB" ? "back" : "front"} foot at ${t} ms`);
+            if (from[who][lift] === 0 && to[who][lift] === 0) assert.equal(pose[lift], 0, `and it stays on the floor at ${t} ms`);
+          }
+        }
+      }
+    }
+  }
+});
+
+test("a foot that travels along the floor while the other stays is lifted on the way, and set down where it is going", () => {
+  // The most each foot is lifted over the move into `label`, and its lift at either end of the move.
+  const lifted = (timeline, label, who, lift) => {
+    const step = timeline.steps.find((s) => s.label === label);
+    let most = 0;
+    for (let t = step.start; t < step.holdStart; t += 1) most = Math.max(most, poseAt(timeline, t)[who][lift]);
+    return { most, ends: [poseAt(timeline, step.start)[who][lift], step[who][lift]] };
+  };
+  const first = buildTimeline(PRESETS[0].phrase);
+  // The recovery brings the front foot back 49 cm; the advance brings the back foot up 30 cm.
+  const recovery = lifted(first, "Recover to guard", "A", "liftF");
+  near(recovery.most, 4, 0.01, "lifted, but no higher than the advance lifts it");
+  assert.deepEqual(recovery.ends, [0, 0], "and on the floor at both ends");
+  near(lifted(first, "Advance: back foot follows", "A", "liftB").most, 3, 0.01, "a tenth as high as it travels");
+  assert.equal(lifted(first, "Advance: back foot follows", "A", "liftF").most, 0, "while the foot in front stays down");
+  // A step that lifts the foot itself keeps its own lift, and nothing is added to it.
+  const own = lifted(first, "Advance: front foot lifts", "A", "liftF").most;
+  assert.ok(own <= POSES.advLift.liftF + 1e-9 && own > POSES.advLift.liftF - 0.01, `the advance lifts the foot as it says: ${own}`);
+  // B faces the other way: he draws his front foot back 28 cm for face protection.
+  const face = buildTimeline(PRESETS[3].phrase);
+  near(lifted(face, "A cuts at the face, B takes face protection", "B", "liftF").most, 2.8, 0.01, "B steps too");
+  // A foot that moves less than 2 cm is only slid, and when both feet travel the fencer glides.
+  const move = (adjA, xA = 0) => buildTimeline({ steps: [{ A: { pose: "guard", x: 0 } }, { ms: 200, hold: 100, A: { pose: "guard", x: xA, adj: adjA } }] });
+  const most = (timeline, lift) => Math.max(...Array.from({ length: 200 }, (_, t) => poseAt(timeline, t).A[lift]));
+  assert.equal(most(move({ footF: 85.5 }), "liftF"), 0, "a shuffle");
+  assert.equal(most(move({}, 30), "liftF") + most(move({}, 30), "liftB"), 0, "a glide");
+  assert.ok(most(move({ footF: 104 }), "liftF") > 1.9, "a step forward");
 });
 
 test("how far the shoulders are turned is an angle like the others: a phrase can set it, and it eases between steps", () => {

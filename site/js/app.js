@@ -621,6 +621,8 @@ function fact(term, detail) {
 
 function createFencer(id) {
   const body = document.getElementById(`body-${id}`);
+  // The blade where it is turned out beyond the far side of the sword arm: first, so the whole body is drawn over it.
+  const behind = svgPath(body, "blade__steel");
   const layers = {};
   for (const name of LAYERS) {
     const isHead = name === "head";
@@ -640,6 +642,7 @@ function createFencer(id) {
   for (const k of [...GHOSTS].reverse()) ghostBodies[k] = svgPath(ghosts, `ghost ghost--${k}`);
   for (const k of [...GHOSTS].reverse()) ghostBlades[k] = svgPath(ghosts, `ghost-blade ghost-blade--${k}`);
   return {
+    behind,
     layers,
     ground: document.getElementById(`ground-${id}`),
     blade: SABRE.map(([, className]) => svgPath(blade, className)),
@@ -893,6 +896,7 @@ function polyline(points, count) {
 }
 
 function drawFencer(parts, figure) {
+  setAttr(parts.behind, "d", figure.behind);
   for (const name of LAYERS) {
     const layer = parts.layers[name];
     const shape = figure[name];
@@ -1080,7 +1084,11 @@ function renderCreator(index, step) {
   setDisabled(stepMsEl, paused || index === 0, paused ? phraseTextEl : stepHoldEl);
   setValue(stepHoldEl, typeof own.hold === "number" ? own.hold : "");
   setValue(stepEaseEl, own.ease === "snap" || own.ease === "linear" ? own.ease : "");
-  setText(stepHintEl, index === 0 ? "The first step is where the scene starts, so it has no move time." : "");
+  // A step with no time to stay on it is passed through, which is worth knowing while timing it.
+  let hint = "";
+  if (index === 0) hint = "The first step is where the scene starts, so it has no move time.";
+  else if (timeline.steps[index].through) hint = "With no time to stay on it, the move runs on through this step into the next without stopping.";
+  setText(stepHintEl, hint);
   setDisabled(stepRemoveButton, paused || timeline.steps.length < 2, paused ? phraseTextEl : stepNameEl);
 
   // Adjust this moment, and the poses.

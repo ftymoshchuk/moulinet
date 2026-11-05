@@ -189,7 +189,8 @@ export function stickFigure(p, dir, camera) {
  * The pen-and-ink fencer. Each layer is a merged silhouette (`g`) with its thin
  * lines (`d`) and its brush strokes (`k`); l1 is drawn first and l6 last, with
  * the head between l4 and l6. The sabre, with the hand that holds it, goes over
- * both fencers.
+ * both fencers, but for the blade where it is turned out beyond the far side of
+ * the sword arm, `behind`, which goes behind the body, before l1.
  *
  * `backView` draws the sword arm on the far side, as the camera sees the
  * fencer facing right; `older` draws an older man, balding, in loose trousers
@@ -227,16 +228,20 @@ function draw(p, dir, camera, backView, older) {
     return lift > 5 ? "" : groundStrokes(W, ank, front, front ? 7 : 9, 1 - lift / 6, front ? undefined : footSpan(W, J.toeBack));
   };
 
-  // Draw order: what the camera sees first goes last.
+  // Draw order: what the camera sees first goes last. The blade out beyond the far side of the sword arm goes behind the
+  // whole body, arm and all; from the other side of the piste it is the nearest thing to the camera, and goes last.
   const order = backView ? [sword, legF, legB, torso, rear] : [rear, legB, legF, torso, sword];
+  const { behind, ...blade } = bladePart(J, W);
+  if (!backView) blade.front += behind;
   return {
+    behind: backView ? behind : "",
     l1: order[0],
     l2: order[1],
     l3: order[2],
     l4: order[3],
     head: headPart(J, W, older),
     l6: order[4],
-    blade: bladePart(J, W),
+    blade,
     ground: ground(J.ankF, true) + ground(J.ankB, false),
   };
 }

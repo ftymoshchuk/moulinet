@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { BASE_BLADE, basePhrase } from "../site/js/bases.js";
+import { bladePart } from "../site/js/body.js";
 import { DEFAULT_FRAME, PIVOT, bladePaths, bladeTip, floorPath, frameOf, handFrame, inkFigure, knee, knee3, kneeBehind, projector, skeleton, stickFigure } from "../site/js/figure.js";
 import { area } from "../site/js/ink.js";
 import { POSES, PRESETS } from "../site/js/library.js";
@@ -691,4 +692,54 @@ test("a figure's path data stays small enough to draw again on every frame", () 
     }
   }
   assert.ok(largest > 8000, "and it is a drawing, not an outline");
+});
+
+test("no scene bends a sword wrist further than a wrist goes, nor passes a blade through its own fencer's head", () => {
+  // The bend at the wrist: the angle between the forearm and the blade, in three dimensions. The most any step asks of
+  // it is parry 5 turned toward the cut, 104.6°.
+  const bend = (pose) => {
+    const J = skeleton(pose);
+    const fore = [0, 1, 2].map((i) => J.hn[i] - J.el[i]);
+    const blade = [0, 1, 2].map((i) => J.at(1)[i] - J.hn[i]);
+    return (Math.acos(fore.reduce((sum, v, i) => sum + v * blade[i], 0) / Math.hypot(...fore)) * 180) / Math.PI;
+  };
+  // Side on, the closest the blade comes to the middle of the head.
+  const clear = (pose) => {
+    const J = skeleton(pose);
+    return Math.min(...Array.from({ length: 45 }, (_, i) => Math.hypot(J.at(i * 2)[0] - J.hd[0], J.at(i * 2)[1] - J.hd[1])));
+  };
+  for (const phrase of [...PRESETS.map((preset) => preset.phrase), basePhrase()]) {
+    const timeline = buildTimeline(phrase);
+    for (let t = 0; t <= timeline.duration; t += 5) {
+      const at = poseAt(timeline, t);
+      for (const who of timeline.solo ? ["A"] : ["A", "B"]) {
+        assert.ok(bend(at[who]) <= 105, `${phrase.name}, ${who} at ${t} ms: the wrist bends ${bend(at[who]).toFixed(0)}°`);
+        assert.ok(clear(at[who]) >= 25, `${phrase.name}, ${who} at ${t} ms: the blade comes ${clear(at[who]).toFixed(1)} cm from the middle of the head`);
+      }
+    }
+  }
+});
+
+test("a blade turned out beyond the far side of the sword arm is drawn behind the body, as the arm is", () => {
+  const turned = resolvePose({ pose: "guard", adj: { yaw: -40 } });
+  const figure = inkFigure(turned, 1, 0, { backView: true });
+  assert.match(figure.behind, /^M.*Z$/, "behind the body");
+  const near = figure.blade.back + figure.blade.front;
+  assert.match(near, /^M.*Z$/, "and the blade by the hand with the hand");
+  // The two are one blade: the part behind starts where the part by the hand ends, as wide.
+  const [{ points: hand }] = readPath(near);
+  const [{ points: away }] = readPath(figure.behind);
+  assert.deepEqual([away[0], away[3]], [hand[1], hand[2]]);
+  // A blade in the plane of the arm, or turned toward the camera, is drawn with the hand, all of it.
+  for (const yaw of [0, 30]) assert.equal(inkFigure(resolvePose({ pose: "guard", adj: { yaw } }), 1, 0, { backView: true }).behind, "", `turned ${yaw}°`);
+  // From outside the sword arm it is the nearest thing to the camera, and is drawn last.
+  const outside = inkFigure(turned, 1, 180);
+  assert.equal(outside.behind, "", "from outside the arm none of it is behind the body");
+  const far = bladePart(skeleton(turned), projector(turned, 1, 180)).behind;
+  assert.ok(far !== "" && outside.blade.front.endsWith(far), "it goes last, with the blade in front of the guard");
+  // In the moulinet the blade goes behind the body as it passes under and behind the arm, and is all in front for the cut.
+  const timeline = buildTimeline(PRESETS.find((preset) => preset.phrase.solo).phrase);
+  const step = (label) => timeline.steps.find((s) => s.label === label).A;
+  for (const label of ["Passes down beside the arm", "Rises behind"]) assert.notEqual(inkFigure(step(label), 1, 25, { backView: true }).behind, "", label);
+  assert.equal(inkFigure(step("Cut comes over the top"), 1, 25, { backView: true }).behind, "", "the cut");
 });
