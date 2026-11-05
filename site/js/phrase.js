@@ -4,8 +4,16 @@ import { POSES } from "./library.js";
 
 // Where each fencer stands until a phrase places them.
 const START = { A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 310 } };
+// Which way along the piste each fencer faces: A toward B, and B back toward A.
+const FACING = { A: 1, B: -1 };
 // Values that are angles, so a move between two of them takes the short way round.
 const ANGLES = new Set(["lean", "turn", "arm", "fore", "blade", "yaw", "rArm", "rFore", "toeBack", "kneeOut"]);
+// A foot that travels along the floor from one step to the next, while the other foot stays where it is, is lifted on
+// the way, as a step is taken: a tenth as high as it travels, and no higher than the advance lifts it. One that moves
+// less than STEP_MIN is only slid (cm).
+const STEP_RISE = 0.1;
+const STEP_HIGH = 4;
+const STEP_MIN = 2;
 // What a pose can hold. An adjustment to anything else is ignored.
 const POSE_KEYS = new Set(Object.keys(POSES.guard));
 // The text a scene carries about itself, and the order the data shows it in:
@@ -102,7 +110,52 @@ export function buildTimeline(phrase) {
   if (!out.length) {
     out.push({ label: "Empty phrase", specA, specB, A: resolvePose(specA), B: resolvePose(specB), start: 0, holdStart: 0, end: 0 });
   }
+  passThrough(out);
   return { steps: out, duration: Math.max(t, 1), solo: Boolean(isPlainObject(phrase) && phrase.solo), unknown };
+}
+
+/**
+ * Each joint as the in-betweens move it: the feet and the hips by where they are
+ * on the piste, so that a foot that stays where it is from one step to the next
+ * stays there however the rest of the body moves, and every other joint as the
+ * pose has it.
+ */
+function onPiste(pose, dir) {
+  return { ...pose, footF: pose.x + dir * pose.footF, hipX: pose.x + dir * pose.hipX };
+}
+
+// How far a joint goes from one value to the next: an angle the short way round.
+function change(key, from, to) {
+  return ANGLES.has(key) ? ((((to - from) % 360) + 540) % 360) - 180 : to - from;
+}
+
+/**
+ * Gives each step the phrase passes through, `through`: how fast each joint of
+ * each fencer is moving as it goes through the step (per ms). A step is passed
+ * through when it has no hold and there is a move into it and a move on out of
+ * it; every other step is a stop, where the body comes to rest. A joint that goes
+ * on the same way from the move before to the move after keeps moving through the
+ * step, at a speed between the two moves' (a harmonic mean, so it never goes
+ * past either step on the way); one that turns back, or is still on either side,
+ * stops there.
+ */
+function passThrough(steps) {
+  const span = (k) => steps[k].holdStart - steps[k].start;
+  for (let k = 1; k < steps.length - 1; k++) {
+    const step = steps[k];
+    if (step.end > step.holdStart || span(k) <= 0 || span(k + 1) <= 0) continue;
+    step.through = {};
+    for (const who of ["A", "B"]) {
+      const [before, at, after] = [steps[k - 1], step, steps[k + 1]].map((s) => onPiste(s[who], FACING[who]));
+      const speed = {};
+      for (const key of Object.keys(at)) {
+        const into = change(key, before[key], at[key]) / span(k);
+        const out = change(key, at[key], after[key]) / span(k + 1);
+        speed[key] = into * out > 0 ? (2 * into * out) / (into + out) : 0;
+      }
+      step.through[who] = speed;
+    }
+  }
 }
 
 // "snap" arrives fast and settles; "linear" keeps one speed; anything else
@@ -120,18 +173,10 @@ export function samePose(a, b) {
   return keys.length === Object.keys(b).length && keys.every((key) => a[key] === b[key]);
 }
 
+/** `amount` of the way from one pose to the other, every joint alike: an angle the short way round. */
 export function mixPoses(from, to, amount) {
   const out = {};
-  for (const key of Object.keys(to)) {
-    const a = from[key];
-    const b = to[key];
-    if (ANGLES.has(key)) {
-      const turn = ((((b - a) % 360) + 540) % 360) - 180;
-      out[key] = a + turn * amount;
-    } else {
-      out[key] = a + (b - a) * amount;
-    }
-  }
+  for (const key of Object.keys(to)) out[key] = from[key] + change(key, from[key], to[key]) * amount;
   return out;
 }
 
@@ -143,10 +188,60 @@ export function poseAt(timeline, t) {
   const step = steps[index];
   if (index > 0 && t < step.holdStart) {
     const before = steps[index - 1];
-    const amount = ease((t - step.start) / Math.max(1, step.holdStart - step.start), step.ease);
-    return { A: mixPoses(before.A, step.A, amount), B: mixPoses(before.B, step.B, amount), index };
+    const span = Math.max(1, step.holdStart - step.start);
+    const u = Math.max(0, Math.min(1, (t - step.start) / span));
+    return { A: between(before, step, "A", u, span), B: between(before, step, "B", u, span), index };
   }
   return { A: step.A, B: step.B, index };
+}
+
+// How fast each ease leaves the step before and comes into the next, for a change of 1 over the whole move.
+function easeSpeeds(kind) {
+  if (kind === "snap") return [3, 0];
+  if (kind === "linear") return [1, 1];
+  return [0, 0];
+}
+
+/**
+ * One fencer, `who`, `u` of the way through the move from step `from` into step
+ * `to`, which lasts `span` ms. Between two stops each joint goes as the move's ease
+ * says. Where the move starts or ends at a step it passes through, each joint
+ * leaves or arrives at the speed it has there instead, so the body runs on through
+ * the step without stopping, and the ease shapes the rest of the move. A foot that
+ * travels along the floor while the other stays where it is is lifted on the way.
+ */
+function between(from, to, who, u, span) {
+  const dir = FACING[who];
+  const own = from[who];
+  const [a, b] = [onPiste(own, dir), onPiste(to[who], dir)];
+  const eased = mixPoses(a, b, ease(u, to.ease));
+  const [leave, arrive] = easeSpeeds(to.ease);
+  const [v0, v1] = [from.through?.[who], to.through?.[who]];
+  // How much the speed at either end adds or takes away, for a difference of 1 per move in that speed.
+  const early = u * (1 - u) ** 2;
+  const late = -(u ** 2) * (1 - u);
+  // How far each joint has gone since the step before.
+  const moved = {};
+  for (const key of Object.keys(b)) {
+    let m = eased[key] - a[key];
+    const d = change(key, a[key], b[key]);
+    if (v0) m += (v0[key] * span - d * leave) * early;
+    if (v1) m += (v1[key] * span - d * arrive) * late;
+    moved[key] = m;
+  }
+  const pose = {};
+  for (const key of Object.keys(own)) pose[key] = own[key] + moved[key];
+  // The feet and the hips moved by where they are on the piste; the pose has them from the foot behind.
+  pose.footF = own.footF + dir * (moved.footF - moved.x);
+  pose.hipX = own.hipX + dir * (moved.hipX - moved.x);
+  // A foot that travels while the other stays is lifted as it leaves, and set down where it is going.
+  for (const [lift, foot, other] of [["liftF", "footF", "x"], ["liftB", "x", "footF"]]) {
+    const travel = b[foot] - a[foot];
+    if (Math.abs(travel) < STEP_MIN || Math.abs(b[other] - a[other]) >= STEP_MIN || own[lift] > 0 || to[who][lift] > 0) continue;
+    const s = Math.max(0, Math.min(1, moved[foot] / travel));
+    pose[lift] += Math.min(STEP_HIGH, STEP_RISE * Math.abs(travel)) * 4 * s * (1 - s);
+  }
+  return pose;
 }
 
 /**

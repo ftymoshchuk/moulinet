@@ -410,6 +410,14 @@
         $("#step-add").click();
         input($("#step-name"), "Between");
         seen.between = { labels: $$(".step-button").map((b) => b.textContent), count: text("#step-count") };
+        // With no time to stay on it, a step is passed through, and says so; but not while the step after it has no
+        // move time to run on into.
+        input($("#step-hold"), "");
+        seen.noHold = { hint: text("#step-hint") };
+        $$(".step-button")[2].click();
+        input($("#step-ms"), "150");
+        $$(".step-button")[1].click();
+        seen.passedThrough = { hint: text("#step-hint"), line: stepLine(1) };
         $("#step-remove").click();
         seen.removed = { labels: $$(".step-button").map((b) => b.textContent), count: text("#step-count"), editing: text("#edit-title") };
         // One fencer only, and two again.

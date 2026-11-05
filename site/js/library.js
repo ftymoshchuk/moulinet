@@ -90,7 +90,9 @@ const OLDER_GUARD = { hipY: 80, arm: -42, fore: 10, blade: 38 };
 const olderGuard = (x) => ({ pose: "guard", x, adj: { ...OLDER_GUARD } });
 
 // A phrase is a list of steps. Each step moves into its poses over `ms`, then
-// holds them for `hold`; a fencer a step leaves out keeps the previous spec.
+// holds them for `hold`; a fencer a step leaves out keeps the previous spec. A
+// step with no hold is passed through: the lunge in flight and the quarters of
+// the moulinet run on into the step after without stopping.
 //
 // A sword arm lies in a plane of its own, about 12 cm to one side of the line
 // between the fencers, so two blades that cross in the side view can still pass
