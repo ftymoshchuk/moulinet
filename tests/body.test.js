@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 import { bladePart, contour, crotch, footSpan, gripFrame, headFrame, headPart, hull, legPart, place, rearArm, segment, shoe, shoeAcross, swordArm, torsoFrame, trunk } from "../site/js/body.js";
 import { projector, skeleton } from "../site/js/figure.js";
-import { area, dist, inside, lerp, unit } from "../site/js/ink.js";
+import { add, area, dist, inside, lerp, mul, sub, unit } from "../site/js/ink.js";
 import { POSES } from "../site/js/library.js";
 import { handParts, headParts, hiltParts, shoeAcrossParts, shoeParts } from "../site/js/parts.js";
 import { resolvePose } from "../site/js/phrase.js";
@@ -18,6 +18,22 @@ function posed(name = "guard", adj = {}, camera = 0) {
   const pose = resolvePose({ pose: name, adj });
   return { pose, J: skeleton(pose), W: projector(pose, 1, camera) };
 }
+
+// How far a shape's outline reaches either side of the line from `a` to `b`, `t` of the way along it, where it crosses
+// the line square to that one there: `left` on the left of the way from a to b, as the page has it, and `right`.
+const reachAt = (points, [a, b], t) => {
+  const u = unit(a, b);
+  const c = add(a, mul(sub(b, a), t));
+  const offsets = [];
+  points.forEach((p, i) => {
+    const q = points[(i + 1) % points.length];
+    const [sp, sq] = [p, q].map((r) => (r[0] - c[0]) * u[0] + (r[1] - c[1]) * u[1]);
+    if (sp > 0 === sq > 0) return;
+    const x = lerp(p, q, sp / (sp - sq));
+    offsets.push((x[1] - c[1]) * u[0] - (x[0] - c[0]) * u[1]);
+  });
+  return { left: Math.max(...offsets), right: -Math.min(...offsets) };
+};
 
 const widthOf = (shape) => {
   const box = boxOf([shape]);
@@ -161,7 +177,7 @@ test("a shoe is turned up at the toe, and its heel turns with it, when the foot 
   assert.equal(flat.ink.length, 1, "the dark heel goes with it");
   assert.equal(flat.hatch.length, parts.hatch.length);
   const toeOf = (made) => made.shape.reduce((best, p) => (p[0] > best[0] ? p : best));
-  near(toeOf(flat)[0] - 100, 23.6, 1e-9, "the toe is the whole length of the shoe from the ankle");
+  near(toeOf(flat)[0] - 100, 21.2, 1e-9, "the toe is the whole length of the shoe from the ankle");
 
   const tilted = shoe([100, 8], 30, parts);
   assert.ok(toeOf(tilted)[1] > toeOf(flat)[1] + 8, "a foot off the floor lands on its heel");
@@ -451,6 +467,29 @@ test("the knickerbockers narrow to the knee and go into a bag over the band, abo
   }
 });
 
+test("the stocking is drawn over a lower leg: from the side a straight shin with the calf behind it, from the front a calf on either side, narrowing into an ankle half as wide", () => {
+  for (const name of ["guard", "lungeHead", "lungeChest"]) {
+    const { J, W } = posed(name);
+    for (const front of [true, false]) {
+      const [knee, ankle] = front ? [J.kF, J.ankF] : [J.kB, J.ankB];
+      const where = `${name}, the leg ${front ? "in front" : "behind"}`;
+      const stocking = readPath(legPart(J, W, ankle, knee, { front, seat: false, older: false }).g)[2].points;
+      const shin = [W(knee.slice(0, 2)), W(ankle)];
+      // Just under the band, a third of the way down the shin, the calf is at its fullest; the ankle is near the shoe.
+      const calf = reachAt(stocking, shin, 0.36);
+      const low = reachAt(stocking, shin, 0.9);
+      const ratio = (low.left + low.right) / (calf.left + calf.right);
+      assert.ok(ratio > 0.4 && ratio < 0.6, `${where}: the ankle is ${ratio} as wide as the calf`);
+      if (front) {
+        // Facing right, the back of the leg is on the left of the way down it.
+        assert.ok(calf.left > calf.right + 1.2, `${where}: the calf swells behind (${calf.left}), the shin is straight in front (${calf.right})`);
+      } else {
+        assert.ok(calf.left > 5.5 && calf.right > 5.5, `${where}: the calf swells on either side, ${calf.left} and ${calf.right}`);
+      }
+    }
+  }
+});
+
 test("the folds and lines of a leg stay on its cloth, on the bag at the knee as on the rest, from every camera angle", () => {
   // How far a point is from the edge of a shape. A shape is drawn as a smooth curve through its points, and a stroke as a
   // lens with some width, so a stroke on the edge of the cloth may come a little past the points of it.
@@ -504,6 +543,28 @@ test("the trunk is a jersey, a neck and a collar, with its seams and the shading
   near(older.back, young.back, 1.5, "and the back is not much changed");
 });
 
+test("the shadow under the jaw and the cord of the neck behind it never cross", () => {
+  // Whether two outlines cross: an edge of one crosses an edge of the other.
+  const crosses = (a, b) =>
+    a.some((p, i) =>
+      b.some((q, j) => {
+        const [p2, q2] = [a[(i + 1) % a.length], b[(j + 1) % b.length]];
+        const side = (o, s, t) => Math.sign((s[0] - o[0]) * (t[1] - o[1]) - (s[1] - o[1]) * (t[0] - o[0]));
+        return side(p, p2, q) !== side(p, p2, q2) && side(q, q2, p) !== side(q, q2, p2);
+      }),
+    );
+  for (const name of ["guard", "lungeChest", "parry5"]) {
+    for (const camera of [-60, 0, 60]) {
+      for (const older of [false, true]) {
+        const { J, W } = posed(name, {}, camera);
+        // The jaw's shadow and the neck's cord are the last two strokes on the trunk.
+        const [jaw, cord] = readPath(trunk(J, W, older).k).slice(-2).map((stroke) => stroke.points);
+        assert.ok(!crosses(jaw, cord), `${name} from ${camera}°, ${older ? "older" : "younger"}: they cross`);
+      }
+    }
+  }
+});
+
 // How wide the jersey looks, front to back across the page, `up` cm above the hips.
 const widthAt = (frame, up) => {
   const { front, back } = frame.slice(up);
@@ -518,6 +579,7 @@ test("turned toward the camera the shoulders are broad and taper to the waist; s
   const turned = frameOf(58);
   const side = frameOf(0);
   assert.ok(widthAt(turned, 48) > widthAt(turned, 15) * 1.15, "broader at the shoulders than at the waist");
+  assert.ok(widthAt(turned, 40) > widthAt(turned, 20) * 1.27, "and tapering from the chest to the waist");
   assert.ok(widthAt(turned, 48) > widthAt(side, 48) + 8, "and broader than the same man side on");
   near(widthAt(side, 48), widthAt(side, 15), 2, "side on he is as deep at the shoulders as at the hips");
   // The camera swings the jersey round as it swings: round to where the shoulders are square to it, they are side on again.
@@ -572,6 +634,25 @@ test("the sword arm ends at its gauntlet and its fist is drawn with the sabre, r
   assert.equal(readPath(rear.g).length, 4, "sleeve, forearm, hand and the point of the elbow");
   const hip = W(J.rh);
   for (const p of readPath(rear.g)[2].points) assert.ok(dist(p, hip) < 15, "the hand is at the end of the forearm");
+});
+
+test("a sleeve is loose over an arm about 10 cm thick: full over the upper arm, fuller on the forearm below the elbow than at the wrist", () => {
+  const { J, W } = posed("extend");
+  const [sleeve, fore] = readPath(swordArm(J, W).g).map((shape) => shape.points);
+  const upper = reachAt(sleeve, [W(J.sh), W(J.el)], 0.5);
+  const across = upper.left + upper.right;
+  assert.ok(across > 11 && across < 13, `the sleeve is ${across} across the upper arm`);
+  const forearm = [W(J.el), W(J.hn)];
+  const [below, wrist] = [reachAt(fore, forearm, 0.1), reachAt(fore, forearm, 0.5)].map((r) => r.left + r.right);
+  assert.ok(below > wrist + 1.5 && below < across, `the forearm is ${below} across below the elbow and ${wrist} toward the wrist`);
+});
+
+test("the head is drawn a twentieth larger than the plates' skull, so a fencer standing straight is seven and a half heads tall", () => {
+  const standing = resolvePose({ pose: "guard", adj: { hipX: 0, hipY: 98, footF: 0, lean: 0 } });
+  const box = boxOf(readPath(headPart(skeleton(standing), projector(standing, 1, 0), false).g));
+  near(box.maxY - box.minY, 23.2 * 1.05, 0.2, "the head is");
+  // The floor is at 0 on the page, and up is less.
+  near(-box.minY / (box.maxY - box.minY), 7.5, 0.1, "heads tall");
 });
 
 test("the head sits where the skeleton puts it, and turns older with the hair", () => {

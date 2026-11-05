@@ -120,8 +120,8 @@ export function trunk(J, W, older, frame = torsoFrame(J, W, older)) {
   // The neck runs up from the collar to under the head, which it carries.
   const [headUp, headForward] = older ? OLDER_HEAD : YOUNGER_HEAD;
   const neck = older
-    ? segment(J.T(56.5, 2.2), J.N(headUp - 3, headForward - 1.5), [7.0, 6.6], [7.0, 6.4], J.nf)
-    : segment(J.T(56.5, 2.2), J.N(headUp - 3, headForward - 1.5), [6.6, 6.2], [6.6, 6.0], J.nf);
+    ? segment(J.T(56.5, 2.2), J.N(headUp - 3, headForward - 1.5), [6.8, 6.4], [6.8, 6.2], J.nf)
+    : segment(J.T(56.5, 2.2), J.N(headUp - 3, headForward - 1.5), [6.1, 5.7], [6.1, 5.6], J.nf);
   const [collarFrom, collarTo] = [J.T(53, 1.6), J.T(58.6, 3.2)];
   const collar = segment(collarFrom, collarTo, [7.4, 7.2, 7.0], [7.6, 7.4, 7.2], J.f, [0.3, 0.3]);
   // The hem is not ruled across: it hangs a little lower in the middle, as the belt goes round the body.
@@ -134,15 +134,27 @@ export function trunk(J, W, older, frame = torsoFrame(J, W, older)) {
   const ca = unit(collarFrom, collarTo);
   const rim = (along, out) => W(place(collarTo, ca, along, out));
   const d = line([rim(1.2, -7.0), rim(-0.6, -1.0), rim(-0.9, 3.4), rim(0.2, 7.2)]);
-  // The shadow the jaw throws on the neck, and the cord of the neck from behind the ear down to the front of the collar,
-  // set on the page with the head.
+  // The shadow the jaw throws on the neck, under it from the chin back to the angle of the jaw, and the cord of the neck
+  // from behind the ear down to the front of the collar, set on the page with the head. The cord runs behind the angle
+  // of the jaw, so the two never cross.
   const H = headFrame(J, W, older);
-  const jaw = brush([H([2.2, -8.8]), H([-1.6, -10]), H([-5.8, -10.8])], 1.5, 0.5);
-  const cord = brush([H([-3.8, -5.6]), H([-2.6, -9.6]), H([-1.0, -12.6])], 0.8, 0.4);
+  const jaw = brush([H([3.8, -11.4]), H([1.0, -11.1]), H([-1.4, -9.8])], 1.0, 0.5);
+  const cord = brush([H([-5.6, -7.4]), H([-4.4, -10.4]), H([-2.8, -13.0])], 0.8, 0.4);
   return { ...shapes, d, k: torsoFolds(across, 4, older) + waistband(across) + jaw + cord };
 }
 
 // ---------- Arms ----------
+
+// The sleeves' half-widths, `hi` over the arm and `lo` under it, at evenly spaced stations: the upper arm from the
+// shoulder to the elbow, a loose sleeve over an arm about 10 cm thick, a little fuller under it, where it hangs, and
+// narrowing to the elbow; the sword arm's forearm from the elbow to the gauntlet, fullest just below the elbow; and the
+// rear forearm from the elbow to the wrist. The gauntlet's cuff flares from its mouth to the fist.
+const SLEEVE = {
+  upper: { hi: [6.2, 6.3, 6.0, 5.5], lo: [6.0, 6.3, 6.1, 5.6] },
+  fore: { hi: [5.7, 5.4, 4.9, 4.3], lo: [5.5, 5.1, 4.5, 3.9] },
+  rearFore: { hi: [5.6, 5.1, 4.5, 4.0], lo: [5.4, 4.8, 4.2, 3.8] },
+};
+const GAUNTLET = [5.0, 5.8, 6.4];
 
 /**
  * The sword arm: a long loose sleeve and the cuff of a gauntlet, up to the wrist;
@@ -155,22 +167,23 @@ export function swordArm(J, W, frame = torsoFrame(J, W, false)) {
   const Wa = (q) => W([q[0], q[1], J.sh[2]]);
   const fu = unit(J.el, J.hn);
   const up = [0, 1];
-  // The sleeve is full over the upper arm and the elbow, and narrows down the forearm into the gauntlet.
-  const hi = [7.2, 7.4, 7.2, 6.8];
-  const lo = [6.8, 7.0, 7.0, 6.6];
+  // The sleeve is full over the upper arm, a little fuller under it, narrows to the elbow, and goes on down the forearm,
+  // which is fullest below the elbow, narrowing into the gauntlet.
+  const { hi, lo } = SLEEVE.upper;
   const upper = segment(J.sh, J.el, hi, lo, up, [0, 1]);
   const n = hi.length;
   const { across } = frame;
   // Behind the jersey, where none of it shows: from the top of the shoulder, along the arm and back to the armpit.
   const hidden = (p) => [p[0], p[1], 0, 0];
   const sleeve = [hidden(across(56.5, 0.55)), across(54.5, 0.9), ...upper.slice(1, 2 * n + 3).map(Wa), hidden(across(41, 0.8))];
-  const fore = segment(J.el, sub(J.hn, mul(fu, 15)), [6.8, 6.2, 5.6, 5.0], [6.6, 5.9, 5.2, 4.6], up);
+  const fore = segment(J.el, sub(J.hn, mul(fu, 15)), SLEEVE.fore.hi, SLEEVE.fore.lo, up);
   // The gauntlet, flaring from the forearm to where it meets the fist.
-  const cuff = segment(sub(J.hn, mul(fu, 20.5)), sub(J.hn, mul(fu, 10.4)), [5.6, 6.3, 6.9], [5.6, 6.3, 6.9], up, [0.2, 0.15]);
+  const cuff = segment(sub(J.hn, mul(fu, 20.5)), sub(J.hn, mul(fu, 10.4)), GAUNTLET, GAUNTLET, up, [0.2, 0.15]);
   const shapes = drawn([sleeve, ...[fore, cuff].map((s) => s.map(Wa))]);
   const atHand = ([x, y]) => Wa(place(J.hn, fu, x, y));
   // The rim of the gauntlet, where the sleeve goes into it.
-  const d = line([[-20.2, 5.5], [-19.0, 0.4], [-20.2, -5.5]].map(atHand));
+  const rim = GAUNTLET[0] - 0.1;
+  const d = line([[-20.2, rim], [-19.0, 0.4], [-20.2, -rim]].map(atHand));
   return { ...shapes, d, k: sleeveFolds(Wa, J.sh, J.el, sub(J.hn, mul(fu, 20.5)), 6) };
 }
 
@@ -183,8 +196,7 @@ export function rearArm(J, W, hand, frame = torsoFrame(J, W, false)) {
   const Wa = (q) => W([q[0], q[1], J.rs[2]]);
   const qu = unit(J.re, J.rh);
   const up = [0, 1];
-  const hi = [7.0, 7.2, 7.0, 6.6];
-  const lo = [6.6, 6.8, 6.8, 6.4];
+  const { hi, lo } = SLEEVE.upper;
   const tube = segment(J.rs, J.re, hi, lo, up, [0, 1]);
   const n = hi.length;
   // Down the outer side of the arm, round the elbow, and back up the inner side...
@@ -195,14 +207,14 @@ export function rearArm(J, W, hand, frame = torsoFrame(J, W, false)) {
   const on = (p) => [p[0], p[1], 0, 0];
   const seam = (p) => [p[0], p[1], 0, 0];
   const sleeve = [on(across(58.6, -0.6)), on(across(57.6, -0.84)), on(across(55.6, -0.97)), on(across(53, -1)), ...outline.slice(1), seam(across(42, -0.6)), seam(across(50, -0.8))];
-  const fore = segment(J.re, J.rh, [6.8, 6.0, 5.2, 4.6], [6.6, 5.6, 4.9, 4.3], up);
+  const fore = segment(J.re, J.rh, SLEEVE.rearFore.hi, SLEEVE.rearFore.lo, up);
   const palm = hand.shape.map(([x, y]) => Wa(place(J.rh, qu, x, y)));
-  // The point of the elbow, rounded, on the outside of the bend.
+  // The point of the elbow, rounded, on the outside of the bend, standing a little proud of the sleeve.
   const e = Wa(J.re);
   const toward = add(unit(e, Wa(J.rs)), unit(e, Wa(J.rh)));
   const outward = Math.hypot(...toward) < 0.2 ? perp(unit(e, Wa(J.rs))) : mul(unit([0, 0], toward), -1);
   const side = perp(outward);
-  const elbow = [add(add(e, mul(outward, 2.8)), mul(side, 6.3)), add(e, mul(outward, 7.3)), add(add(e, mul(outward, 2.8)), mul(side, -6.3)), add(e, mul(outward, -2))];
+  const elbow = [add(add(e, mul(outward, 2.4)), mul(side, 5.4)), add(e, mul(outward, 6.2)), add(add(e, mul(outward, 2.4)), mul(side, -5.4)), add(e, mul(outward, -2))];
   const shapes = drawn([sleeve, fore.map(Wa), palm, elbow]);
   const d = hand.lines.map((l) => line(l.map(([x, y]) => Wa(place(J.rh, qu, x, y))))).join("");
   return { ...shapes, d, k: sleeveFolds(Wa, J.rs, J.re, J.rh, 8) };
@@ -424,10 +436,14 @@ function legShapes(J, flat, ank, kn, { front, seat, near, older }) {
   } else {
     // (It starts square at the knee, inside the round end of the thigh, so the two make one knee.)
     shapes.push(segment(kn, k(12), [8.8, 9.0, 8.5, 7.7], [8.4, 8.6, 7.8, 7.0], f, [0, 1]));
-    shapes.push(segment(k(10.5), add(ank, mul(su, 2)), [6.4, 6.4, 5.7, 4.9, 4.4], [6.4, 6.7, 5.9, 4.9, 4.3], f, [0.2, 0.4]));
-    // The lower edge of the cloth over the band, and the band itself, each curved round the leg.
+    const calf = front ? CALF_SIDE : CALF_FRONT;
+    const into = add(ank, mul(su, 2));
+    shapes.push(segment(k(10.5), into, calf.hi, calf.lo, f, [0.2, 0.4]));
+    // The lower edge of the cloth over the band, and the band itself, each curved round the leg; the band, 14.2 cm below
+    // the knee, is as wide as the stocking is there.
     lines.push(across(k(11.6), su, 7.2, 6.8, 3.0));
-    lines.push(across(k(14.2), su, 6.3, 6.3, 2.6));
+    const band = (14.2 - 10.5) / Math.max(1, dist(k(10.5), into));
+    lines.push(across(k(14.2), su, edge(calf.hi, band), edge(calf.lo, band), 2.6));
   }
   if (seat) shapes.push(trouserFront(J, flat, older));
   return { shapes, lines };
@@ -442,6 +458,15 @@ const THIGH_FRONT = { hi: [16.0, 13.8, 11.6, 9.8], lo: [11.0, 10.4, 9.6, 8.8] };
 const THIGH_BACK = { hi: [16.0, 13.0, 10.8, 9.6], lo: [12.5, 11.6, 10.4, 9.2] };
 const LOOSE_FRONT = { hi: [15.0, 13.4, 13.0, 12.4], lo: [10.6, 11.6, 12.0, 11.6] };
 const LOOSE_BACK = { hi: [15.0, 13.0, 12.4, 12.0], lo: [12.0, 12.2, 12.2, 11.6] };
+
+// The stocking, from under the bag at the knee into the shoe, over a lower leg shaped as one is: its half-widths `hi` on
+// the side that faces forward and `lo` on the other, at evenly spaced stations from 10.5 cm below the knee to 2 cm below
+// the ankle. The leg in front is seen from the side: its shin runs nearly straight down the front, and the calf swells
+// behind it, widest just under the band, a third of the way down the shin, and narrows into an ankle half as wide. The
+// leg behind, its foot and knee turned toward the camera, is seen from the front: the calf swells on either side, lower
+// and fuller on the inside, which faces forward.
+const CALF_SIDE = { hi: [5.8, 5.4, 5.0, 4.5, 3.9, 3.3, 3.3], lo: [6.6, 7.4, 6.8, 5.4, 4.0, 3.2, 3.4] };
+const CALF_FRONT = { hi: [6.0, 6.6, 6.2, 5.0, 4.0, 3.5, 3.5], lo: [6.4, 6.6, 5.6, 4.4, 3.7, 3.3, 3.4] };
 
 // Where a thigh's square top meets its sides, on the side that faces forward (`hi`) and on the other, and the way down the thigh.
 function thighTop(hip, kn, widths) {
@@ -590,6 +615,8 @@ const YOUNGER_HEAD = [15.5, 6.5];
 const OLDER_HEAD = [14.2, 8.1];
 // How much of the body's lean the head nods with: little, so the eyes stay level.
 const NOD = 0.15;
+// How much larger than the plates' skull in parts.js the head is drawn.
+const HEAD_SIZE = 1.05;
 
 /**
  * Where the head is on the page: `H(q)` sets a point of the head's own frame, in parts.js, on the page. The head is
@@ -598,8 +625,10 @@ const NOD = 0.15;
  */
 export function headFrame(J, W, older) {
   const centre = J.N(...(older ? OLDER_HEAD : YOUNGER_HEAD));
-  // An older man's head is a little larger for his height.
-  const size = older ? 1.07 : 1;
+  // A head drawn a twentieth larger than the 23 cm of the plates' skull, as an illustrator draws one, so that the fencer
+  // is seven and a half heads tall and the head holds its own against the jersey and the sleeves; an older man's head is
+  // a little larger again for his height.
+  const size = HEAD_SIZE * (older ? 1.07 : 1);
   const nod = J.lean * NOD * RAD;
   const hf = [Math.cos(nod), -Math.sin(nod)];
   const hu = [Math.sin(nod), Math.cos(nod)];

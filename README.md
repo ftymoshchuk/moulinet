@@ -101,17 +101,20 @@ is in this repository.
 
 The shoulders are turned toward you, as in those books: the jersey is a stack
 of slices of the body, set round by the pose's `turn`, so it is broad at the
-shoulders and a little narrower at the waist, and the camera swings it as it
-swings the piste. The sleeve of the arm on your side begins on the jersey
-itself, and the other arm lies behind it, set on the shoulder at the front of
-the chest and as long as an arm, its loose sleeve running on from the line of
-the shoulder into a gauntlet. The hips turn with the shoulders, if not as far,
+shoulders and tapers to the waist, about 38 cm across against 28, and the camera
+swings it as it swings the piste. The sleeve of the arm on your side begins on
+the jersey itself, and the other arm lies behind it, set on the shoulder at the
+front of the chest and as long as an arm, its loose sleeve running on from the
+line of the shoulder into a gauntlet. A sleeve is loose over an arm about 10 cm
+thick: full over the upper arm, narrowing to the elbow, and fullest on the
+forearm just below it, narrowing to the wrist. The hips turn with the shoulders, if not as far,
 so each leg starts from a hip of its own, the leg behind on your side and the
 leg in front on the far side: the legs part at the crotch, under a wide front
 of the trousers, rather than from one point. The foot in front points at the
 opponent, and the foot behind is turned across, its toe at you and turned back a
 little by the pose's `toeBack`, so that the two make an L, as the stance is
-taught. That shoe is a few domes standing on the floor, which the camera turns
+taught. Each shoe is 29 cm from heel to toe, as long as a shoe for a man of the
+fencers' height. The one behind is a few domes standing on the floor, which the camera turns
 with the piste, so it is seen end on, from a quarter or from the side as the
 camera moves. The guard is the plates' classic stance: wide, both knees bent,
 each over its own foot, so both shins stand upright. The knee of the leg behind
@@ -148,7 +151,10 @@ in the fourth the palm is up and the edge in; and there are halves between them,
 as the 2/3 of the guard.
 
 The head is drawn as the plates draw it: a long skull and a short, square face,
-carried forward on a thick neck. The neck takes only part of the body's lean
+carried forward on a thick neck. It is drawn a twentieth larger than life, as
+an illustrator draws one, so the fencer is seven and a half heads tall and the
+head holds its own against the jersey; the shadow under the jaw stops at its
+angle, and the cord of the neck runs down behind it. The neck takes only part of the body's lean
 and the head hardly any, so however the body leans the head is held up and the
 eyes look ahead. The hair is strokes of the pen, combed in rows round the
 crown, up off the forehead, back over the top and down the back of the head,
@@ -163,7 +169,11 @@ A young fencer wears knickerbockers and long stockings, an older one loose
 trousers gathered at the ankle, a belly and narrower shoulders. The
 knickerbockers are full at the hips and narrow to the knee, where the cloth
 hangs over the band in a bag about a third wider than the stocking, as the
-plates draw it. The strokes are placed by rule and never by chance, so a figure
+plates draw it. The stocking is drawn over a lower leg as one is shaped: from
+the side, the shin runs nearly straight down the front and the calf swells
+behind, widest just under the band, then narrows into an ankle about half as
+wide; the leg behind, its foot and knee turned toward you, is seen from the
+front, so its calf swells on either side, fuller on the inside. The strokes are placed by rule and never by chance, so a figure
 moves as one drawing and does not flicker, and a pose that is held is drawn
 once.
 
@@ -300,7 +310,7 @@ it passes, the feet that stay and the feet that step, and a wrist that never ben
 past what parry 5 asks), the edits the Creator makes to a scene, the saved
 scenes (what they keep and what they leave alone) and the check that a
 reference link is a web address, the base postures, the drawing (the curves and
-brush strokes, the parts of a body, the hilt and the hand in each hand position,
+brush strokes, the parts of a body and their proportions, the hilt and the hand in each hand position,
 and every phrase and posture at every moment from five camera angles, checked for
 broken path data and for shapes that do not merge), and the published files (only relative links to files that
 exist, no outside requests, every element the scripts need). Thirteen more run

@@ -313,7 +313,8 @@ export function handParts() {
 }
 
 // A lace-up leather shoe seen from the side, in a frame with the ankle at the
-// origin and x toward the toe: the outline from the heel round the toe, the dark
+// origin and x toward the toe, 29 cm from heel to toe, the length of a shoe for
+// a man as tall as the fencers: the outline from the heel round the toe, the dark
 // heel block, the hatching on the heel and the toe cap, the laces, the toe cap's
 // seam and the welt above the sole. The floor is 8 below the origin.
 const SHOE = {
@@ -324,41 +325,41 @@ const SHOE = {
     [-7.0, -1.6],
     [-5.4, 1.4],
     [-2.6, 2.4],
-    [0.8, 1.0],
-    [5.0, -0.8],
-    [10.0, -2.2],
-    [15.0, -2.8],
-    [19.4, -3.0],
-    [22.6, -4.4],
-    [23.6, -6.4, 0, 0.7],
-    [22.0, -8.0, 0, 0.5],
-    [8.0, -8.4, 0, 0.5],
+    [0.7, 1.0],
+    [4.5, -0.8],
+    [9.0, -2.2],
+    [13.5, -2.8],
+    [17.5, -3.0],
+    [20.3, -4.4],
+    [21.2, -6.4, 0, 0.7],
+    [19.8, -8.0, 0, 0.5],
+    [7.2, -8.4, 0, 0.5],
   ],
   ink: [[[-7.2, -8.1], [-7.5, -6.4], [-3.2, -6.4], [-2.8, -8.2]]],
   hatch: [
     [[-7.2, -2.0], [-5.8, -4.4]],
     [[-6.8, -0.4], [-5.2, -3.0]],
     [[-5.8, 1.0], [-4.2, -1.6]],
-    [[14.6, -3.4], [15.2, -6.0]],
-    [[16.4, -3.4], [17.0, -6.0]],
-    [[18.2, -3.6], [18.8, -6.0]],
-    [[20.0, -3.8], [20.6, -6.0]],
-    [[10.4, -3.0], [11.2, -5.8]],
-    [[12.4, -3.2], [13.0, -5.8]],
+    [[13.1, -3.4], [13.7, -6.0]],
+    [[14.8, -3.4], [15.3, -6.0]],
+    [[16.4, -3.6], [16.9, -6.0]],
+    [[18.0, -3.8], [18.5, -6.0]],
+    [[9.4, -3.0], [10.1, -5.8]],
+    [[11.2, -3.2], [11.7, -5.8]],
     [[-1.0, -4.6], [-0.6, -6.8]],
-    [[1.2, -4.4], [1.6, -6.8]],
-    [[3.4, -4.6], [3.8, -6.8]],
-    [[5.6, -4.8], [6.0, -6.8]],
-    [[7.8, -5.0], [8.2, -6.8]],
+    [[1.1, -4.4], [1.4, -6.8]],
+    [[3.1, -4.6], [3.4, -6.8]],
+    [[5.0, -4.8], [5.4, -6.8]],
+    [[7.0, -5.0], [7.4, -6.8]],
   ],
   laces: [
-    [[0.8, 0.8], [2.2, -1.6]],
-    [[2.8, 0.0], [4.2, -2.4]],
-    [[4.8, -0.6], [6.2, -3.0]],
-    [[6.8, -1.2], [8.2, -3.6]],
+    [[0.7, 0.8], [2.0, -1.6]],
+    [[2.5, 0.0], [3.8, -2.4]],
+    [[4.3, -0.6], [5.6, -3.0]],
+    [[6.1, -1.2], [7.4, -3.6]],
   ],
-  sole: [[-2.6, -7.0], [7.0, -7.2], [22.6, -6.8]],
-  cap: [[13.0, -2.6], [14.0, -4.6], [13.6, -6.2]],
+  sole: [[-2.6, -7.0], [6.3, -7.2], [20.3, -6.8]],
+  cap: [[11.7, -2.6], [12.6, -4.6], [12.2, -6.2]],
 };
 
 export function shoeParts() {
@@ -378,26 +379,26 @@ const SHOE_ACROSS = {
   // its height, and how square it is (2 is an ellipse, and more is squarer).
   domes: [
     [-2.6, 5.0, 4.1, 10.4, 3.0], // the heel and the ankle, which the stocking runs into
-    [1.0, 8.4, 5.1, 8.8, 1.9], // the instep, where the laces run
-    [13.6, 10.0, 5.5, 6.0, 2.3], // the toe box
+    [0.9, 7.6, 5.1, 8.8, 1.9], // the instep, where the laces run
+    [12.2, 9.0, 5.5, 6.0, 2.3], // the toe box
   ],
   // The sole is a slab under the shoe, a little wider than it, and bowed down at the toe.
   sole: { height: 1.2, edge: 0.4, bow: 0.35 },
   // The edge of the shoe where the stocking goes into it, across the front of the ankle: how wide it is, and how high it is at either end and in the middle.
-  collar: { wide: 3.7, ends: 9.9, middle: 9.4 },
+  collar: { wide: 3.4, ends: 9.9, middle: 9.4 },
   // Where the laces cross: how far along the foot.
-  laces: [1.8, 3.4, 5.0, 6.6],
+  laces: [1.6, 3.1, 4.5, 5.9],
   // The seam of the toe cap, as how far along the foot it crosses the toe box.
-  seam: 19.0,
+  seam: 17.1,
   // Strokes of shade on the side that turns from the light, each hanging from the
   // skin of a dome: which dome, how far across it and how far along the foot it
   // is, and how long.
   hatch: [
-    [2, 4.5, 12.4, 2.6],
-    [2, 3.5, 15.0, 2.6],
-    [2, 2.4, 17.4, 2.2],
-    [1, 4.1, 3.8, 2.4],
-    [1, 3.6, 5.8, 2.2],
+    [2, 4.5, 11.2, 2.6],
+    [2, 3.5, 13.5, 2.6],
+    [2, 2.4, 15.7, 2.2],
+    [1, 4.1, 3.4, 2.4],
+    [1, 3.6, 5.2, 2.2],
   ],
 };
 
@@ -409,15 +410,16 @@ export function shoeAcrossParts() {
 // Each is an ellipse: how far up the spine it is (cm above the hips), how far
 // forward of the spine its middle lies, and its half-depth and half-width. With
 // the shoulders turned toward the camera the slices make the broad shoulders
-// that taper to the waist, and the camera swings them round as it swings.
+// that taper to the waist, about 38 cm across the page at the shoulders and 28
+// at the waist, and the camera swings them round as it swings.
 const TORSO = [
-  [11, 0.4, 12.6, 17.6],
-  [18, 0.4, 12.0, 16.6],
-  [27, 0.8, 13.0, 18.4],
-  [36, 1.4, 14.0, 20.6],
-  [44, 1.4, 13.6, 21.8],
-  [51, 0.6, 11.0, 22.5],
-  [54, 0.4, 9.5, 17.6],
+  [11, 0.4, 12.6, 17.0],
+  [18, 0.4, 12.0, 15.0],
+  [27, 0.8, 13.0, 16.6],
+  [36, 1.4, 14.0, 19.6],
+  [44, 1.4, 13.6, 21.0],
+  [51, 0.6, 11.0, 21.6],
+  [54, 0.4, 9.5, 17.2],
   [56.5, 0.6, 8.2, 13.4],
   [58.5, 1.0, 7.0, 10.0],
   [59.5, 1.2, 6.0, 7.5],

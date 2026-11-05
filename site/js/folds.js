@@ -169,9 +169,10 @@ export function sockWrinkles(W, from, ankle, ref, seed = 3, inner = 1) {
   for (const [c, t1] of [[4.6, 0.72], [3.4, 0.6], [2.2, 0.44], [1.0, 0.3]]) {
     d += inFrame(W, f, [0.03 + r() * 0.04, c * inner], [t1 + r() * 0.06, c * inner * 0.8], 0.6 + r() * 0.15, 0, 0.4);
   }
+  // (Across the ankle, which is narrower than the calf.)
   for (let i = 0; i < 3; i++) {
     const t = 0.7 + i * 0.09 + r() * 0.03;
-    d += stroke(W, [f.at(t, 3.6 - r()), f.at(t + 0.02, 0.4), f.at(t + 0.045, -3.6 + r())], 0.5 + r() * 0.2, 0.5);
+    d += stroke(W, [f.at(t, 2.7 - 0.5 * r()), f.at(t + 0.02, 0.3), f.at(t + 0.045, -2.7 + 0.5 * r())], 0.5 + r() * 0.2, 0.5);
   }
   return d;
 }
@@ -251,21 +252,21 @@ export function sleeveFolds(W, shoulder, elbow, wrist, seed = 6) {
   const side = bend > 0 ? -1 : 1;
   let d = "";
   for (let i = 0; i < 3; i++) {
-    const c = side * (3.6 - i * 0.7);
+    const c = side * (3.1 - i * 0.6);
     const a = fore.at(0.3 + i * 0.12, c * 1.4);
     const b = lerp(elbow, a, 0.16);
-    d += stroke(W, [a, add(lerp(a, b, 0.5), mul(fore.n, side * 0.8)), b], 0.6 + r() * 0.3, 0.45);
+    d += stroke(W, [a, add(lerp(a, b, 0.5), mul(fore.n, side * 0.7)), b], 0.6 + r() * 0.3, 0.45);
   }
   for (let i = 0; i < 2; i++) {
-    const a = up.at(0.62 + i * 0.12, side * (3.8 - i * 0.8));
+    const a = up.at(0.62 + i * 0.12, side * (3.2 - i * 0.7));
     d += stroke(W, [a, lerp(a, elbow, 0.5), lerp(elbow, a, 0.14)], 0.6, 0.45);
   }
   // Shade under the upper arm, near the armpit.
-  for (const [t0, t1, c] of [[0.12, 0.46, -5.4], [0.16, 0.38, -4.2]]) {
+  for (const [t0, t1, c] of [[0.12, 0.46, -4.6], [0.16, 0.38, -3.6]]) {
     d += stroke(W, [up.at(t0, c), up.at((t0 + t1) / 2, c - 0.3), up.at(t1, c + 0.2)], 0.65, 0.45);
   }
   // The heavier line under the forearm.
-  d += stroke(W, [fore.at(0.18, -5.4), fore.at(0.55, -5.0), fore.at(0.94, -4.2)], 1.2, 0.5);
+  d += stroke(W, [fore.at(0.18, -4.6), fore.at(0.55, -4.2), fore.at(0.94, -3.6)], 1.2, 0.5);
   return d;
 }
 
