@@ -127,7 +127,12 @@ grip, the forefinger least; behind them the hand bends at the wrist to meet the
 forearm in the mouth of the gauntlet, however the blade is held, and the grip
 runs on past the heel of the hand to the pommel, a nut at its end. The fist is
 one shape, with a line where one finger lies over the next or over the thumb,
-and a crease at each middle knuckle that faces you.
+and a crease at each middle knuckle that faces you. A blade turned out beyond the
+far side of the sword arm is further from you than the body is, and is drawn
+behind it, as the arm is. So in the moulinet, where the wrist turns the blade out
+beyond the arm as it passes under and behind, and the elbow gives a little so the
+hand rises, the blade goes behind the shoulder and the head, and the wrist bends
+no further than it does in parry 5.
 
 The guard is one sheet of steel, light, with a line of ink round it: from a lip
 over the thumb it sweeps forward through the blade and round in front of the
@@ -291,7 +296,8 @@ npm test
 ```
 There is nothing to install: the tests use Node's own test runner. They cover
 the timeline and its maths, with how the body moves between steps (through a step
-it passes, and the feet that stay and the feet that step), the edits the Creator makes to a scene, the saved
+it passes, the feet that stay and the feet that step, and a wrist that never bends
+past what parry 5 asks), the edits the Creator makes to a scene, the saved
 scenes (what they keep and what they leave alone) and the check that a
 reference link is a web address, the base postures, the drawing (the curves and
 brush strokes, the parts of a body, the hilt and the hand in each hand position,

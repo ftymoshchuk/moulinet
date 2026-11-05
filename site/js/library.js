@@ -100,6 +100,12 @@ const olderGuard = (x) => ({ pose: "guard", x, adj: { ...OLDER_GUARD } });
 // (`yaw`) until they touch where they cross. B's parry 5 turns less than the
 // pose does: its 70° would have them meet out near the points, not on B's forte.
 //
+// In the moulinet the blade goes round outside the sword arm, turned out from it
+// as it passes under and behind (yaw), and the elbow gives a little so the hand
+// rises as the blade goes behind: the wrist bends no further than parry 5 asks of
+// it, and the blade passes behind the shoulder and the head, not through them. The
+// hand stays in the third, so the edge leads all the way round.
+//
 // These are the scenes the practice library starts with. A scene may also say
 // where it was noted, with an `event` and a `reference` link; these do not,
 // because there is no real bout behind them to point to.
@@ -175,9 +181,9 @@ export const PRESETS = [
       steps: [
         { label: "En garde", hold: 500, A: { pose: "guard", x: 90 } },
         { label: "Arm extends", ms: 260, hold: 80, A: { pose: "extend", x: 90 } },
-        { label: "Blade drops forward", ms: 170, A: { pose: "extend", x: 90, adj: { blade: -75, yaw: -20 } } },
-        { label: "Passes down beside the arm", ms: 150, A: { pose: "extend", x: 90, adj: { blade: -165, yaw: -30 } } },
-        { label: "Rises behind", ms: 150, A: { pose: "extend", x: 90, adj: { blade: 105, yaw: -25 } } },
+        { label: "Blade drops forward", ms: 170, A: { pose: "extend", x: 90, adj: { blade: -77, yaw: -20 } } },
+        { label: "Passes down beside the arm", ms: 150, A: { pose: "extend", x: 90, adj: { arm: 4, fore: 8, blade: -121, yaw: -78 } } },
+        { label: "Rises behind", ms: 150, A: { pose: "extend", x: 90, adj: { arm: 16, fore: 40, blade: 147, yaw: -71 } } },
         { label: "Cut comes over the top", ms: 170, hold: 450, ease: "snap", A: { pose: "extend", x: 90, adj: { blade: 15, yaw: 0 } } },
         { label: "Back to guard", ms: 350, hold: 400, A: { pose: "guard", x: 90 } },
       ],

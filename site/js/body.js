@@ -654,6 +654,8 @@ function unit3(a) {
 // How far the wrist, where the forearm ends and the hand begins, is behind the hand's point on the blade, along the
 // forearm (cm): just inside the mouth of the gauntlet.
 const WRIST = 10;
+// How far out beyond the plane of the sword arm, away from the camera, the blade goes behind the body (cm).
+const BEYOND_ARM = 2;
 
 /**
  * The frame of the hand on the blade, which the hilt and the fist are worked out in (parts.js): `a` along the blade
@@ -1055,6 +1057,9 @@ export function contour(field, [x0, y0, x1, y1], step) {
  * shield over the fist with the blade coming out of it; from the side of the thumb it looks into it, and sees the fist
  * in it; and side on it is a crescent in front of and under the fingers.
  *
+ * The blade out beyond the far side of the sword arm, turned away from the camera, is `behind`: further from the
+ * camera than the body, as the arm is, it is drawn behind the body with the arm, and the rest of it with the hand.
+ *
  * Returns, back to front: the blade when its root is behind the guard, `back`; the inside of the guard the camera sees,
  * `inside` (its line of ink `o`, its shape `g`, shaded `k`); the grip, a dark rod, `grip`; the pommel, `pommel`, when it
  * is behind the fist; the fist, `fist` (`o`, `g`, its lines `d`, `k`); the pommel again, `butt`, when it is in front of
@@ -1084,11 +1089,24 @@ export function bladePart(J, W, hilt = hiltParts()) {
   while (exit < rows.length - 1 && rows[exit][middle][1] < 0) exit++;
   const [r0, r1] = [rows[exit - 1][middle], rows[exit][middle]];
   const cut = r0[1] / (r0[1] - r1[1]);
-  const root = G.point([r0[0] + (r1[0] - r0[0]) * cut, 0, 0]);
-  const b0 = W(root);
+  // How far along the blade from the hand it comes out of the guard, and how long it is (cm).
+  const from = r0[0] + (r1[0] - r0[0]) * cut;
+  const length = dist3(J.hn, J.tip);
+  const b0 = W(G.point([from, 0, 0]));
   const b1 = W(J.tip);
   const n = perp(unit(b0, b1));
-  const steel = `M${[add(b0, mul(n, 0.62)), add(b1, mul(n, 0.18)), sub(b1, mul(n, 0.18)), sub(b0, mul(n, 0.62))].map(pt).join("L")}Z`;
+  // The blade from `k0` to `k1` cm along it from the hand, narrowing from its root to its point.
+  const wide = (k) => 0.62 - (0.44 * (k - from)) / Math.max(1, length - from);
+  const steelFrom = (k0, k1) => {
+    const [p0, p1] = [W(J.at(k0)), W(J.at(k1))];
+    return `M${[add(p0, mul(n, wide(k0))), add(p1, mul(n, wide(k1))), sub(p1, mul(n, wide(k1))), sub(p0, mul(n, wide(k0)))].map(pt).join("L")}Z`;
+  };
+  // A blade turned away from the camera, out beyond the far side of the sword arm, is further from it than the body, as
+  // the arm is: that much of it, `behind`, goes behind the body with the arm, and the rest is drawn with the hand.
+  const away = -G.a[2];
+  const beyond = away > 0 ? Math.max(from, BEYOND_ARM / away) : length;
+  const steel = beyond > from + 0.01 ? steelFrom(from, Math.min(beyond, length)) : "";
+  const behind = beyond < length - 0.01 ? steelFrom(beyond, length) : "";
   const inFront = facing[exit][middle] > 0;
 
   // The grip, dark, and the pommel, a nut of steel at its end, flat where it meets the grip and domed at the end, with
@@ -1134,6 +1152,7 @@ export function bladePart(J, W, hilt = hiltParts()) {
   const outer = drawn(outsideShapes, 0.22, 0.75);
   const inner = drawn(insideShapes, 0.2, 0.6);
   return {
+    behind,
     back: inFront ? "" : steel,
     inside: { o: inner.o, g: inner.g, k: shade },
     grip: rod.length > 2 ? blob(rod) : "",

@@ -621,6 +621,8 @@ function fact(term, detail) {
 
 function createFencer(id) {
   const body = document.getElementById(`body-${id}`);
+  // The blade where it is turned out beyond the far side of the sword arm: first, so the whole body is drawn over it.
+  const behind = svgPath(body, "blade__steel");
   const layers = {};
   for (const name of LAYERS) {
     const isHead = name === "head";
@@ -640,6 +642,7 @@ function createFencer(id) {
   for (const k of [...GHOSTS].reverse()) ghostBodies[k] = svgPath(ghosts, `ghost ghost--${k}`);
   for (const k of [...GHOSTS].reverse()) ghostBlades[k] = svgPath(ghosts, `ghost-blade ghost-blade--${k}`);
   return {
+    behind,
     layers,
     ground: document.getElementById(`ground-${id}`),
     blade: SABRE.map(([, className]) => svgPath(blade, className)),
@@ -893,6 +896,7 @@ function polyline(points, count) {
 }
 
 function drawFencer(parts, figure) {
+  setAttr(parts.behind, "d", figure.behind);
   for (const name of LAYERS) {
     const layer = parts.layers[name];
     const shape = figure[name];
