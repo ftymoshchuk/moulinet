@@ -10,6 +10,7 @@
 // the fencer facing left is then turned round to face the other way.
 import { Bone, BoxGeometry, BufferAttribute, BufferGeometry, CatmullRomCurve3, CylinderGeometry, Group, Matrix4, Mesh, Quaternion, Skeleton, SkinnedMesh, SphereGeometry, TubeGeometry, Vector3 } from "../vendor/three.module.min.js";
 import { gripFrame } from "./body.js";
+import { hiltParts } from "./parts.js";
 import { skeleton } from "./figure.js";
 
 const RAD = Math.PI / 180;
@@ -28,9 +29,9 @@ const WRIST_BEND = 50;
 const GRIP_ACROSS = 40;
 const GRIP_BACK = 1.6;
 const GRIP_OUT = 2.4;
-// How far each joint of a finger bends to close round the grip, from the knuckle out (degrees); the thumb lies along
-// the back of the grip. The rear hand, on the hip, is held loosely closed.
-const SWORD_CURL = { 1: [12, 22, 18], 2: [58, 80, 48], 3: [64, 86, 52], 4: [68, 88, 52], 5: [72, 88, 50] };
+// How far each joint of a finger bends to close round the grip, from the knuckle out (degrees), the forefinger least;
+// the thumb lies along the back of the grip. The rear hand, on the hip, is held loosely closed.
+const SWORD_CURL = { 2: [58, 80, 48], 3: [64, 86, 52], 4: [68, 88, 52], 5: [72, 88, 50] };
 const REAR_CURL = { 1: [6, 10, 8], 2: [22, 30, 20], 3: [24, 32, 22], 4: [26, 34, 22], 5: [28, 34, 22] };
 // How much of the forearm's turn toward the hand each of its two bones takes, the elbow's end first.
 const FOREARM_TWIST = [0.2, 0.65];
@@ -187,8 +188,33 @@ function makeRig(bodies, figure) {
         const along = unit((next === undefined ? tails[i] : heads[next]).clone().sub(heads[i]));
         const axis = new Vector3().crossVectors(along, palm);
         if (axis.lengthSq() < 1e-8) return;
-        turns.set(i, new Quaternion().setFromAxisAngle(axis.normalize(), angle * RAD * (side === "L" ? 1 : -1)));
+        turns.set(i, new Quaternion().setFromAxisAngle(axis.normalize(), angle * RAD));
       });
+    }
+    return turns;
+  };
+
+  // The sword hand's thumb lies along the back of the grip, as parts.js has it: each of its bones turns to point at
+  // the next of the thumb's joints there, the knuckle where it leaves the hand, the middle joint and the tip.
+  const thumbAlongGrip = (side) => {
+    const h = hand(side);
+    const g = GRIP_ACROSS * RAD;
+    const edge = h.out.clone().multiplyScalar(Math.cos(g)).addScaledVector(h.across, Math.sin(g));
+    const point = ([x, y, z]) => h.centre.clone().addScaledVector(h.grip, x + FIST).addScaledVector(edge, y).addScaledVector(h.palm, z);
+    const targets = hiltParts().thumb.joints.map(point);
+    const turns = new Map();
+    // The turn of the bone before, which at rest is the hand's: none.
+    let before = new Quaternion();
+    const start = heads[at[`finger1-1.${side}`]].clone();
+    for (const j of [1, 2, 3]) {
+      const i = at[`finger1-${j}.${side}`];
+      const next = at[`finger1-${j + 1}.${side}`];
+      const bone = (next === undefined ? tails[i] : heads[next]).clone().sub(heads[i]);
+      const toward = targets[j - 1].clone().sub(start).normalize();
+      const turn = new Quaternion().setFromUnitVectors(unit(bone.clone().applyQuaternion(before)), toward).multiply(before);
+      turns.set(i, before.clone().invert().multiply(turn));
+      start.add(bone.applyQuaternion(turn));
+      before = turn;
     }
     return turns;
   };
@@ -204,7 +230,7 @@ function makeRig(bodies, figure) {
     legs: { L: limb("L", "upperleg01", "lowerleg01", "foot"), R: limb("R", "upperleg01", "lowerleg01", "foot") },
     arms: { L: limb("L", "upperarm01", "lowerarm01", "wrist"), R: limb("R", "upperarm01", "lowerarm01", "wrist") },
     hands: { L: hand("L"), R: hand("R") },
-    curls: { L: curl("L", SWORD_CURL), R: curl("R", REAR_CURL) },
+    curls: { L: new Map([...curl("L", SWORD_CURL), ...thumbAlongGrip("L")]), R: curl("R", REAR_CURL) },
     restFoot: { L: unit(tails[at["foot.L"]].clone().sub(head("foot.L"))), R: unit(tails[at["foot.R"]].clone().sub(head("foot.R"))) },
     restNeck: unit(tails[at.neck03].clone().sub(head("neck01"))),
   };

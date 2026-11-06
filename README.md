@@ -69,7 +69,7 @@ drawing: bodies modelled in three dimensions, the young man and the older one,
 posed from the same numbers, so their feet, their hands and their blades are
 where the drawing has them, and drawn in ink. The floor, the marks round the
 feet, the motion ghosts and the blade paths stay as they are. They load the
-first time you turn them on, about 360 KB, and need a browser with WebGL 2; one
+first time you turn them on, about 370 KB, and need a browser with WebGL 2; one
 without says so and keeps the drawing. They are new, and the drawing is still
 the default.
 
@@ -190,11 +190,16 @@ once.
 The bodies are MakeHuman's: its base mesh, skeleton and skin weights, which its
 authors gave to the public domain, shaped into the two men with its body
 targets. `scripts/bake-fencers.js` makes them once, ahead of time, into one
-compressed file of 180 KB, `site/models/fencers.bin`: the young man athletic,
+compressed file of 190 KB, `site/models/fencers.bin`: the young man athletic,
 the older one heavier and balding; their legs as long as the skeleton's, 90 cm
 from hip joint to ankle, and their arms 31 cm to the elbow and 27 cm to the
 wrist; and every point of each body on a garment, the jacket and breeches or
-trousers standing a little off the skin, the gloves, the shoes, the hair.
+trousers standing a little off the skin, the gloves, the shoes, the hair. The
+cloth is smoothed so it runs over the hollows of the body instead of into them,
+the seat spans the cleft of the buttocks, and the bare feet are rounded into
+shoes. Each garment ends in a straight seam round the body, at the waist, below
+the knee, at the collar and at the cuffs, where the ink draws a line, as the
+drawing draws its hems.
 
 Each frame poses the bodies from the pose's numbers. The hips go where the
 skeleton has them, square to its hips, and the chest turns and leans with its

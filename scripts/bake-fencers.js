@@ -66,6 +66,14 @@ const BODIES = {
   },
 };
 
+// How many rounds of smoothing each garment has, so that cloth runs over the hollows of the body rather than into
+// them and a shoe is a shoe, not a bare foot; and how far a shoe stands off the foot (decimetres).
+const SMOOTH = { jacket: 20, breeches: 40, shoe: 30 };
+const SHOE = 0.03;
+// The seat of the breeches spans the cleft between the buttocks, as cloth does: the vertices of the breeches that face
+// back at least this much (the cosine of their angle from straight back) are filled this many rounds.
+const SEAT = { facing: 0.35, rounds: 120 };
+
 // The bones the page poses. Every other bone of MakeHuman's skeleton only ever
 // turns with its parent, so its share of the skin goes to the nearest of these
 // above it: the face to the head, the toes to the foot, the breast to the chest.
@@ -89,12 +97,14 @@ export const BONES = [
 
 // The groups of the base mesh that are drawn: the body and the eyes in it.
 const DRAWN = new Set(["body", "helper-l-eye", "helper-r-eye"]);
-const FACE = /^(head|jaw|eye|brow|lip|cheek|nose|temple|chin|ear|tongue|levator|oris|orbicularis|risorius|special|oculi|mouth|teeth)/;
 
+// The base mesh: its vertices, and the faces drawn as triangles, with the face of the mesh each came from.
 function parseObj(text) {
   const verts = [];
   const faces = [];
+  const from = [];
   let group = "";
+  let face = 0;
   for (const line of text.split("\n")) {
     if (line.startsWith("v ")) {
       const [, x, y, z] = line.trim().split(/\s+/);
@@ -103,10 +113,14 @@ function parseObj(text) {
       group = line.slice(2).trim();
     } else if (line.startsWith("f ") && DRAWN.has(group)) {
       const idx = line.trim().split(/\s+/).slice(1).map((t) => parseInt(t, 10) - 1);
-      for (let k = 1; k + 1 < idx.length; k++) faces.push(idx[0], idx[k], idx[k + 1]);
+      for (let k = 1; k + 1 < idx.length; k++) {
+        faces.push(idx[0], idx[k], idx[k + 1]);
+        from.push(face);
+      }
+      face++;
     }
   }
-  return { verts: Float64Array.from(verts), faces };
+  return { verts: Float64Array.from(verts), faces, from };
 }
 
 function applyTarget(verts, text, weight) {
@@ -170,19 +184,74 @@ function lengthen(verts, joints, skel, part, wanted) {
   for (const [j, k] of moved) if (k) joints[j] = joints[j].map((x, c) => x + extra * d[c] * k);
 }
 
+// Fills the hollows under cloth that spans them: each vertex of `which` that lies below the middle of its neighbours,
+// along `normals`, rises toward it, round after round.
+function fill(pos, neighbours, normals, which, rounds) {
+  for (let round = 0; round < rounds; round++) {
+    for (const v of which) {
+      const around = neighbours[v];
+      let rise = 0;
+      for (let k = 0; k < 3; k++) {
+        let sum = 0;
+        for (const u of around) sum += pos[3 * u + k];
+        rise += (sum / around.length - pos[3 * v + k]) * normals[3 * v + k];
+      }
+      if (rise > 0) for (let k = 0; k < 3; k++) pos[3 * v + k] += rise * normals[3 * v + k];
+    }
+  }
+}
+
+// Smooths each vertex `rounds[v]` rounds, by Taubin's pair of steps, which keep a shape its size: each vertex moves
+// toward the middle of its neighbours, then a little back out.
+function smooth(pos, neighbours, rounds) {
+  const most = Math.max(...rounds);
+  const next = new Float64Array(pos.length);
+  for (let round = 0; round < most; round++) {
+    for (const step of [0.5, -0.53]) {
+      next.set(pos);
+      rounds.forEach((r, v) => {
+        if (r <= round) return;
+        const around = neighbours[v];
+        for (let k = 0; k < 3; k++) {
+          let sum = 0;
+          for (const u of around) sum += pos[3 * u + k];
+          next[3 * v + k] = pos[3 * v + k] + step * (sum / around.length - pos[3 * v + k]);
+        }
+      });
+      pos.set(next);
+    }
+  }
+}
+
+// Where the garments end, in MakeHuman's units (decimetres), each measured along the bone it crosses, so that it runs
+// round the limb with the rings of the mesh: the top of the shoe up the shin from the ankle, the band of the
+// knickerbockers down the shin from the knee, the waist up from the hip joints, the collar up the neck, the gauntlet
+// of the sword hand back up the forearm from the wrist, and the cuff of the rear sleeve.
+const ENDS = { shoe: 0.25, knee: 0.8, waist: 0.75, collar: 0.35, gauntlet: 1.05, cuff: 0.15 };
+
 /** Which garment a vertex is on, from the bone that moves it most and where it is at rest (decimetres). */
 function garmentOf(body, bone, p, heads) {
-  const hip = heads["upperleg01.L"][1];
-  const knee = heads["lowerleg01.L"][1];
-  const ankle = heads["foot.L"][1];
+  // How far `p` is along the line from the start of bone `a` toward the start of bone `b`.
+  const along = (a, b) => {
+    const d = sub(heads[b], heads[a]);
+    const l = Math.hypot(...d);
+    const q = sub(p, heads[a]);
+    return (q[0] * d[0] + q[1] * d[1] + q[2] * d[2]) / l;
+  };
   if (/^eye\./.test(bone)) return "eye";
-  if (/^(foot|toe)/.test(bone) || p[1] < ankle + 0.25) return "shoe";
-  if (/^(wrist|metacarpal|finger)/.test(bone)) return bone.endsWith(".L") ? "glove" : "skin";
-  if (bone === "lowerarm02.L" && dist(p, heads["wrist.L"]) < 1.05) return "glove";
-  if (/^neck0[23]/.test(bone) || FACE.test(bone)) return bone === "head" && isHair(body, p, heads.head) ? "hair" : "skin";
-  if (/^neck01/.test(bone)) return p[1] < heads.neck01[1] + 0.35 ? "jacket" : "skin";
-  if (/^(lowerleg|upperleg|pelvis|root)/.test(bone) || p[1] < hip + 0.75) return p[1] < knee - 0.8 && !body.trousers ? "stocking" : "breeches";
-  return "jacket";
+  const side = bone.endsWith(".L") ? "L" : "R";
+  if (/^(upperleg|lowerleg|foot|toe)/.test(bone)) {
+    const up = along(`foot.${side}`, `lowerleg01.${side}`);
+    if (up < ENDS.shoe) return "shoe";
+    if (!body.trousers && up < dist(heads[`foot.${side}`], heads[`lowerleg01.${side}`]) - ENDS.knee) return "stocking";
+  } else if (/^(upperarm|lowerarm|wrist|metacarpal|finger)/.test(bone)) {
+    const past = along(`lowerarm01.${side}`, `wrist.${side}`) - dist(heads[`lowerarm01.${side}`], heads[`wrist.${side}`]);
+    if (side === "L") return past > -ENDS.gauntlet ? "glove" : "jacket";
+    return past > -ENDS.cuff ? "skin" : "jacket";
+  } else if (along("neck01", "head") > ENDS.collar) {
+    return isHair(body, p, heads.head) ? "hair" : "skin";
+  }
+  return p[1] < heads["upperleg01.L"][1] + ENDS.waist ? "breeches" : "jacket";
 }
 
 // Hair over the crown and down the back of the head; an older man's only round the back and sides.
@@ -204,6 +273,16 @@ export function bake(root, bodies = BODIES) {
   const count = used.length;
   const index = Uint16Array.from(obj.faces, (v) => number.get(v));
   if (count > 65535) throw new Error("too many vertices for 16-bit triangles");
+
+  // Which vertices share an edge with each.
+  const linked = Array.from({ length: count }, () => new Set());
+  for (let f = 0; f < index.length; f += 3) {
+    for (const [a, b] of [[0, 1], [1, 2], [2, 0]]) {
+      linked[index[f + a]].add(index[f + b]);
+      linked[index[f + b]].add(index[f + a]);
+    }
+  }
+  const neighbours = linked.map((set) => [...set]);
 
   // Each bone of the skeleton, and the bone the page poses that it turns with.
   const posed = new Map(BONES.map((name, i) => [name, i]));
@@ -265,6 +344,9 @@ export function bake(root, bodies = BODIES) {
   };
   const armWeights = Object.fromEntries(SIDES.map((side) => [side, { upper: length(side, "upperarm", "lowerarm01", "wrist"), fore: length(side, "lowerarm", "wrist") }]));
 
+  // The faces of the mesh: the corners of each, which faces share an edge with it, and the faces round each vertex.
+  const faces = faceStructure(index, obj.from, count);
+
   const figures = {};
   for (const [who, body] of Object.entries(bodies)) {
     const verts = obj.verts.slice();
@@ -285,28 +367,154 @@ export function bake(root, bodies = BODIES) {
     }
     const heads = Object.fromEntries(Object.keys(skel.bones).map((name) => [name, headOf(name)]));
 
+    // Each vertex on its garment, and each face; where garments meet, the vertices of the seam set on the line the
+    // garment ends at, so the seam runs straight round the body.
+    const garment = Uint8Array.from(used, (v, i) => GARMENTS.indexOf(garmentOf(body, strongest[i].bone, [verts[3 * v], verts[3 * v + 1], verts[3 * v + 2]], heads)));
+    const wearing = faceGarments(garment, faces);
+    const seam = new Uint8Array(count);
+    for (let i = 0; i < count; i++) {
+      const kinds = new Set(faces.round[i].map((f) => wearing.get(f)));
+      const plane = kinds.size > 1 ? seamPlane(kinds, strongest[i].bone, heads) : null;
+      if (!plane) continue;
+      seam[i] = 1;
+      const v = used[i];
+      const off = (verts[3 * v] - plane.at[0]) * plane.dir[0] + (verts[3 * v + 1] - plane.at[1]) * plane.dir[1] + (verts[3 * v + 2] - plane.at[2]) * plane.dir[2];
+      for (let k = 0; k < 3; k++) verts[3 * v + k] -= off * plane.dir[k];
+    }
+    // Each standing off the skin as far as its garment does, and the garments smoothed but for their seams.
     const normals = normalsOf(verts, obj.faces);
-    const position = new Int16Array(count * 3);
-    const garment = new Uint8Array(count);
+    const dressed = new Float64Array(count * 3);
     used.forEach((v, i) => {
-      const p = [verts[3 * v], verts[3 * v + 1], verts[3 * v + 2]];
-      const kind = garmentOf(body, strongest[i].bone, p, heads);
-      garment[i] = GARMENTS.indexOf(kind);
-      const out = body.loose[kind] ?? 0;
-      for (let k = 0; k < 3; k++) {
-        const cm = (p[k] + out * normals[3 * v + k]) * scale;
-        position[3 * i + k] = Math.round(cm * 100);
-      }
+      const kind = GARMENTS[garment[i]];
+      const out = kind === "shoe" ? SHOE : (body.loose[kind] ?? 0);
+      for (let k = 0; k < 3; k++) dressed[3 * i + k] = verts[3 * v + k] + out * normals[3 * v + k];
     });
+    const drawnNormals = Float64Array.from({ length: count * 3 }, (_, j) => normals[3 * used[Math.floor(j / 3)] + (j % 3)]);
+    const seat = [...garment.keys()].filter((i) => !seam[i] && GARMENTS[garment[i]] === "breeches" && -drawnNormals[3 * i + 2] > SEAT.facing);
+    fill(dressed, neighbours, drawnNormals, seat, SEAT.rounds);
+    smooth(dressed, neighbours, [...garment].map((g, i) => (seam[i] ? 0 : (SMOOTH[GARMENTS[g]] ?? 0))));
+    const position = Int16Array.from(dressed, (x) => Math.round(x * scale * 100));
     const cm = (p) => p.map((x) => Math.round(x * scale * 100) / 100);
     figures[who] = {
       position,
       garment,
+      wearing,
       heads: BONES.map((name) => cm(heads[name])),
       tails: BONES.map((name) => cm(joints[skel.bones[name].tail])),
     };
   }
-  return { count, index, skinIndex, skinWeight, parents, figures };
+  return seamed({ count, index, skinIndex, skinWeight, parents, figures }, obj.from);
+}
+
+// The faces of the mesh, from the triangles and the face each came from: the corners of each face, the faces that
+// share an edge with each, and the faces round each vertex.
+function faceStructure(index, from, count) {
+  const corners = new Map();
+  const round = Array.from({ length: count }, () => []);
+  const sharing = new Map();
+  from.forEach((face, t) => {
+    const list = corners.get(face) ?? new Set();
+    for (let c = 0; c < 3; c++) {
+      const v = index[3 * t + c];
+      list.add(v);
+      if (!round[v].includes(face)) round[v].push(face);
+      const w = index[3 * t + ((c + 1) % 3)];
+      const edge = v < w ? `${v} ${w}` : `${w} ${v}`;
+      const faces = sharing.get(edge) ?? [];
+      if (!faces.includes(face)) faces.push(face);
+      sharing.set(edge, faces);
+    }
+    corners.set(face, list);
+  });
+  const next = new Map([...corners.keys()].map((face) => [face, new Set()]));
+  for (const list of sharing.values()) for (const f of list) for (const g of list) if (f !== g) next.get(f).add(g);
+  return { corners, next, round };
+}
+
+// The garment each face wears: the one most of its corners are on, or of those the first in GARMENTS; and then a face
+// that differs from at least three of the faces beside it takes theirs, so a seam has no notch one face deep. The hair
+// is not a garment: where it meets the skin the colours blend, as a hairline does, so a face of hair wears skin here.
+const [HAIR, SKIN] = [GARMENTS.indexOf("hair"), GARMENTS.indexOf("skin")];
+function faceGarments(garment, { corners, next }) {
+  const wearing = new Map();
+  for (const [face, list] of corners) {
+    const votes = new Map();
+    for (const v of list) {
+      const kind = garment[v] === HAIR ? SKIN : garment[v];
+      votes.set(kind, (votes.get(kind) ?? 0) + 1);
+    }
+    wearing.set(face, [...votes].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0][0]);
+  }
+  for (let round = 0; round < 3; round++) {
+    for (const [face, kind] of [...wearing]) {
+      const votes = new Map();
+      for (const g of next.get(face)) votes.set(wearing.get(g), (votes.get(wearing.get(g)) ?? 0) + 1);
+      const [most, count] = [...votes].sort((a, b) => b[1] - a[1])[0] ?? [kind, 0];
+      if (most !== kind && count >= 3) wearing.set(face, most);
+    }
+  }
+  return wearing;
+}
+
+// The plane a seam between the garments `kinds` lies in, at a vertex moved most by `bone`: through `at`, square to
+// `dir`. The waist is level; the others are square to the bone they go round.
+function seamPlane(kinds, bone, heads) {
+  const has = (kind) => kinds.has(GARMENTS.indexOf(kind));
+  const side = bone.endsWith(".L") ? "L" : "R";
+  const across = (a, b, along) => {
+    const d = sub(heads[b], heads[a]);
+    const l = Math.hypot(...d);
+    const dir = d.map((x) => x / l);
+    return { dir, at: heads[a].map((x, k) => x + dir[k] * along(l)) };
+  };
+  const arm = /^(upperarm|lowerarm|wrist|metacarpal|finger)/.test(bone);
+  if (has("jacket") && has("breeches")) return { dir: [0, 1, 0], at: [0, heads["upperleg01.L"][1] + ENDS.waist, 0] };
+  if (has("shoe")) return across(`foot.${side}`, `lowerleg01.${side}`, () => ENDS.shoe);
+  if (has("stocking")) return across(`foot.${side}`, `lowerleg01.${side}`, (l) => l - ENDS.knee);
+  if (has("glove")) return across(`lowerarm01.${side}`, `wrist.${side}`, (l) => l - ENDS.gauntlet);
+  if (has("jacket") && has("skin")) return arm ? across(`lowerarm01.${side}`, `wrist.${side}`, (l) => l - ENDS.cuff) : across("neck01", "head", () => ENDS.collar);
+  return null;
+}
+
+// Where garments meet, each vertex of the seam is doubled, one for each garment, so the colours meet at the seam rather
+// than blending across a face. The doubles are where the vertex is and move as it does, so nothing parts. Both bodies
+// share the triangles, so a vertex is doubled where the garments of either meet. `from` is the face of the mesh each
+// triangle came from, and each body's `wearing` the garment each face wears.
+function seamed({ count, index, skinIndex, skinWeight, parents, figures }, from) {
+  const bodies = Object.values(figures);
+  const worn = bodies.map((body) => body.wearing);
+  const keyOf = from.map((face) => worn.map((wearing) => wearing.get(face)).join(","));
+  // Each vertex keeps its number for the first garment it is on, and its doubles are numbered after all the rest.
+  const keys = Array.from({ length: count }, () => []);
+  for (let j = 0; j < index.length; j++) {
+    const key = keyOf[Math.floor(j / 3)];
+    if (!keys[index[j]].includes(key)) keys[index[j]].push(key);
+  }
+  const source = Array.from({ length: count }, (_, v) => v);
+  const numbers = keys.map((list, v) => new Map(list.map((key, k) => [key, k === 0 ? v : source.push(v) - 1])));
+  if (source.length > 65535) throw new Error("too many vertices for 16-bit triangles");
+  const copy = (array, size) => {
+    const out = new array.constructor(source.length * size);
+    source.forEach((v, i) => out.set(array.subarray(v * size, v * size + size), i * size));
+    return out;
+  };
+  const wears = (b) => {
+    const out = new Uint8Array(source.length);
+    const own = bodies[b].garment;
+    for (let j = 0; j < index.length; j++) {
+      const worn = Number(keyOf[Math.floor(j / 3)].split(",")[b]);
+      out[numbers[index[j]].get(keyOf[Math.floor(j / 3)])] = worn === SKIN ? own[index[j]] : worn;
+    }
+    return out;
+  };
+  return {
+    count: source.length,
+    index: Uint16Array.from(index, (v, j) => numbers[v].get(keyOf[Math.floor(j / 3)])),
+    skinIndex: copy(skinIndex, 4),
+    skinWeight: copy(skinWeight, 4),
+    parents,
+    figures: Object.fromEntries(Object.entries(figures).map(([who, { wearing, ...f }], b) => [who, { ...f, position: copy(f.position, 3), garment: wears(b) }])),
+  };
 }
 
 // A list of 16-bit numbers as the steps between them, `stride` apart, wrapping round.

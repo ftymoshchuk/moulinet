@@ -103,7 +103,7 @@ export async function createStage3d(canvas) {
   const renderer = new WebGLRenderer({ canvas, context: gl });
   renderer.outputColorSpace = LinearSRGBColorSpace;
   renderer.setClearColor(0x000000, 0);
-  const stage = { lost: false };
+  const stage = { lost: false, fencers: null };
   canvas.addEventListener("webglcontextlost", (event) => {
     event.preventDefault();
     stage.lost = true;
@@ -141,6 +141,7 @@ export async function createStage3d(canvas) {
     scene.add(figure.group);
     fencers[who] = figure;
   }
+  stage.fencers = fencers;
   const meshes = [];
   scene.traverse((o) => {
     if (o.isMesh) meshes.push(o);
