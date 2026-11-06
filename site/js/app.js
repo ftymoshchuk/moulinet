@@ -4,7 +4,7 @@
 // where it was noted. The base postures show one fencer in one posture at a
 // time, in words as well as lines. The Creator makes new scenes.
 import { BASES, BASE_BLADE, BASE_GROUPS, basePhrase } from "./bases.js";
-import { DEFAULT_FRAME, bladePaths, floorPath, frameOf, handFrame, inkFigure, stickFigure } from "./figure.js";
+import { DEFAULT_FRAME, bladePaths, floorPath, frameOf, groundPath, handFrame, stickFigure } from "./figure.js";
 import { JOINTS, POSE_NAMES, POSES, PRESETS } from "./library.js";
 import {
   TEXT_KEYS,
@@ -31,36 +31,6 @@ import {
 import { STORAGE_KEY, deleteScene, readSaved, referenceUrl, saveScene, sceneSummary } from "./scenes.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
-// Layers of an ink figure, back to front, as inkFigure names them.
-const LAYERS = ["l1", "l2", "l3", "l4", "head", "l6"];
-// What each layer is when both fencers are drawn from the back (as the stage draws them): the sword arm, the two legs, the jersey, the head and the rear arm.
-const PARTS = { l1: "jersey", l2: "trousers", l3: "trousers", l4: "jersey", head: "face", l6: "jersey" };
-// The sabre and the hand that holds it, back to front, as inkFigure names their parts: the blade when its root is
-// behind the guard; the inside of the guard the camera sees, its line of ink, its steel in shadow and the shade deep in
-// it; the grip; the pommel when it is behind the fist; the fist, its line of ink, its glove, its lines and its shading;
-// the pommel when it is in front of the fist; the outside of the guard, its line of ink, its steel and its shading;
-// and the blade when its root is in front of the guard.
-const SABRE = [
-  ["back", "blade__steel"],
-  ["inside.o", "blade__outline"],
-  ["inside.g", "blade__inside"],
-  ["inside.k", "blade__shade"],
-  ["grip", "blade__steel"],
-  ["pommel.o", "blade__outline"],
-  ["pommel.g", "blade__guard"],
-  ["pommel.d", "blade__rim"],
-  ["fist.o", "figure__outline"],
-  ["fist.g", "figure__fill figure__fill--jersey"],
-  ["fist.d", "figure__detail"],
-  ["fist.k", "figure__ink"],
-  ["butt.o", "blade__outline"],
-  ["butt.g", "blade__guard"],
-  ["butt.d", "blade__rim"],
-  ["o", "blade__outline"],
-  ["g", "blade__guard"],
-  ["k", "blade__shade"],
-  ["front", "blade__steel"],
-];
 // Four motion ghosts, each this far behind the one before.
 const GHOSTS = [1, 2, 3, 4];
 const GHOST_GAP_MS = 45;
@@ -79,6 +49,8 @@ const modeButtons = document.querySelectorAll("[data-mode]");
 const modePanels = [...document.querySelectorAll("[data-modes]")].map((el) => ({ el, modes: el.dataset.modes.split(" ") }));
 const stagePanelEl = document.getElementById("stage-panel");
 const stageEl = document.getElementById("stage");
+const canvas3dEl = document.getElementById("stage-3d");
+const stageNoteEl = document.getElementById("stage-note");
 const stepCountEl = document.getElementById("step-count");
 const stepLabelEl = document.getElementById("step-label");
 const timecodeEl = document.getElementById("timecode");
@@ -569,6 +541,63 @@ function deleteSelectedScene() {
 let frame = 0;
 let lastTick = null;
 
+// ---------- The 3D figures ----------
+
+// The fencers are 3D figures, which load as the page opens: the drawing code, then
+// the bodies. The stage waits a moment for them; if they take longer, or this
+// browser cannot draw them, it shows the fencers as stick figures meanwhile.
+let stage3d = null;
+let waitFor3d = 0;
+const WAIT_FOR_3D_MS = 1500;
+
+// Whether this browser can draw them, before anything is fetched for them: they
+// need WebGL 2, and a way to uncompress the bodies.
+function canDraw3d() {
+  if (typeof DecompressionStream !== "function") return false;
+  try {
+    const gl = document.createElement("canvas").getContext("webgl2");
+    gl?.getExtension("WEBGL_lose_context")?.loseContext();
+    return Boolean(gl);
+  } catch {
+    return false;
+  }
+}
+
+// Says under the stage why the fencers are stick figures.
+function noteStickFigures(why) {
+  setText(stageNoteEl, `The fencers are drawn as stick figures, as ${why}.`);
+  stageNoteEl.classList.remove("hidden");
+}
+
+function start3d() {
+  waitFor3d = performance.now() + WAIT_FOR_3D_MS;
+  setTimeout(update, WAIT_FOR_3D_MS);
+  Promise.resolve()
+    .then(() => {
+      if (!canDraw3d()) throw Object.assign(new Error("no WebGL 2"), { why: "this browser cannot draw them in 3D, having no WebGL 2" });
+      return import("./stage3d.js");
+    })
+    .then(({ createStage3d }) => createStage3d(canvas3dEl))
+    .then((stage) => {
+      stage3d = stage;
+    })
+    .catch((error) => noteStickFigures(error.why ?? `their 3D figures could not be loaded (${error.message})`))
+    .finally(() => {
+      waitFor3d = 0;
+      update();
+    });
+}
+
+// Whether the stage shows the 3D figures now. A browser can take the drawing
+// away, as when a graphics card is reset, and then the stick figures stand in.
+function showing3d() {
+  if (stage3d?.lost) {
+    stage3d = null;
+    noteStickFigures("the browser took the 3D figures' drawing away");
+  }
+  return Boolean(stage3d);
+}
+
 function update() {
   render();
   if (state.playing && !frame) {
@@ -620,21 +649,6 @@ function fact(term, detail) {
 }
 
 function createFencer(id) {
-  const body = document.getElementById(`body-${id}`);
-  // The blade where it is turned out beyond the far side of the sword arm: first, so the whole body is drawn over it.
-  const behind = svgPath(body, "blade__steel");
-  const layers = {};
-  for (const name of LAYERS) {
-    const isHead = name === "head";
-    layers[name] = {
-      outline: svgPath(body, "figure__outline"),
-      fill: svgPath(body, `figure__fill figure__fill--${PARTS[name]}`),
-      hair: isHead ? svgPath(body, "figure__hair") : null,
-      detail: svgPath(body, "figure__detail"),
-      ink: svgPath(body, "figure__ink"),
-    };
-  }
-  const blade = document.getElementById(`blade-${id}`);
   const ghosts = document.getElementById(`ghosts-${id}`);
   const ghostBodies = {};
   const ghostBlades = {};
@@ -642,10 +656,8 @@ function createFencer(id) {
   for (const k of [...GHOSTS].reverse()) ghostBodies[k] = svgPath(ghosts, `ghost ghost--${k}`);
   for (const k of [...GHOSTS].reverse()) ghostBlades[k] = svgPath(ghosts, `ghost-blade ghost-blade--${k}`);
   return {
-    behind,
-    layers,
     ground: document.getElementById(`ground-${id}`),
-    blade: SABRE.map(([, className]) => svgPath(blade, className)),
+    stick: document.getElementById(`stick-${id}`),
     ghostBodies,
     ghostBlades,
   };
@@ -895,21 +907,6 @@ function polyline(points, count) {
   return count < 2 ? "" : `M${points.slice(0, count).join("L")}`;
 }
 
-function drawFencer(parts, figure) {
-  setAttr(parts.behind, "d", figure.behind);
-  for (const name of LAYERS) {
-    const layer = parts.layers[name];
-    const shape = figure[name];
-    setAttr(layer.outline, "d", shape.o);
-    setAttr(layer.fill, "d", shape.g);
-    if (layer.hair) setAttr(layer.hair, "d", shape.hair);
-    setAttr(layer.detail, "d", shape.d);
-    setAttr(layer.ink, "d", shape.k ?? "");
-  }
-  setAttr(parts.ground, "d", figure.ground);
-  SABRE.forEach(([key], i) => setAttr(parts.blade[i], "d", key.split(".").reduce((part, name) => part[name], figure.blade)));
-}
-
 // The Creator keeps one view as a scene is reshaped; the library looks as close as
 // keeps everyone and their whole blades in; the postures, as close as keeps the
 // fencer and most of the blade in.
@@ -927,24 +924,38 @@ function frameFor(now) {
   return framed.frame;
 }
 
-// Where the camera looks from. The close-up comes round to the other side of the
-// piste, outside the sword arm, which is where the old books draw the grip and
-// the hand positions from; the camera turns it from there.
+// Where the camera looks from. The close-up looks from outside the sword arm,
+// which is where the old books draw the grip and the hand positions from: for
+// the fencer facing right, from the other side of the piste; the fencer facing
+// left has his sword arm on the near side, so his stays on this side. The camera
+// turns it from there.
 function viewCamera() {
-  return state.camera + (state.closeUp ? 180 : 0);
+  if (!state.closeUp) return state.camera;
+  const nearSide = state.mode === "creator" && editingFencer() === "B";
+  return state.camera + (nearSide ? 0 : 180);
 }
 
 function drawStage(now) {
   const camera = viewCamera();
-  setAttr(stageEl, "viewBox", frameFor(now).join(" "));
+  const view = frameFor(now);
+  setAttr(stageEl, "viewBox", view.join(" "));
   // The postures stand still, so they have no motion to show.
   const moving = state.mode !== "base";
   stagePanelEl.classList.toggle("is-solo", timeline.solo);
   setAttr(floorEl, "d", floorPath(camera));
-  // From outside the sword arm, in the close-up, the arm is in front of the body.
-  const backView = !state.closeUp;
-  drawFencer(fencers.A, inkFigure(now.A, 1, camera, { backView }));
-  drawFencer(fencers.B, inkFigure(now.B, -1, camera, { backView, older: true }));
+  const in3d = showing3d();
+  canvas3dEl.classList.toggle("hidden", !in3d);
+  if (in3d) {
+    stage3d.draw({ poses: now, solo: timeline.solo, frame: view, camera, ink: state.ink });
+    canvas3dEl.dataset.fencers = timeline.solo ? "A" : "A B";
+  }
+  // Without them, stick figures; as the page opens, the stage waits a moment for them first.
+  const sticks = !in3d && performance.now() >= waitFor3d;
+  for (const [who, dir] of [["A", 1], ["B", -1]]) {
+    const stick = sticks ? stickFigure(now[who], dir, camera) : NO_GHOST;
+    setAttr(fencers[who].stick, "d", stick.body + stick.blade);
+    setAttr(fencers[who].ground, "d", groundPath(now[who], dir, camera));
+  }
   if (state.ink) setAttr(inkEl, "filter", "url(#ink-texture)");
   else inkEl.removeAttribute("filter");
 
@@ -1161,6 +1172,16 @@ function render() {
   else renderCreator(index, step);
   keepFocus();
 }
+
+// The canvas of the 3D figures is drawn at its size on the page, so a change of
+// size draws them again, even when nothing is playing.
+if (typeof ResizeObserver === "function") {
+  new ResizeObserver(() => {
+    if (showing3d()) render();
+  }).observe(canvas3dEl);
+}
+
+start3d();
 
 setSaved(readSaved(getStorage()));
 parked = creatorView(newPhrase());

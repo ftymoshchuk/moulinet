@@ -2,12 +2,10 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { BASE_BLADE, basePhrase } from "../site/js/bases.js";
-import { bladePart } from "../site/js/body.js";
-import { DEFAULT_FRAME, PIVOT, bladePaths, bladeTip, floorPath, frameOf, handFrame, inkFigure, knee, knee3, kneeBehind, projector, skeleton, stickFigure } from "../site/js/figure.js";
-import { area } from "../site/js/ink.js";
+import { DEFAULT_FRAME, PIVOT, bladePaths, bladeTip, floorPath, frameOf, gripFrame, groundPath, handFrame, knee, knee3, kneeBehind, projector, skeleton, stickFigure } from "../site/js/figure.js";
 import { POSES, PRESETS } from "../site/js/library.js";
 import { buildTimeline, poseAt, resolvePose } from "../site/js/phrase.js";
-import { allPaths, boxOf, readPath } from "./path-data.js";
+import { boxOf, readPath } from "./path-data.js";
 
 const BAD_NUMBER = /NaN|Infinity|undefined/;
 
@@ -15,75 +13,53 @@ function near(actual, expected, tolerance, message = "") {
   assert.ok(Math.abs(actual - expected) <= tolerance, `${message} ${actual} is not within ${tolerance} of ${expected}`);
 }
 
-test("every phrase and every base posture draws clean paths at every moment, from every camera angle", () => {
+test("every phrase and every base posture draws clean ghosts, floor marks and blade points at every moment, from every camera angle", () => {
   for (const phrase of [...PRESETS.map((preset) => preset.phrase), basePhrase()]) {
     const timeline = buildTimeline(phrase);
-    for (const camera of [-60, -25, 0, 28, 60]) {
+    // From side on, turned either way, and from the other side of the piste, as the close-up looks.
+    for (const camera of [-60, -25, 0, 28, 60, 155, 180, 205]) {
       for (let t = 0; t <= timeline.duration; t += 37) {
         const { A, B } = poseAt(timeline, t);
-        const drawn = [
-          inkFigure(A, 1, camera, { backView: true }),
-          inkFigure(B, -1, camera, { older: true }),
-          stickFigure(A, 1, camera),
-          stickFigure(B, -1, camera),
-        ];
-        for (const d of drawn.flatMap((figure) => allPaths(figure))) {
-          assert.doesNotMatch(d, BAD_NUMBER, `${phrase.name} at ${t} ms, camera ${camera}`);
-        }
+        const drawn = [stickFigure(A, 1, camera), stickFigure(B, -1, camera)].flatMap((figure) => [figure.body, figure.blade]);
+        drawn.push(groundPath(A, 1, camera), groundPath(B, -1, camera), bladeTip(A, 1, camera), bladeTip(B, -1, camera));
+        for (const d of drawn) assert.doesNotMatch(d, BAD_NUMBER, `${phrase.name} at ${t} ms, camera ${camera}`);
       }
     }
   }
 });
 
-test("an ink figure has every layer, each with a silhouette and detail lines", () => {
-  const figure = inkFigure(resolvePose({ pose: "guard" }), 1, 0);
-  for (const layer of ["l1", "l2", "l3", "l4", "l6"]) {
-    assert.match(figure[layer].g, /^M.*Z$/, layer);
-    assert.match(figure[layer].d, /^M/, layer);
-    assert.match(figure[layer].k, /^M.*z$/, layer);
-  }
-  assert.match(figure.head.g, /^M.*Z$/);
-  assert.match(figure.head.hair, /^M.*z$/, "the hair, in strokes");
-  assert.match(figure.blade.back + figure.blade.front, /^M.*Z$/, "the blade");
-  assert.match(figure.blade.g, /^M.*Z$/, "the guard");
-  assert.match(figure.blade.o, /^M.*Z$/, "and its line of ink");
-  assert.match(figure.ground, /^M/, "both feet are planted in guard");
-});
-
-test("the sword arm is drawn behind the body from the back, in front of it otherwise", () => {
-  const pose = resolvePose({ pose: "guard" });
-  const back = inkFigure(pose, 1, 0, { backView: true });
-  const front = inkFigure(pose, 1, 0);
-  assert.equal(back.l1.g, front.l6.g);
-  assert.equal(back.l6.g, front.l1.g);
-});
-
-test("the feet make an L: the foot in front points at the opponent, the foot behind at the camera", () => {
-  for (const [dir, options] of [[1, { backView: true }], [-1, { backView: true, older: true }]]) {
+test("the marks on the floor run under each planted foot as the camera sees it: along the shoe in front, across the one behind", () => {
+  for (const dir of [1, -1]) {
     for (const name of ["guard", "lungeChest", "parry3"]) {
       const pose = resolvePose({ pose: name });
-      const figure = inkFigure(pose, dir, 0, options);
-      // From the back, the leg in front is drawn first and the leg behind over it.
-      const feet = [figure.l2, figure.l3].map((leg) => boxOf([readPath(leg.g).at(-1)]));
-      const [front, back] = feet.map((box) => box.maxX - box.minX);
-      assert.ok(front > 25, `${name}: the shoe in front is seen from the side, the length of a foot (${front})`);
-      assert.ok(back < front * 0.6, `${name}: and the shoe behind is seen end on (${back})`);
-      // The strokes on the floor under it go either side of it.
-      const floor = readPath(figure.ground);
-      assert.equal(floor.length, 6);
-      const under = boxOf(floor.slice(3));
       const J = skeleton(pose);
-      const ankle = projector(pose, dir, 0)(J.ankB)[0];
-      assert.ok(under.minX < ankle - 8 && under.maxX > ankle + 8, `${name}: the strokes under the foot behind are round it`);
+      const W = projector(pose, dir, 0);
+      const strokes = readPath(groundPath(pose, dir, 0));
+      // Three strokes under each foot, below the floor and tapering to points.
+      assert.equal(strokes.length, 6, `${name}, facing ${dir}`);
+      for (const stroke of strokes) {
+        assert.ok(stroke.closed && stroke.points.every(([, y]) => y > 0), `${name}: below the floor`);
+      }
+      const [front, back] = [boxOf(strokes.slice(0, 3)), boxOf(strokes.slice(3))];
+      // The shoe in front is seen from the side, as long as a foot; the one behind, turned across, end on.
+      assert.ok(front.maxX - front.minX > 35, `${name}: along the shoe in front (${front.maxX - front.minX})`);
+      assert.ok(back.maxX - back.minX < (front.maxX - front.minX) * 0.8, `${name}: across the shoe behind (${back.maxX - back.minX})`);
+      for (const [box, ankle] of [[front, J.ankF], [back, J.ankB]]) {
+        const x = W(ankle)[0];
+        assert.ok(box.minX < x - 5 && box.maxX > x + 5, `${name}: round the ankle`);
+      }
     }
   }
 });
 
-test("a foot lifted clear of the floor leaves no hatching", () => {
-  const planted = inkFigure(resolvePose({ pose: "guard" }), 1, 0).ground;
-  const lifted = inkFigure(resolvePose({ pose: "guard", adj: { liftF: 20, liftB: 20 } }), 1, 0).ground;
-  assert.equal((planted.match(/M/g) || []).length, 6);
-  assert.equal(lifted, "");
+test("a foot lifted clear of the floor leaves no marks, and one lifted a little leaves shorter ones", () => {
+  const marks = (adj) => readPath(groundPath(resolvePose({ pose: "guard", adj }), 1, 0));
+  assert.equal(marks({}).length, 6);
+  assert.equal(marks({ liftF: 20, liftB: 20 }).length, 0);
+  const lifted = marks({ liftF: 3 });
+  assert.equal(lifted.length, 6);
+  const width = (strokes) => boxOf(strokes).maxX - boxOf(strokes).minX;
+  assert.ok(width(lifted.slice(0, 3)) < width(marks({}).slice(0, 3)), "the front foot's marks shrink as it lifts");
 });
 
 test("the knee keeps thigh and shin lengths and bends forward", () => {
@@ -397,17 +373,10 @@ test("the motion ghosts use the knee the pose turns, as the drawing does", () =>
   for (const camera of [0, 30, -60]) assert.notEqual(ghost(0, camera), ghost(40, camera), `${camera}°: the ghost's knee turns with the pose`);
 });
 
-test("the foot's turn and the knee's turn reach the drawing: the leg behind changes, the head and the blade do not, and the floor round the foot follows the foot alone", () => {
-  const drawn = (adj) => inkFigure(resolvePose({ pose: "guard", adj }), 1, 28, { backView: true });
-  const guard = drawn({});
-  const changes = (figure) => Object.keys(figure).filter((key) => JSON.stringify(figure[key]) !== JSON.stringify(guard[key]));
-  for (const adj of [{ toeBack: 40 }, { kneeOut: 70 }]) {
-    const changed = changes(drawn(adj));
-    assert.ok(changed.length > 0, `${JSON.stringify(adj)}: the drawing changes`);
-    for (const part of ["head", "blade"]) assert.ok(!changed.includes(part), `${JSON.stringify(adj)}: but not the ${part}`);
-  }
-  assert.notEqual(drawn({ toeBack: 40 }).ground, guard.ground, "the strokes on the floor go round the foot as it turns");
-  assert.equal(drawn({ kneeOut: 70 }).ground, guard.ground, "and not round the knee");
+test("the marks on the floor follow the foot behind as it turns, and not the knee", () => {
+  const marks = (adj) => groundPath(resolvePose({ pose: "guard", adj }), 1, 28);
+  assert.notEqual(marks({ toeBack: 40 }), marks({}), "the foot turns, and the marks go round it");
+  assert.equal(marks({ kneeOut: 70 }), marks({}), "the knee turns, and they stay");
 });
 
 test("an advance lands the front foot where the next guard has it, so no foot slides when the back foot follows", () => {
@@ -561,22 +530,6 @@ test("a close-up looks at the sword hand: the fist, the hilt and the forte of th
   }
 });
 
-test("seen from outside the sword arm, as the close-up sees it, every pose draws clean paths, with the hand toward the camera", () => {
-  for (const name of Object.keys(POSES)) {
-    for (const camera of [120, 155, 180, 205, 240]) {
-      for (const [dir, options] of [[1, {}], [-1, { older: true }]]) {
-        const figure = inkFigure(resolvePose({ pose: name }), dir, camera, options);
-        for (const d of allPaths(figure)) assert.doesNotMatch(d, BAD_NUMBER, `${name} from ${camera}°`);
-      }
-    }
-  }
-  // Round there, the hand position that turns the edge out, away from the camera in the stage's own view, turns it to
-  // the camera: the outside of the guard is what is seen of it.
-  const area2 = (d) => readPath(d).reduce((sum, shape) => sum + Math.abs(area(shape.points)) / 2, 0);
-  const second = inkFigure(resolvePose({ pose: "extend", adj: { hand: -90, blade: 0 } }), 1, 180, {}).blade;
-  assert.ok(area2(second.g) > 2.5 * area2(second.inside.g), "the second position, from outside the arm: a shield");
-});
-
 test("a frame holds the blade only as far as it is told, and all of it unless told less", () => {
   // The blade held up: its point sets how high the stage must reach.
   const timeline = buildTimeline({ solo: true, steps: [{ A: { pose: "prep", x: 60 } }] });
@@ -629,69 +582,27 @@ test("blade paths sample the whole phrase about every 10 ms, at most 700 times",
   assert.equal(bladePaths(long, 0).times.length, 701);
 });
 
-test("the shapes of a figure are wound one way and its strokes another, so shapes merge and strokes stay solid", () => {
-  for (const [dir, options] of [[1, { backView: true }], [-1, { older: true }], [1, {}], [-1, {}]]) {
-    for (const name of ["guard", "lungeChest", "parry5"]) {
-      const figure = inkFigure(resolvePose({ pose: name }), dir, 25, options);
-      const where = `${name}, facing ${dir}, ${JSON.stringify(options)}`;
-      const { blade } = figure;
-      const shapes = [figure.l1.g, figure.l2.g, figure.l3.g, figure.l4.g, figure.l6.g, figure.head.g, blade.g, blade.inside.g, blade.fist.g, blade.pommel.g, blade.butt.g, blade.grip].filter(Boolean).flatMap(readPath);
-      assert.ok(shapes.length > 10);
-      assert.ok(shapes.every((shape) => shape.closed && area(shape.points) > 0), `silhouettes, ${where}`);
-      // (The hair is drawn in strokes of the pen, so it is wound as they are.)
-      for (const layer of [figure.l1.k, figure.l2.k, figure.l3.k, figure.l4.k, figure.l6.k, figure.head.k, figure.head.hair, figure.ground, blade.k, blade.inside.k, blade.fist.k].filter(Boolean)) {
-        const ways = new Set(readPath(layer).map((stroke) => Math.sign(area(stroke.points))));
-        assert.equal(ways.size, 1, `strokes, ${where}`);
-        assert.ok(!ways.has(0));
-      }
-    }
-  }
-});
-
-test("the hand position reaches the drawing: the sabre and the hand that holds it turn, and the body does not", () => {
-  const drawing = (hand) => inkFigure(resolvePose({ pose: "guard", adj: { hand } }), 1, 25, { backView: true });
-  const [two, four] = [drawing(-90), drawing(90)];
-  for (const layer of ["l1", "l2", "l3", "l4", "head", "l6", "ground"]) assert.deepEqual(two[layer], four[layer], `${layer} is the same`);
-  for (const part of ["g", "inside", "fist"]) assert.notDeepEqual(two.blade[part], four.blade[part], `the sabre's ${part} turns`);
-  // The blade itself lies where it did: its point is where the pose puts it.
+test("the hand position turns the hand about the blade: the edge down in the third, out in the second, up in the first, in in the fourth", () => {
+  const frame = (hand) => gripFrame(skeleton(resolvePose({ pose: "extend", adj: { hand, blade: 0 } })));
+  const G = frame(0);
+  // The frame is square: along the blade, the way the edge faces and the way the palm faces.
+  for (const [a, b] of [[G.a, G.e], [G.e, G.s], [G.s, G.a]]) near(a[0] * b[0] + a[1] * b[1] + a[2] * b[2], 0, 1e-9, "square");
+  near(G.a[0], 1, 1e-9, "the blade points at the opponent");
+  // The third position: thumb up, so the edge faces down, and the palm faces in, away from the sword arm (+z).
+  near(G.e[1], -1, 1e-9, "third, the edge down");
+  near(G.s[2], 1, 1e-9, "third, the palm in");
+  // The second: palm down and the edge out.
+  near(frame(-90).e[2], -1, 1e-9, "second, the edge out");
+  near(frame(-90).s[1], -1, 1e-9, "second, the palm down");
+  // The first: turned right over, thumb down and the edge up.
+  near(frame(-180).e[1], 1, 1e-9, "first, the edge up");
+  // The fourth: palm up and the edge in.
+  near(frame(90).e[2], 1, 1e-9, "fourth, the edge in");
+  near(frame(90).s[1], 1, 1e-9, "fourth, the palm up");
+  // Half way between the second and the third, the edge faces down and out.
+  near(frame(-45).e[1], -Math.SQRT1_2, 1e-9, "2/3, the edge half way down");
+  // The hand turns, and the blade lies where it did: its point is where the pose puts it.
   assert.equal(bladeTip(resolvePose({ pose: "guard", adj: { hand: -90 } }), 1, 25), bladeTip(resolvePose({ pose: "guard", adj: { hand: 90 } }), 1, 25));
-});
-
-test("a pose is drawn once for a view, and when drawn again for another it comes out the same", () => {
-  const pose = resolvePose({ pose: "guard" });
-  const first = inkFigure(pose, 1, 0);
-  assert.equal(inkFigure(pose, 1, 0), first, "held, it is the same drawing");
-  for (const [dir, camera, options] of [[1, 30, {}], [-1, 0, {}], [1, 0, { backView: true }], [1, 0, { older: true }]]) {
-    const other = inkFigure(pose, dir, camera, options);
-    assert.notEqual(other, first, `facing ${dir} from ${camera}° ${JSON.stringify(options)} is a new drawing`);
-    assert.equal(inkFigure(pose, dir, camera, options), other, "and that one is held");
-  }
-  assert.deepEqual(inkFigure(pose, 1, 0), first, "nothing in a drawing is left to chance");
-  assert.deepEqual(inkFigure(resolvePose({ pose: "guard" }), 1, 0), first, "nor to which pose object it was made from");
-});
-
-test("a pose held on a step is one drawing, however long the step lasts", () => {
-  const timeline = buildTimeline(PRESETS[0].phrase);
-  const early = poseAt(timeline, 100).A;
-  const late = poseAt(timeline, 500).A;
-  assert.equal(inkFigure(early, 1, 0), inkFigure(late, 1, 0));
-  const moving = poseAt(timeline, timeline.steps[1].start + 40).A;
-  assert.notEqual(inkFigure(moving, 1, 0), inkFigure(late, 1, 0));
-});
-
-test("a figure's path data stays small enough to draw again on every frame", () => {
-  let largest = 0;
-  for (const name of Object.keys(POSES)) {
-    for (const camera of [-60, -30, 0, 30, 60]) {
-      for (const [dir, options] of [[1, { backView: true }], [-1, { older: true }], [1, {}], [-1, {}]]) {
-        const size = allPaths(inkFigure(resolvePose({ pose: name }), dir, camera, options)).reduce((sum, d) => sum + d.length, 0);
-        largest = Math.max(largest, size);
-        // (The hand round the hilt, worked out in depth, is some 10,000 of them.)
-        assert.ok(size < 42000, `${name} from ${camera}° is ${size} characters`);
-      }
-    }
-  }
-  assert.ok(largest > 8000, "and it is a drawing, not an outline");
 });
 
 test("no scene bends a sword wrist further than a wrist goes, nor passes a blade through its own fencer's head", () => {
@@ -720,26 +631,3 @@ test("no scene bends a sword wrist further than a wrist goes, nor passes a blade
   }
 });
 
-test("a blade turned out beyond the far side of the sword arm is drawn behind the body, as the arm is", () => {
-  const turned = resolvePose({ pose: "guard", adj: { yaw: -40 } });
-  const figure = inkFigure(turned, 1, 0, { backView: true });
-  assert.match(figure.behind, /^M.*Z$/, "behind the body");
-  const near = figure.blade.back + figure.blade.front;
-  assert.match(near, /^M.*Z$/, "and the blade by the hand with the hand");
-  // The two are one blade: the part behind starts where the part by the hand ends, as wide.
-  const [{ points: hand }] = readPath(near);
-  const [{ points: away }] = readPath(figure.behind);
-  assert.deepEqual([away[0], away[3]], [hand[1], hand[2]]);
-  // A blade in the plane of the arm, or turned toward the camera, is drawn with the hand, all of it.
-  for (const yaw of [0, 30]) assert.equal(inkFigure(resolvePose({ pose: "guard", adj: { yaw } }), 1, 0, { backView: true }).behind, "", `turned ${yaw}°`);
-  // From outside the sword arm it is the nearest thing to the camera, and is drawn last.
-  const outside = inkFigure(turned, 1, 180);
-  assert.equal(outside.behind, "", "from outside the arm none of it is behind the body");
-  const far = bladePart(skeleton(turned), projector(turned, 1, 180)).behind;
-  assert.ok(far !== "" && outside.blade.front.endsWith(far), "it goes last, with the blade in front of the guard");
-  // In the moulinet the blade goes behind the body as it passes under and behind the arm, and is all in front for the cut.
-  const timeline = buildTimeline(PRESETS.find((preset) => preset.phrase.solo).phrase);
-  const step = (label) => timeline.steps.find((s) => s.label === label).A;
-  for (const label of ["Passes down beside the arm", "Rises behind"]) assert.notEqual(inkFigure(step(label), 1, 25, { backView: true }).behind, "", label);
-  assert.equal(inkFigure(step("Cut comes over the top"), 1, 25, { backView: true }).behind, "", "the cut");
-});

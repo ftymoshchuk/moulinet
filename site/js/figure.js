@@ -1,11 +1,11 @@
-// Fencers drawn in pen and ink, as SVG path data.
+// A fencer's skeleton, worked out from a pose's numbers, and the camera that
+// looks at it: where the stage looks, the motion ghosts, the blade paths and the
+// marks on the floor. The figures themselves are drawn in 3D (stage3d.js), on
+// this skeleton.
 //
 // The body is worked out in centimetres, y up, facing +x with the back foot at
 // 0; a projector then places it on the piste and turns it for the camera,
 // which swings around a point on the piste. Out come SVG units, y down.
-import { bladePart, footSpan, headPart, legPart, rearArm, swordArm, torsoFrame, trunk } from "./body.js";
-import { groundStrokes } from "./folds.js";
-import { handParts } from "./parts.js";
 import { poseAt } from "./phrase.js";
 
 // The camera turns around this point on the piste (cm).
@@ -185,65 +185,69 @@ export function stickFigure(p, dir, camera) {
   };
 }
 
-/**
- * The pen-and-ink fencer. Each layer is a merged silhouette (`g`) with its thin
- * lines (`d`) and its brush strokes (`k`); l1 is drawn first and l6 last, with
- * the head between l4 and l6. The sabre, with the hand that holds it, goes over
- * both fencers, but for the blade where it is turned out beyond the far side of
- * the sword arm, `behind`, which goes behind the body, before l1.
- *
- * `backView` draws the sword arm on the far side, as the camera sees the
- * fencer facing right; `older` draws an older man, balding, in loose trousers
- * instead of knickerbockers.
- */
-export function inkFigure(p, dir, camera, { backView = false, older = false } = {}) {
-  // A pose held on a step, or a page left paused, is drawn again and again: the
-  // last drawing of each pose object is kept, for the same view. A pose is never
-  // changed once made, so the drawing cannot go stale.
-  const view = `${dir} ${camera} ${backView} ${older}`;
-  const kept = DRAWN.get(p);
-  if (kept?.view === view) return kept.figure;
-  const figure = draw(p, dir, camera, backView, older);
-  DRAWN.set(p, { view, figure });
-  return figure;
+// The shoe of each foot, from the ankle, back to the heel and on to the toe, and half as wide (cm).
+const SHOE = { heel: 7, toe: 21, half: 5 };
+
+// A stroke of the pen along the floor from x0 to x1, y below it, `width` thick in the middle and tapering to points.
+function floorStroke(x0, x1, y, width) {
+  const [a, b, m] = [x0.toFixed(1), x1.toFixed(1), ((x0 + x1) / 2).toFixed(1)];
+  return `M${a} ${y.toFixed(1)}Q${m} ${(y - width).toFixed(1)} ${b} ${y.toFixed(1)}Q${m} ${(y + width).toFixed(1)} ${a} ${y.toFixed(1)}Z`;
 }
 
-const DRAWN = new WeakMap();
-
-function draw(p, dir, camera, backView, older) {
+/**
+ * The marks on the floor under a fencer's planted feet, as the plates draw them: three strokes of the pen under each
+ * shoe, as long as the camera sees the shoe reach across the piste and shorter each, which shrink as the foot lifts
+ * and are gone once it is clear of the floor.
+ */
+export function groundPath(p, dir, camera) {
   const J = skeleton(p);
   const W = projector(p, dir, camera);
-  const hands = handParts();
-  const frame = torsoFrame(J, W, older);
-  const torso = trunk(J, W, older, frame);
-  const sword = swordArm(J, W, frame);
-  const rear = rearArm(J, W, hands.hip, frame);
-  // The front of the trousers belongs to the leg further from the camera, and the leg drawn over it parts from it only below the crotch.
-  const legF = legPart(J, W, J.ankF, J.kF, { front: true, seat: backView, near: !backView, older });
-  const legB = legPart(J, W, J.ankB, J.kB, { front: false, seat: !backView, near: backView, older });
+  const tb = (p.toeBack ?? 0) * RAD;
+  let d = "";
+  for (const [ankle, along] of [[J.ankF, [1, 0]], [J.ankB, [-Math.sin(tb), Math.cos(tb)]]]) {
+    const lift = ankle[1] - 8;
+    if (lift > 5) continue;
+    // The corners of the sole, on the floor, across the page.
+    const xs = [];
+    for (const length of [-SHOE.heel, SHOE.toe]) {
+      for (const across of [-SHOE.half, SHOE.half]) xs.push(W([ankle[0] + along[0] * length - along[1] * across, 0, along[1] * length + along[0] * across])[0]);
+    }
+    const shrink = 1 - lift / 6;
+    const middle = (Math.min(...xs) + Math.max(...xs)) / 2;
+    const half = ((Math.max(...xs) - Math.min(...xs)) / 2 + 6) * shrink;
+    d += floorStroke(middle - half, middle + half + 3, 1.3, 1.0) + floorStroke(middle - half * 0.75, middle + half * 0.8, 3.0, 0.8) + floorStroke(middle - half * 0.45, middle + half * 0.5, 4.5, 0.6);
+  }
+  return d;
+}
 
-  // Strokes on the floor under each planted foot, shorter as it lifts. The foot behind is turned across, so they go all round it.
-  const ground = (ank, front) => {
-    const lift = ank[1] - 8;
-    return lift > 5 ? "" : groundStrokes(W, ank, front, front ? 7 : 9, 1 - lift / 6, front ? undefined : footSpan(W, J.toeBack));
-  };
+const add3 = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+const sub3 = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const mul3 = (a, k) => [a[0] * k, a[1] * k, a[2] * k];
+const cross3 = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+function unit3(a) {
+  const l = Math.hypot(...a) || 1;
+  return [a[0] / l, a[1] / l, a[2] / l];
+}
 
-  // Draw order: what the camera sees first goes last. The blade out beyond the far side of the sword arm goes behind the
-  // whole body, arm and all; from the other side of the piste it is the nearest thing to the camera, and goes last.
-  const order = backView ? [sword, legF, legB, torso, rear] : [rear, legB, legF, torso, sword];
-  const { behind, ...blade } = bladePart(J, W);
-  if (!backView) blade.front += behind;
-  return {
-    behind: backView ? behind : "",
-    l1: order[0],
-    l2: order[1],
-    l3: order[2],
-    l4: order[3],
-    head: headPart(J, W, older),
-    l6: order[4],
-    blade,
-    ground: ground(J.ankF, true) + ground(J.ankB, false),
-  };
+/**
+ * The frame of the hand on the blade, in the body's frame: `a` along the blade toward its point, `e` the way the edge
+ * faces and `s` the way the palm faces. `point(q)` sets a point q = [x, y, z] of that frame, x cm along the blade, y
+ * toward the edge and z toward the palm, in the body's frame; `step(v)` does the same for a step.
+ *
+ * In the third position the edge faces the way the blade turns as it cuts in the plane of the arm: down from a blade
+ * held forward, forward from one held up. The pose's `hand` turns it about the blade from there, toward the inside of
+ * the sword arm as it grows: the second position, at -90, has the palm down and the edge out; the fourth, at 90, the
+ * palm up and the edge in; and the first, at -180, the thumb down and the edge up.
+ */
+export function gripFrame(J) {
+  const a = unit3(sub3(J.at(1), J.at(0)));
+  const third = [Math.sin(J.bp), -Math.cos(J.bp), 0];
+  const inward = cross3(third, a);
+  const t = (J.hand ?? 0) * RAD;
+  const e = add3(mul3(third, Math.cos(t)), mul3(inward, Math.sin(t)));
+  const s = add3(mul3(third, -Math.sin(t)), mul3(inward, Math.cos(t)));
+  const step = ([x, y, z]) => add3(add3(mul3(a, x), mul3(e, y)), mul3(s, z));
+  return { a, e, s, step, point: (q) => add3(J.hn, step(q)) };
 }
 
 // How the stage looks at the piste unless a phrase asks for closer: x, y, width

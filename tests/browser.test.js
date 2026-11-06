@@ -45,11 +45,11 @@ const skip = !browser && process.env.REQUIRE_BROWSER !== "1" && "no Chrome or Ch
  * Opens `path` in the browser, served with the site, and returns the DOM the
  * page ended with and every line it logged to the console.
  */
-async function openInBrowser(path) {
+async function openInBrowser(path, flags = []) {
   assert.ok(browser, "REQUIRE_BROWSER=1, but no Chrome or Chromium was found; set CHROME_BIN");
   const site = siteHandler();
   const server = createServer((request, response) => {
-    if (request.url !== "/drive.html") return site(request, response);
+    if (new URL(request.url, "http://localhost").pathname !== "/drive.html") return site(request, response);
     response.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
     response.end(DRIVER);
   });
@@ -66,14 +66,18 @@ async function openInBrowser(path) {
         `--user-data-dir=${profile}`,
         "--enable-logging=stderr",
         "--virtual-time-budget=5000",
+        ...flags,
         "--dump-dom",
         `http://127.0.0.1:${server.address().port}${path}`,
       ],
       { maxBuffer: 64 * 1024 * 1024, timeout: 90_000 },
     );
     // The page logs nothing, so any console line is a problem: an uncaught
-    // error, a failed load, something the security policy refused.
-    return { dom: stdout, consoleLines: stderr.split("\n").filter((line) => line.includes(":CONSOLE")) };
+    // error, a failed load, something the security policy refused. A browser
+    // with no graphics card draws the 3D figures in software and says how slow
+    // that is; those notes are the browser's, not the page's.
+    const notes = /GL Driver Message|Automatic fallback to software WebGL/;
+    return { dom: stdout, consoleLines: stderr.split("\n").filter((line) => line.includes(":CONSOLE") && !notes.test(line)) };
   } finally {
     server.close();
     await rm(profile, { recursive: true, force: true });
@@ -87,13 +91,16 @@ let driven = null;
  * saw, any error it hit, and what the browser logged to the console.
  */
 function drive() {
-  driven ??= openInBrowser("/drive.html").then(({ dom, consoleLines }) => {
-    const json = dom.match(/<pre id="results">([^<]*)<\/pre>/)?.[1];
-    assert.ok(json, "the driver did not finish");
-    const results = JSON.parse(json.replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("&amp;", "&"));
-    return { ...results, consoleLines };
-  });
+  driven ??= openInBrowser("/drive.html").then(resultsOf);
   return driven;
+}
+
+/** What the driver saw, out of the DOM it left, with what the browser logged. */
+function resultsOf({ dom, consoleLines }) {
+  const json = dom.match(/<pre id="results">([^<]*)<\/pre>/)?.[1];
+  assert.ok(json, "the driver did not finish");
+  const results = JSON.parse(json.replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("&amp;", "&"));
+  return { ...results, consoleLines };
 }
 
 const CONTROLS = ["#play-button", ".speed", "#timeline", "#steps", "#timecode", "[data-toggle=ghosts]", "[data-toggle=trail]", "[data-toggle=ink]", "[data-toggle=loop]", "[data-toggle=closeUp]", "#camera"];
@@ -110,17 +117,17 @@ test("in a browser, the page opens on the practice library and builds its contro
   assert.equal(count(/class="step-button"/g), 8, "step buttons");
   assert.equal(count(/class="pose-button"/g), Object.keys(POSE_NAMES).length, "pose buttons");
   assert.equal(count(/class="base-button"/g), BASES.length, "posture buttons");
-  // Each fencer's parts are filled by what they are, so the older man's trousers can be a shade darker than his jersey.
-  assert.equal(count(/class="figure__fill figure__fill--trousers"/g), 4, "two legs for each fencer");
-  assert.equal(count(/class="figure__fill figure__fill--jersey"/g), 8, "the jersey and both arms for each, and the fist, which is drawn with the sabre");
-  assert.equal(count(/class="figure__fill figure__fill--face"/g), 2, "and a face for each");
+  // The fencers are drawn in 3D on a canvas over the stage, with a stick figure for each to stand in where they cannot be.
+  assert.match(dom, /<canvas id="stage-3d" class="stage__3d[^"]*" aria-hidden="true"/);
+  assert.equal(count(/class="stick( fencer-b)?"/g), 2, "a stick figure for each fencer");
   assert.equal(count(/<input type="range" id="joint-/g), JOINTS.length, "joint sliders");
   assert.match(dom, /id="step-count"[^>]*>\d\d \/ 08</);
   // The panels of the other modes are there, and out of sight.
   assert.match(dom, /class="panel panel--poses hidden"/);
   assert.doesNotMatch(dom, /class="panel panel--library hidden"/);
   const paths = [...dom.matchAll(/<path\b[^>]*?\sd="([^"]*)"/g)].map((m) => m[1]);
-  assert.ok(paths.filter(Boolean).length > 60, `only ${paths.filter(Boolean).length} paths drawn`);
+  assert.ok(paths.filter(Boolean).length > 10, `only ${paths.filter(Boolean).length} paths drawn`);
+  assert.match(dom, /id="ground-a" class="ground" d="M/, "the marks on the floor round A's feet");
   for (const d of paths) assert.doesNotMatch(d, /NaN|Infinity|undefined/);
 });
 
@@ -206,9 +213,9 @@ test("in a browser, the base postures show one fencer, not a pair, and describe 
     label: "Guard (tierce)",
     count: `01 / ${two(BASES.length)}`,
     solo: true,
-    bodyA: "inline",
-    bodyB: "none",
-    bladeB: "none",
+    stickA: "inline",
+    stickB: "none",
+    groundB: "none",
     legend: "none",
     ghostsHidden: true,
     trailsHidden: true,
@@ -349,8 +356,8 @@ test("in a browser, the Creator makes a new scene, and asks before it throws one
     line: '    {"label":"Between","ms":300,"A":{"pose":"guard","x":0},"B":{"pose":"guard","x":245}},',
   });
   assert.deepEqual(seen.removed, { labels: ["01En garde", "02Lunge"], count: "02 / 02", editing: "Step 2: Lunge. Fencer A." });
-  assert.deepEqual(seen.alone, { line: '  "solo": true,', solo: true, bodyB: "none", canEditB: false });
-  assert.deepEqual(seen.together, { line: false, solo: false, bodyB: "inline" });
+  assert.deepEqual(seen.alone, { line: '  "solo": true,', solo: true, stickB: "none", canEditB: false });
+  assert.deepEqual(seen.together, { line: false, solo: false, stickB: "inline" });
 });
 
 test("in a browser, scenes are saved on this device, listed in the library with their link, and deleted", { skip, timeout: 120_000 }, async () => {
@@ -505,4 +512,31 @@ test("in a browser, the camera angle is a change that is not saved, and removing
   assert.deepEqual(seen.cameraUnsaved, { opened: false, turned: true, declined: { asked: 1, name: "Camera" }, backAgain: false });
   assert.deepEqual(seen.cameraSaved, { camera: 10, unsaved: false }, "the new angle is the one that is kept");
   assert.deepEqual(seen.removeFocus, { count: "01 / 01", removeOff: true, focus: "step-name" });
+});
+
+test("in a browser, the fencers are 3D figures, one alone and two in a pair, or stick figures with a note saying why", { skip, timeout: 120_000 }, async () => {
+  const { seen, errors, consoleLines } = await drive();
+  assert.deepEqual(errors, []);
+  assert.deepEqual(consoleLines, []);
+  const { figures3d } = seen;
+  if (figures3d.loaded.canvas) {
+    assert.deepEqual(figures3d.loaded, { canvas: true, sticks: [false, false], note: "" });
+    assert.equal(figures3d.solo, "A");
+    assert.equal(figures3d.pair, "A B");
+  } else {
+    // A browser that cannot draw them in 3D, such as one with no graphics at all.
+    assert.match(figures3d.loaded.note, /^The fencers are drawn as stick figures, as .+\.$/);
+    assert.deepEqual(figures3d.loaded.sticks, [true, true]);
+  }
+});
+
+test("in a browser without WebGL, stick figures stand in for the 3D figures, and a note under the stage says why", { skip, timeout: 120_000 }, async () => {
+  const { seen, errors, consoleLines } = resultsOf(await openInBrowser("/drive.html?fallback", ["--disable-3d-apis"]));
+  assert.deepEqual(errors, []);
+  assert.deepEqual(consoleLines, []);
+  assert.deepEqual(seen.fallback, {
+    canvas: false,
+    sticks: [true, true],
+    note: "The fencers are drawn as stick figures, as this browser cannot draw them in 3D, having no WebGL 2.",
+  });
 });

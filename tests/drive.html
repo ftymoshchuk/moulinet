@@ -16,16 +16,72 @@
       const results = { errors: [], seen: {} };
       const frame = document.getElementById("page");
 
-      frame.addEventListener("load", () => {
+      frame.addEventListener("load", async () => {
         const win = frame.contentWindow;
         win.addEventListener("error", (event) => results.errors.push(event.message));
+        win.addEventListener("unhandledrejection", (event) => results.errors.push(String(event.reason)));
         try {
-          drive(win, frame.contentDocument, results.seen);
+          // Opened as drive.html?fallback, in a browser that cannot draw in 3D, it only looks at what stands in.
+          if (location.search === "?fallback") await driveFallback(win, frame.contentDocument, results.seen);
+          else {
+            drive(win, frame.contentDocument, results.seen);
+            await drive3d(win, frame.contentDocument, results.seen);
+          }
         } catch (error) {
           results.errors.push(`${error.name}: ${error.message}`);
         }
         document.getElementById("results").textContent = JSON.stringify(results);
       });
+
+      // What the stage shows of the fencers: the 3D figures' canvas, the stick figures that stand in without them,
+      // and the note that says why.
+      function fencersShown(doc) {
+        const $ = (selector) => doc.querySelector(selector);
+        return {
+          canvas: !$("#stage-3d").classList.contains("hidden"),
+          sticks: ["#stick-a", "#stick-b"].map((id) => ($(id).getAttribute("d") ?? "") !== ""),
+          note: $("#stage-note").classList.contains("hidden") ? "" : $("#stage-note").textContent,
+        };
+      }
+
+      // Waits until the 3D figures are on the stage, or the note says why they are not.
+      async function settled(win, doc) {
+        for (let wait = 0; wait < 400; wait++) {
+          const now = fencersShown(doc);
+          if (now.canvas || now.note) return now;
+          await new Promise((resolve) => win.setTimeout(resolve, 50));
+        }
+        return fencersShown(doc);
+      }
+
+      // The 3D figures load as the page opens and take the stage; in a browser that cannot draw them, stick figures
+      // stand in, and a note under the stage says why.
+      async function drive3d(win, doc, seen) {
+        const $ = (selector) => doc.querySelector(selector);
+        const $$ = (selector) => [...doc.querySelectorAll(selector)];
+        const button = (name) => $$("button").find((b) => b.textContent.trim() === name || b.getAttribute("aria-label") === name);
+        const input = (el, value) => {
+          el.value = String(value);
+          el.dispatchEvent(new win.Event("input", { bubbles: true }));
+        };
+        button("Practice library").click();
+        $$(".scene-button")[0].click();
+        seen.figures3d = { loaded: await settled(win, doc) };
+        // Every step, a turned camera and the close-up draw them too; one fencer alone is one figure.
+        for (const step of $$(".step-button")) step.click();
+        input($("#camera"), 30);
+        button("Hand close-up").click();
+        button("Hand close-up").click();
+        input($("#camera"), 0);
+        $$(".scene-button").find((card) => card.textContent.includes("Solo")).click();
+        seen.figures3d.solo = $("#stage-3d").dataset.fencers ?? "";
+        $$(".scene-button")[0].click();
+        seen.figures3d.pair = $("#stage-3d").dataset.fencers ?? "";
+      }
+
+      async function driveFallback(win, doc, seen) {
+        seen.fallback = await settled(win, doc);
+      }
 
       function drive(win, doc, seen) {
         const $ = (selector) => doc.querySelector(selector);
@@ -167,9 +223,9 @@
           count: text("#step-count"),
           solo: $("#stage-panel").classList.contains("is-solo"),
           // One fencer: B and the legend are not drawn, and A is.
-          bodyA: display("#body-a"),
-          bodyB: display("#body-b"),
-          bladeB: display("#blade-b"),
+          stickA: display("#stick-a"),
+          stickB: display("#stick-b"),
+          groundB: display("#ground-b"),
           legend: display(".legend"),
           // The postures stand still, so there is no motion to show, whatever the toggles say.
           ghostsHidden: $("#ghosts").classList.contains("hidden"),
@@ -422,9 +478,9 @@
         seen.removed = { labels: $$(".step-button").map((b) => b.textContent), count: text("#step-count"), editing: text("#edit-title") };
         // One fencer only, and two again.
         $("#meta-solo").click();
-        seen.alone = { line: lines()[5], solo: $("#stage-panel").classList.contains("is-solo"), bodyB: display("#body-b"), canEditB: !$("#fencer-b").disabled };
+        seen.alone = { line: lines()[5], solo: $("#stage-panel").classList.contains("is-solo"), stickB: display("#stick-b"), canEditB: !$("#fencer-b").disabled };
         $("#meta-solo").click();
-        seen.together = { line: lines().some((line) => line.includes('"solo"')), solo: $("#stage-panel").classList.contains("is-solo"), bodyB: display("#body-b") };
+        seen.together = { line: lines().some((line) => line.includes('"solo"')), solo: $("#stage-panel").classList.contains("is-solo"), stickB: display("#stick-b") };
         checkPaths();
 
         // The data is the scene: typing into it fills in the fields.

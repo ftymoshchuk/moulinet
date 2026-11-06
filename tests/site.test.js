@@ -27,9 +27,11 @@ test("the page loads only its own files, by relative paths that exist", () => {
     assert.ok(url.href.startsWith(SITE.href), `${url} is outside site/`);
     assert.ok(existsSync(url), `${url} is missing`);
   }
+  // Scripts import each other, and the one library kept in site/vendor; the 3D figures are imported only when wanted.
   for (const { name, source } of scripts) {
-    for (const [, path] of source.matchAll(/^import\b[^"]*"([^"]+)"/gm)) {
-      assert.match(path, /^\.\/[\w-]+\.js$/, `${name} imports ${path}`);
+    const imports = [...source.matchAll(/^import\b[^"]*"([^"]+)"/gm), ...source.matchAll(/\bimport\("([^"]+)"\)/g)];
+    for (const [, path] of imports) {
+      assert.match(path, /^(\.\/[\w-]+|\.\.\/vendor\/[\w.-]+)\.js$/, `${name} imports ${path}`);
       assert.ok(existsSync(new URL(`js/${path}`, SITE)), `${name} imports ${path}, which is missing`);
     }
   }
@@ -108,20 +110,21 @@ test("every bundled font is used, preloaded fonts among them, and has its licenc
   }
 });
 
+test("the library the 3D figures are drawn with and the bodies they are made of come with their licences", () => {
+  assert.deepEqual(readdirSync(new URL("vendor/", SITE)).toSorted(), ["MIT-three.js.txt", "three.module.min.js"]);
+  assert.match(read("vendor/MIT-three.js.txt"), /^The MIT License\n\nCopyright © 2010-2024 three\.js authors/);
+  assert.match(read("vendor/three.module.min.js").slice(0, 200), /Copyright 2010-2024 Three\.js Authors\n \* SPDX-License-Identifier: MIT/);
+  assert.match(read("vendor/three.module.min.js").slice(0, 300), /const t="170"/, "three.js r170, as the README says");
+  assert.deepEqual(readdirSync(new URL("models/", SITE)).toSorted(), ["CC0-MakeHuman.txt", "fencers.bin"]);
+  const cc0 = read("models/CC0-MakeHuman.txt");
+  assert.match(cc0, /makehumancommunity\/makehuman\nat commit a8bc2d54ff0ac92e78ff71431b1023eda42bf482/);
+  assert.match(cc0, /# Creative Commons CC0 1\.0 Universal/);
+  const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+  assert.equal(pkg.license, "Apache-2.0 AND OFL-1.1 AND MIT AND CC0-1.0");
+});
+
 test("the fields hold typing to the same limits the scene is saved and shown within", () => {
   const limitOf = (id) => Number(html.match(new RegExp(`<(?:input|textarea)\\b[^>]*\\bid="${id}"[^>]*>`))?.[0].match(/\bmaxlength="(\d+)"/)?.[1]);
   for (const key of TEXT_KEYS) assert.equal(limitOf(`meta-${key}`), TEXT_LIMITS[key], `#meta-${key}`);
   assert.equal(limitOf("step-name"), TEXT_LIMITS.label, "#step-name");
-});
-
-test("every part of a figure the page fills has a colour, and the older man's face and trousers differ from his jersey", () => {
-  const parts = [...app.matchAll(/PARTS = \{([^}]*)\}/g)][0][1];
-  const kinds = new Set([...parts.matchAll(/"(\w+)"/g)].map((m) => m[1]));
-  assert.deepEqual([...kinds].toSorted(), ["face", "jersey", "trousers"]);
-  const rule = (selector) => css.match(new RegExp(`${selector.replace(/[.\\[\]]/g, "\\$&")}\\s*\\{([^}]*)\\}`))?.[1] ?? "";
-  const variable = (name) => css.match(new RegExp(`${name}:\\s*(#[0-9a-f]{6})`, "i"))?.[1];
-  assert.match(rule(".fencer--b .figure__fill--trousers"), /fill:\s*var\(--fencer-b-trousers\)/);
-  assert.match(rule(".fencer--b .figure__fill--face"), /fill:\s*var\(--fencer-b-face\)/);
-  const colours = new Set(["--fencer-b", "--fencer-b-trousers", "--fencer-b-face"].map(variable));
-  assert.ok(!colours.has(undefined) && colours.size === 3, "three colours, all different");
 });
