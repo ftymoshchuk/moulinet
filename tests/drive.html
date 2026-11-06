@@ -47,8 +47,9 @@
         });
         button("Practice library").click();
         $$(".scene-button")[0].click();
+        seen.figures3d = { offAtFirst: shown() };
         button("3D figures").click();
-        seen.figures3d = { loading: $("#announcer").textContent, atOnce: shown() };
+        Object.assign(seen.figures3d, { loading: $("#announcer").textContent, atOnce: shown() });
         for (let wait = 0; wait < 400 && !/^(3D figures on|The 3D figures could not)/.test($("#announcer").textContent); wait++) {
           await new Promise((resolve) => win.setTimeout(resolve, 50));
         }
@@ -110,6 +111,11 @@
           panels: $$("main section.panel").filter(visible).map(panelName),
           controls: ["#play-button", ".speed", "#timeline", "#steps", "#timecode", "[data-toggle=ghosts]", "[data-toggle=trail]", "[data-toggle=ink]", "[data-toggle=loop]", "[data-toggle=closeUp]", "[data-toggle=figures3d]", "#camera"].filter((selector) => visible($(selector))),
         });
+
+        // The page opens with the 3D figures on; the drawing in pen and ink is what most of what follows looks at, so
+        // they are turned off until drive3d turns them on again.
+        seen.opened3d = { pressed: $("[data-toggle=figures3d]").getAttribute("aria-pressed"), announced: text("#announcer") };
+        if ($("[data-toggle=figures3d]").getAttribute("aria-pressed") === "true") button("3D figures").click();
 
         // ---------- The practice library ----------
 

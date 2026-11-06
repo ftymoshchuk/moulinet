@@ -64,14 +64,13 @@ looks from the other side of the piste, outside the sword arm, which is where th
 old books draw the grip and the hand positions from, so the blade points the way
 it does in their plates; the camera turns it from there.
 
-**3D figures**, in every mode, puts two people on the stage in place of the
-drawing: bodies modelled in three dimensions, the young man and the older one,
-posed from the same numbers, so their feet, their hands and their blades are
+**3D figures**, on unless you turn them off, puts two people on the stage:
+bodies modelled in three dimensions, the young man and the older one, posed from
+the same numbers as the drawing, so their feet, their hands and their blades are
 where the drawing has them, and drawn in ink. The floor, the marks round the
-feet, the motion ghosts and the blade paths stay as they are. They load the
-first time you turn them on, about 370 KB, and need a browser with WebGL 2; one
-without says so and keeps the drawing. They are new, and the drawing is still
-the default.
+feet, the motion ghosts and the blade paths are the same either way. They load
+as the page opens, about 370 KB, and need a browser with WebGL 2; turned off, or
+in a browser without it, the stage shows the fencers in pen and ink, as below.
 
 The library and the Creator, which play scenes, add:
 - **Playback** at ¼, ½ or full speed, a step at a time, or scrubbed along the
@@ -99,8 +98,9 @@ In the Creator there is more:
   it up again as soon as it applies.
 
 ## The drawing
-The fencers are not pictures. Each is worked out from a pose, a few numbers for
-the joints, and drawn in the browser as pen and ink: a line round the body that
+With the 3D figures off, the fencers are drawn in pen and ink. They are not
+pictures. Each is worked out from a pose, a few numbers for the joints, and
+drawn in the browser: a line round the body that
 is fine where it faces the light and heavy where it turns away, as a pen
 presses on the shadow side, and brush strokes that swell and end in points for
 the folds of the breeches, the creases of the jersey, the wrinkles of a stocking

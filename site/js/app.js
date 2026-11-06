@@ -172,9 +172,9 @@ const state = {
   ink: true,
   // A close-up of the sword hand, from outside the arm.
   closeUp: false,
-  // The fencers as people in three dimensions, drawn in ink, instead of the
+  // The fencers as people in three dimensions, drawn in ink, rather than the
   // pen-and-ink drawing.
-  figures3d: false,
+  figures3d: true,
   camera: 0,
   fencer: "A",
   // The step on show while paused on one; null when the time decides.
@@ -575,11 +575,17 @@ let lastTick = null;
 
 // ---------- The 3D figures ----------
 
-// They are loaded the first time they are turned on: the drawing, then the
-// bodies. Until then, and if they cannot be shown, the stage draws the fencers
-// in pen and ink as it always has.
+// The stage shows the fencers as 3D figures unless they are turned off. They
+// load as the page opens, the drawing and then the bodies; meanwhile, and if
+// they cannot be shown, the stage draws the fencers in pen and ink.
 let stage3d = null;
 let loading3d = false;
+// Whether to say how loading went: only once someone has asked for them.
+let tell3d = false;
+// While they first load, the stage waits a moment for them rather than draw the
+// pen and ink only to put it away: until this time, or until someone turns them off.
+let waitFor3d = 0;
+const WAIT_FOR_3D_MS = 1500;
 
 // Whether this browser can draw them, before anything is fetched for them: they
 // need WebGL 2, and a way to uncompress the bodies.
@@ -594,10 +600,18 @@ function canDraw3d() {
   }
 }
 
-function start3d() {
-  if (stage3d || loading3d) return;
+// Loads them, saying so if `asked`; once they are loaded, turning them on only says they are on.
+function start3d(asked) {
+  if (stage3d) {
+    if (asked) announce("3D figures on.");
+    return;
+  }
+  if (asked) {
+    tell3d = true;
+    announce("Loading the 3D figures.");
+  }
+  if (loading3d) return;
   loading3d = true;
-  announce("Loading the 3D figures.");
   Promise.resolve()
     .then(() => {
       if (!canDraw3d()) throw new Error("this browser cannot draw them, as it has no WebGL 2");
@@ -606,14 +620,15 @@ function start3d() {
     .then(({ createStage3d }) => createStage3d(canvas3dEl))
     .then((stage) => {
       stage3d = stage;
-      if (state.figures3d) announce("3D figures on.");
+      if (state.figures3d && tell3d) announce("3D figures on.");
     })
     .catch((error) => {
       state.figures3d = false;
-      announce(`The 3D figures could not be shown: ${error.message}.`);
+      if (tell3d) announce(`The 3D figures could not be shown: ${error.message}.`);
     })
     .finally(() => {
       loading3d = false;
+      waitFor3d = 0;
       update();
     });
 }
@@ -846,7 +861,10 @@ for (const button of toggleButtons) {
   button.addEventListener("click", () => {
     const key = button.dataset.toggle;
     state[key] = !state[key];
-    if (key === "figures3d" && state[key]) start3d();
+    if (key === "figures3d") {
+      waitFor3d = 0;
+      if (state[key]) start3d(true);
+    }
     update();
   });
 }
@@ -1008,7 +1026,9 @@ function drawStage(now) {
   stagePanelEl.classList.toggle("is-solo", timeline.solo);
   setAttr(floorEl, "d", floorPath(camera));
   const in3d = showing3d();
-  stagePanelEl.classList.toggle("is-3d", in3d);
+  // As the page opens, the fencers wait a moment for their 3D figures.
+  const waiting = state.figures3d && !in3d && performance.now() < waitFor3d;
+  stagePanelEl.classList.toggle("is-3d", in3d || waiting);
   canvas3dEl.classList.toggle("hidden", !in3d);
   if (in3d) {
     stage3d.draw({ poses: now, solo: timeline.solo, frame: view, camera, ink: state.ink });
@@ -1243,6 +1263,13 @@ if (typeof ResizeObserver === "function") {
   new ResizeObserver(() => {
     if (showing3d()) render();
   }).observe(canvas3dEl);
+}
+
+// The 3D figures start loading at once, and the stage waits a moment for them.
+if (state.figures3d) {
+  waitFor3d = performance.now() + WAIT_FOR_3D_MS;
+  setTimeout(update, WAIT_FOR_3D_MS);
+  start3d(false);
 }
 
 setSaved(readSaved(getStorage()));

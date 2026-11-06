@@ -514,10 +514,18 @@ test("in a browser, the 3D figures load when turned on and take the drawn fencer
   const { seen, errors, consoleLines } = await drive();
   assert.deepEqual(errors, []);
   assert.deepEqual(consoleLines, []);
-  const { figures3d } = seen;
-  assert.equal(figures3d.loading, "Loading the 3D figures.");
-  // Until they are ready the pen and ink stay.
-  assert.deepEqual(figures3d.atOnce, { pressed: "true", canvas: false, drawing: true });
+  const { figures3d, opened3d } = seen;
+  // The page opens with them on, loading them without a word; turned off, the pen and ink are back.
+  assert.deepEqual(opened3d, { pressed: "true", announced: "" });
+  assert.deepEqual(figures3d.offAtFirst, { pressed: "false", canvas: false, drawing: true });
+  if (figures3d.loading === "Loading the 3D figures.") {
+    // Until they are ready the pen and ink stay.
+    assert.deepEqual(figures3d.atOnce, { pressed: "true", canvas: false, drawing: true });
+  } else {
+    // Already loaded as the page opened, they are on at once.
+    assert.equal(figures3d.loading, "3D figures on.");
+    assert.deepEqual(figures3d.atOnce, { pressed: "true", canvas: true, drawing: false });
+  }
   if (figures3d.announced === "3D figures on.") {
     assert.deepEqual(figures3d.loaded, { pressed: "true", canvas: true, drawing: false });
   } else {
