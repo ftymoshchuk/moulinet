@@ -157,3 +157,23 @@ test("three.js turns the bones as the rig worked them out, for either fencer", (
     }
   }
 });
+
+test("the body moves smoothly: through every scene, no bone turns more than 25 degrees in 4 ms, even where a limb passes through straight", () => {
+  for (const preset of PRESETS) {
+    const timeline = buildTimeline(preset.phrase);
+    for (const who of timeline.solo ? ["A"] : ["A", "B"]) {
+      const { rig } = figures[who];
+      let before = null;
+      for (let t = 0; t <= timeline.duration; t += 4) {
+        const { q } = poseRig(rig, poseAt(timeline, t)[who]);
+        if (before) {
+          for (const [i, turn] of q.entries()) {
+            const degrees = (turn.angleTo(before[i]) * 180) / Math.PI;
+            assert.ok(degrees < 25, `${preset.id} at ${t} ms, ${who}: ${rig.names[i]} turns ${degrees.toFixed(1)}°`);
+          }
+        }
+        before = q.map((turn) => turn.clone());
+      }
+    }
+  }
+});

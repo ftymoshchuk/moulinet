@@ -1011,7 +1011,7 @@ function drawStage(now) {
   stagePanelEl.classList.toggle("is-3d", in3d);
   canvas3dEl.classList.toggle("hidden", !in3d);
   if (in3d) {
-    stage3d.draw({ poses: now, solo: timeline.solo, frame: view, camera });
+    stage3d.draw({ poses: now, solo: timeline.solo, frame: view, camera, ink: state.ink });
     setAttr(fencers.A.ground, "d", groundPath(now.A, 1, camera));
     setAttr(fencers.B.ground, "d", groundPath(now.B, -1, camera));
   } else {

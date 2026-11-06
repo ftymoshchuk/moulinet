@@ -208,12 +208,16 @@ nod as the skeleton's do. Each ankle goes exactly where the skeleton's is, as
 far above the floor as the body's ankle is above the sole of its shoe, with the
 knee bending the skeleton's way, and the foot lies flat or tips up at the toe as
 it lifts. The rear hand goes where the skeleton has it. The sword hand closes
-round the grip as the drawing holds the hilt, the sabre exactly where the
-skeleton has it; a hand that would have to bend further at the wrist than a
-wrist can bends only that far, and the sabre turns between thumb and forefinger
-for the rest, as it does in a moulinet. The shoulder comes forward on the
-collarbone to let the hand reach, and in the few moments it still cannot, the
-hand falls short by at most a centimetre or so and the sabre goes with it.
+round the grip as the drawing holds the hilt, its thumb along the back of the
+grip, the sabre exactly where the skeleton has it; a hand that would have to
+bend further at the wrist, or turn further about the forearm, than an arm can
+goes only so far, and the sabre turns between thumb and forefinger for the
+rest, as it does in a moulinet. The shoulder comes forward on the collarbone to
+let the hand reach, and in the few moments of the moulinet it still cannot, the
+hand falls short by a few centimetres and the sabre goes with it. An arm or a
+leg all but straight turns its elbow or knee the way the skeleton's would bend,
+or failing that the way the hand or the foot has it, so a limb passing through
+straight never turns over: no bone turns more than 25° in 4 ms.
 
 The fencer facing left stands as the skeleton has him, which is the one facing
 right turned round: his sword arm is on your side, and the blades meet in three
@@ -225,10 +229,14 @@ They are drawn with [three.js](https://threejs.org), r170, kept in
 wear, in white under a light from high in front, and as which way each point of
 them faces and how far it is from you. Ink goes where the distance jumps, at
 their outline and where a part passes in front of another, where a surface turns
-sharply, and where one colour meets another, at a cuff or a collar; hatching
-goes where the light is low, crossed where it is lowest; everything else keeps
-its flat colour. The drawing is made finer than the screen, so the lines are
-smooth, on a canvas laid over the stage.
+sharply, and where one colour meets another, at a seam; the line is heavier on
+the side away from the light, as a pen presses on the shadow side. Hatching goes
+where the light is low, crossed where it is lowest, ruled from a point on each
+fencer so that it moves with him rather than staying on the screen; the young
+man's hair is dark, the older man's grey hair strokes of the pen; everything
+else keeps its flat colour. With **Ink texture** on, the pen wavers a little
+along its lines, as the drawing's does. The drawing is made finer than the
+screen, so the lines are smooth, on a canvas laid over the stage.
 
 ## Writing a phrase
 A scene is a phrase: JSON, with a few words about where it comes from. **Phrase

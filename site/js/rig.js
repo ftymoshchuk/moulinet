@@ -11,7 +11,7 @@
 import { Bone, BoxGeometry, BufferAttribute, BufferGeometry, CatmullRomCurve3, CylinderGeometry, Group, Matrix4, Mesh, Quaternion, Skeleton, SkinnedMesh, SphereGeometry, TubeGeometry, Vector3 } from "../vendor/three.module.min.js";
 import { gripFrame } from "./body.js";
 import { hiltParts } from "./parts.js";
-import { skeleton } from "./figure.js";
+import { knee3, kneeBehind, skeleton } from "./figure.js";
 
 const RAD = Math.PI / 180;
 const X = new Vector3(1, 0, 0);
@@ -33,8 +33,10 @@ const GRIP_OUT = 2.4;
 // the thumb lies along the back of the grip. The rear hand, on the hip, is held loosely closed.
 const SWORD_CURL = { 2: [58, 80, 48], 3: [64, 86, 52], 4: [68, 88, 52], 5: [72, 88, 50] };
 const REAR_CURL = { 1: [6, 10, 8], 2: [22, 30, 20], 3: [24, 32, 22], 4: [26, 34, 22], 5: [28, 34, 22] };
-// How much of the forearm's turn toward the hand each of its two bones takes, the elbow's end first.
+// How much of the forearm's turn toward the hand each of its two bones takes, the elbow's end first, and how far the
+// forearm can turn the hand either way (degrees).
 const FOREARM_TWIST = [0.2, 0.65];
+const FOREARM_TURN = 100;
 // How far the shoulder may come forward, turning on the collarbone, to let the hand reach (degrees), and how much of
 // the arm's length the reach may take before it does.
 const SHOULDER_REACH = 16;
@@ -65,17 +67,32 @@ function hinge(a, b, c, fallback) {
   return h.length() > 1e-3 * a.distanceTo(b) * b.distanceTo(c) ? h.normalize() : fallback.clone().normalize();
 }
 
-/** The middle joint of a limb from `h` to `a`, `l1` and `l2` long, bending toward `toward`; straight if it cannot reach. */
+// How far off the line from hip to ankle, or shoulder to wrist, the skeleton's knee or elbow must be (cm) for its own
+// way of bending to settle which way the limb bends; nearer the line, the more the limb's own way takes over, so that a
+// limb passing through straight never turns over. An elbow's own way is out from the body, between the ways the
+// skeleton's can bend, down or up; a knee's is its foot's.
+// How much nearer the hip the ankle is taken to be, to find which way the skeleton's knee bends (cm).
+const KNEE_SHORTER = 6;
+// How much an all but straight sword arm's elbow points out from the body, beside the way the hand turns it.
+const ELBOW_OUT = 0.4;
+const BENT = 10;
+
+/**
+ * The middle joint of a limb from `h` to `a`, `l1` and `l2` long, bending toward `toward`, or `fallback` as the limb
+ * straightens, and straight if it cannot reach; and the axis it bends about, which keeps its way however straight.
+ */
 function solveJoint(h, a, l1, l2, toward, fallback) {
   const d = a.clone().sub(h);
   const len = Math.max(1e-6, Math.min(d.length(), l1 + l2 - 1e-4));
   const u = d.clone().normalize();
   const along = (l1 * l1 + len * len - l2 * l2) / (2 * len);
   const r = Math.sqrt(Math.max(0, l1 * l1 - along * along));
-  let side = toward.clone().addScaledVector(u, -toward.dot(u));
-  if (side.lengthSq() < 1e-6) side = fallback.clone().addScaledVector(u, -fallback.dot(u));
+  const square = (v) => v.clone().addScaledVector(u, -v.dot(u));
+  const side = square(toward);
+  side.add(square(fallback).multiplyScalar(Math.max(0, BENT - side.length()) / BENT));
+  if (side.lengthSq() < 1e-10) side.copy(square(new Vector3(0, 0, 1))).add(square(X));
   side.normalize();
-  return h.clone().addScaledVector(u, along).addScaledVector(side, r);
+  return { joint: h.clone().addScaledVector(u, along).addScaledVector(side, r), axis: new Vector3().crossVectors(side, u).normalize() };
 }
 
 // The turn of `q` about `axis`, a unit step in its own frame, without the rest of it.
@@ -294,17 +311,24 @@ export function poseRig(rig, p) {
   // The legs: the model's left is the leg in front, its right the leg behind. Each ankle goes where the skeleton has
   // it, as far above the floor as the model's ankle is above its sole, the knee bending the way the skeleton's does.
   const tb = (p.toeBack ?? 0) * RAD;
+  // Which way each knee bends is the way the skeleton's would with the ankle a little nearer the hip, so that it is
+  // settled even where the skeleton's leg is straight and its knee on the line.
+  const bentKnee = (hip, ankle, front) => {
+    const toward = ankle.clone().sub(hip);
+    const a = hip.clone().addScaledVector(toward, 1 - KNEE_SHORTER / toward.length());
+    const k = front ? knee3(J.hipF, [a.x, a.y, a.z], 1) : kneeBehind(J.hipB[0], J.hipB[1], a.x, a.y, J.hipB[2], p.kneeOut ?? 40);
+    return V(k).sub(mid(hip, a));
+  };
   const legs = [
-    ["L", hipF, V(J.kF), V([...J.ankF, 0]), new Vector3(1, 0, 0)],
-    ["R", hipB, V(J.kB), V([...J.ankB, 0]), new Vector3(-Math.sin(tb), 0, Math.cos(tb))],
+    ["L", hipF, V([...J.ankF, 0]), new Vector3(1, 0, 0)],
+    ["R", hipB, V([...J.ankB, 0]), new Vector3(-Math.sin(tb), 0, Math.cos(tb))],
   ];
-  for (const [side, h0, k0, a0, foot] of legs) {
+  for (const [side, h0, a0, foot] of legs) {
     const leg = rig.legs[side];
     const hip = at[b(`upperleg01.${side}`)];
     const ankle = a0.clone().setY(a0.y - 8 + rig.ankle[side]);
     const leftOfFoot = new Vector3().crossVectors(Y, foot).normalize();
-    const knee = solveJoint(hip, ankle, leg.upper, leg.lower, k0.clone().sub(mid(h0, a0)), foot);
-    const axis = hinge(hip, knee, ankle, leftOfFoot);
+    const { joint: knee, axis } = solveJoint(hip, ankle, leg.upper, leg.lower, bentKnee(h0, a0, side === "L"), foot);
     const qThigh = turnTo(leg.restUpper, leg.restHinge, knee.clone().sub(hip), axis);
     set(`upperleg01.${side}`, qThigh);
     set(`upperleg02.${side}`, qThigh);
@@ -328,9 +352,20 @@ export function poseRig(rig, p) {
   const pinch = V(J.hn).addScaledVector(ga, -PINCH);
   const pinchAtRest = hand.centre.clone().addScaledVector(hand.grip, FIST - PINCH);
   // The hand round the grip, bending at the wrist from `forearm` no further than a wrist can, the sabre turning in the
-  // fingers for the rest: the hand's turn, and where that puts the wrist.
-  const holding = (forearm) => {
-    let turn = turnTo(hand.grip, hand.palm, ga, gs);
+  // fingers for the rest: the hand's turn, and where that puts the wrist. Given the turn of the forearm, `fore`, the
+  // hand also turns about the forearm no further than a forearm can turn it; beyond that it turns back as the sabre
+  // goes on turning in the fingers, so that a blade that goes right round, as in a moulinet, takes the hand smoothly.
+  const onBlade = turnTo(hand.grip, hand.palm, ga, gs);
+  const holding = (forearm, fore) => {
+    let turn = onBlade.clone();
+    if (fore) {
+      const along = rig.arms.L.restLower;
+      const t = twistOf(fore.clone().invert().multiply(turn), along);
+      const angle = 2 * Math.atan2(new Vector3(t.x, t.y, t.z).dot(along), t.w);
+      const most = FOREARM_TURN * RAD;
+      const kept = Math.abs(angle) <= most ? angle : (Math.sign(angle) * most * (Math.PI - Math.abs(angle))) / (Math.PI - most);
+      turn = new Quaternion().setFromAxisAngle(along.clone().applyQuaternion(fore), kept - angle).multiply(turn);
+    }
     const fingers = hand.out.clone().applyQuaternion(turn);
     const bent = fingers.angleTo(forearm);
     if (bent > WRIST_BEND * RAD) {
@@ -341,6 +376,8 @@ export function poseRig(rig, p) {
     return { turn, wrist: pinch.clone().add(hand.wrist.clone().sub(pinchAtRest).applyQuaternion(turn)) };
   };
 
+  // The turn of each forearm, as the elbow bends it, before the hand turns it.
+  const forearms = {};
   // An arm from its shoulder to `wrist`, the elbow bending toward the skeleton's `e0` from its line from `s0` to `end`,
   // the hand turned `qWrist` (or along the forearm) and its fingers closed.
   const reachFor = (side, wrist, qWrist, e0, s0, end, fallback) => {
@@ -369,15 +406,24 @@ export function poseRig(rig, p) {
       }
     }
     const s = at[b(`upperarm01.${side}`)];
-    const elbow = solveJoint(s, wrist, arm.upper, arm.lower, e0.clone().sub(mid(s0, end)), fallback);
-    const bend = hinge(s, elbow, wrist, arm.restHinge);
-    const qUpper = turnTo(arm.restUpper, arm.restHinge, elbow.clone().sub(s), bend);
+    // A sword arm all but straight turns its elbow the way the hand on the blade would have the forearm turn least,
+    // where it bends about the axis the hand's turn gives it, and out from the body where that says little.
+    const out = side === "L" ? new Vector3().crossVectors(unit(wrist.clone().sub(s)), arm.restHinge.clone().applyQuaternion(onBlade)).addScaledVector(unit(fallback), ELBOW_OUT) : fallback;
+    const solved = solveJoint(s, wrist, arm.upper, arm.lower, e0.clone().sub(mid(s0, end)), out);
+    // The upper arm and the forearm for the elbow at `joint` bending about `axis`, and how far the hand is turned about
+    // the forearm from it.
+    const shaped = ({ joint, axis }) => {
+      const qUpper = turnTo(arm.restUpper, arm.restHinge, joint.clone().sub(s), axis);
+      const qFore = turnTo(arm.restLower, arm.restHinge, wrist.clone().sub(joint), axis);
+      const twist = twistOf(qFore.clone().invert().multiply(qWrist ?? qFore), arm.restLower);
+      return { qUpper, qFore, twist };
+    };
+    const { qUpper, qFore, twist } = shaped(solved);
+    forearms[side] = qFore;
     set(`upperarm01.${side}`, qUpper);
     set(`upperarm02.${side}`, qUpper);
-    const qFore = turnTo(arm.restLower, arm.restHinge, wrist.clone().sub(elbow), bend);
     // The hand's turn about the forearm is shared out along it, so the wrist does not wring.
     const turnOfHand = qWrist ?? qFore;
-    const twist = twistOf(qFore.clone().invert().multiply(turnOfHand), arm.restLower);
     set(`lowerarm01.${side}`, qFore.clone().multiply(new Quaternion().slerp(twist, FOREARM_TWIST[0])));
     set(`lowerarm02.${side}`, qFore.clone().multiply(new Quaternion().slerp(twist, FOREARM_TWIST[1])));
     set(`wrist.${side}`, turnOfHand);
@@ -392,12 +438,12 @@ export function poseRig(rig, p) {
 
   // The sword arm reaches for the hand bent from the forearm as the skeleton has it, then again with the hand bent from
   // the forearm that gives, which the wrist can manage. The rear hand, the model's right, goes where the skeleton has it.
-  const swordArm = [V(J.el), V(J.sh), V(J.hn), new Vector3(0, -1, -0.3)];
+  const swordArm = [V(J.el), V(J.sh), V(J.hn), new Vector3(0, -0.3, -1)];
   let held = holding(unit(V(J.hn).sub(V(J.el))));
   reachFor("L", held.wrist, held.turn, ...swordArm);
-  held = holding(unit(at[b("wrist.L")].clone().sub(at[b("lowerarm01.L")])));
+  held = holding(unit(at[b("wrist.L")].clone().sub(at[b("lowerarm01.L")])), forearms.L);
   reachFor("L", held.wrist, held.turn, ...swordArm);
-  reachFor("R", V(J.rh), null, V(J.re), rs, V(J.rh), new Vector3(-1, -0.4, 0.4));
+  reachFor("R", V(J.rh), null, V(J.re), rs, V(J.rh), new Vector3(-0.4, -0.3, 1));
   // Where a hand out of reach falls short of where it would hold the sabre: the sabre goes with it.
   const short = at[b("wrist.L")].clone().sub(held.wrist);
   return { q, at, grip: G, wrists: { L: held.wrist, R: V(J.rh) }, short };
