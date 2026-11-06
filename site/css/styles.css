@@ -560,6 +560,26 @@ textarea:focus-visible {
   border-radius: 10px;
 }
 
+/* The 3D figures are drawn on a canvas laid exactly over the stage, which keeps
+   its floor, motion ghosts and blade paths under them; the stage's own drawing
+   of the fencers is put away while they are on. */
+.stage__frame {
+  position: relative;
+}
+
+.stage__3d {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+.panel--stage.is-3d .fencer {
+  display: none;
+}
+
 /* A phrase for one fencer hides everything of fencer B, and the legend that
    tells two fencers apart. */
 .panel--stage.is-solo .fencer-b,

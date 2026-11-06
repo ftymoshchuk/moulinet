@@ -72,8 +72,11 @@ async function openInBrowser(path) {
       { maxBuffer: 64 * 1024 * 1024, timeout: 90_000 },
     );
     // The page logs nothing, so any console line is a problem: an uncaught
-    // error, a failed load, something the security policy refused.
-    return { dom: stdout, consoleLines: stderr.split("\n").filter((line) => line.includes(":CONSOLE")) };
+    // error, a failed load, something the security policy refused. A browser
+    // with no graphics card draws the 3D figures in software and says how slow
+    // that is; those notes are the browser's, not the page's.
+    const notes = /GL Driver Message|Automatic fallback to software WebGL/;
+    return { dom: stdout, consoleLines: stderr.split("\n").filter((line) => line.includes(":CONSOLE") && !notes.test(line)) };
   } finally {
     server.close();
     await rm(profile, { recursive: true, force: true });
@@ -96,7 +99,7 @@ function drive() {
   return driven;
 }
 
-const CONTROLS = ["#play-button", ".speed", "#timeline", "#steps", "#timecode", "[data-toggle=ghosts]", "[data-toggle=trail]", "[data-toggle=ink]", "[data-toggle=loop]", "[data-toggle=closeUp]", "#camera"];
+const CONTROLS = ["#play-button", ".speed", "#timeline", "#steps", "#timecode", "[data-toggle=ghosts]", "[data-toggle=trail]", "[data-toggle=ink]", "[data-toggle=loop]", "[data-toggle=closeUp]", "[data-toggle=figures3d]", "#camera"];
 const two = (n) => String(n).padStart(2, "0");
 
 test("in a browser, the page opens on the practice library and builds its controls", { skip, timeout: 120_000 }, async () => {
@@ -164,7 +167,7 @@ test("in a browser, the practice library plays each scene and says what it is", 
     ghosts: { A: 8, B: 0 },
   });
   // (The close-up of the hand starts off, and is not one of the four.)
-  assert.deepEqual(seen.toggledOff, { pressed: ["false", "false", "false", "false", "false"], ghostsHidden: true, trailsHidden: true, inkFilter: null });
+  assert.deepEqual(seen.toggledOff, { pressed: ["false", "false", "false", "false", "false", "false"], ghostsHidden: true, trailsHidden: true, inkFilter: null });
   assert.equal(seen.inkFilter, "url(#ink-texture)");
   assert.deepEqual(seen.camera, { shown: "-40°", floorTurned: true });
   assert.deepEqual(seen.speed, ["true", "false", "false"]);
@@ -201,7 +204,7 @@ test("in a browser, a scene is looked at with its whole blades in view, and the 
 
 test("in a browser, the base postures show one fencer, not a pair, and describe each posture", { skip, timeout: 120_000 }, async () => {
   const { seen } = await drive();
-  assert.deepEqual(seen.baseShows, { chosen: ["base"], panels: ["stage", "detail", "bases"], controls: ["[data-toggle=ink]", "[data-toggle=closeUp]", "#camera"] });
+  assert.deepEqual(seen.baseShows, { chosen: ["base"], panels: ["stage", "detail", "bases"], controls: ["[data-toggle=ink]", "[data-toggle=closeUp]", "[data-toggle=figures3d]", "#camera"] });
   assert.deepEqual(seen.baseStage, {
     label: "Guard (tierce)",
     count: `01 / ${two(BASES.length)}`,
@@ -505,4 +508,22 @@ test("in a browser, the camera angle is a change that is not saved, and removing
   assert.deepEqual(seen.cameraUnsaved, { opened: false, turned: true, declined: { asked: 1, name: "Camera" }, backAgain: false });
   assert.deepEqual(seen.cameraSaved, { camera: 10, unsaved: false }, "the new angle is the one that is kept");
   assert.deepEqual(seen.removeFocus, { count: "01 / 01", removeOff: true, focus: "step-name" });
+});
+
+test("in a browser, the 3D figures load when turned on and take the drawn fencers' place, or say why they cannot", { skip, timeout: 120_000 }, async () => {
+  const { seen, errors, consoleLines } = await drive();
+  assert.deepEqual(errors, []);
+  assert.deepEqual(consoleLines, []);
+  const { figures3d } = seen;
+  assert.equal(figures3d.loading, "Loading the 3D figures.");
+  // Until they are ready the pen and ink stay.
+  assert.deepEqual(figures3d.atOnce, { pressed: "true", canvas: false, drawing: true });
+  if (figures3d.announced === "3D figures on.") {
+    assert.deepEqual(figures3d.loaded, { pressed: "true", canvas: true, drawing: false });
+  } else {
+    // A browser that cannot draw them, such as one with no graphics at all, keeps the drawing and turns the switch off.
+    assert.match(figures3d.announced, /^The 3D figures could not be shown: .+\.$/);
+    assert.deepEqual(figures3d.loaded, { pressed: "false", canvas: false, drawing: true });
+  }
+  assert.deepEqual(figures3d.off, { pressed: "false", canvas: false, drawing: true });
 });

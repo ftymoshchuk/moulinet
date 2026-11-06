@@ -4,7 +4,7 @@
 // where it was noted. The base postures show one fencer in one posture at a
 // time, in words as well as lines. The Creator makes new scenes.
 import { BASES, BASE_BLADE, BASE_GROUPS, basePhrase } from "./bases.js";
-import { DEFAULT_FRAME, bladePaths, floorPath, frameOf, handFrame, inkFigure, stickFigure } from "./figure.js";
+import { DEFAULT_FRAME, bladePaths, floorPath, frameOf, groundPath, handFrame, inkFigure, stickFigure } from "./figure.js";
 import { JOINTS, POSE_NAMES, POSES, PRESETS } from "./library.js";
 import {
   TEXT_KEYS,
@@ -79,6 +79,7 @@ const modeButtons = document.querySelectorAll("[data-mode]");
 const modePanels = [...document.querySelectorAll("[data-modes]")].map((el) => ({ el, modes: el.dataset.modes.split(" ") }));
 const stagePanelEl = document.getElementById("stage-panel");
 const stageEl = document.getElementById("stage");
+const canvas3dEl = document.getElementById("stage-3d");
 const stepCountEl = document.getElementById("step-count");
 const stepLabelEl = document.getElementById("step-label");
 const timecodeEl = document.getElementById("timecode");
@@ -171,6 +172,9 @@ const state = {
   ink: true,
   // A close-up of the sword hand, from outside the arm.
   closeUp: false,
+  // The fencers as people in three dimensions, drawn in ink, instead of the
+  // pen-and-ink drawing.
+  figures3d: false,
   camera: 0,
   fencer: "A",
   // The step on show while paused on one; null when the time decides.
@@ -569,6 +573,62 @@ function deleteSelectedScene() {
 let frame = 0;
 let lastTick = null;
 
+// ---------- The 3D figures ----------
+
+// They are loaded the first time they are turned on: the drawing, then the
+// bodies. Until then, and if they cannot be shown, the stage draws the fencers
+// in pen and ink as it always has.
+let stage3d = null;
+let loading3d = false;
+
+// Whether this browser can draw them, before anything is fetched for them: they
+// need WebGL 2, and a way to uncompress the bodies.
+function canDraw3d() {
+  if (typeof DecompressionStream !== "function") return false;
+  try {
+    const gl = document.createElement("canvas").getContext("webgl2");
+    gl?.getExtension("WEBGL_lose_context")?.loseContext();
+    return Boolean(gl);
+  } catch {
+    return false;
+  }
+}
+
+function start3d() {
+  if (stage3d || loading3d) return;
+  loading3d = true;
+  announce("Loading the 3D figures.");
+  Promise.resolve()
+    .then(() => {
+      if (!canDraw3d()) throw new Error("this browser cannot draw them, as it has no WebGL 2");
+      return import("./stage3d.js");
+    })
+    .then(({ createStage3d }) => createStage3d(canvas3dEl))
+    .then((stage) => {
+      stage3d = stage;
+      if (state.figures3d) announce("3D figures on.");
+    })
+    .catch((error) => {
+      state.figures3d = false;
+      announce(`The 3D figures could not be shown: ${error.message}.`);
+    })
+    .finally(() => {
+      loading3d = false;
+      update();
+    });
+}
+
+// Whether the stage shows the 3D figures now. A browser can take the drawing
+// away, as when a graphics card is reset, and then the pen and ink come back.
+function showing3d() {
+  if (state.figures3d && stage3d?.lost) {
+    stage3d = null;
+    state.figures3d = false;
+    announce("The 3D figures stopped, as the browser took their drawing away.");
+  }
+  return Boolean(state.figures3d && stage3d);
+}
+
 function update() {
   render();
   if (state.playing && !frame) {
@@ -786,6 +846,7 @@ for (const button of toggleButtons) {
   button.addEventListener("click", () => {
     const key = button.dataset.toggle;
     state[key] = !state[key];
+    if (key === "figures3d" && state[key]) start3d();
     update();
   });
 }
@@ -929,22 +990,36 @@ function frameFor(now) {
 
 // Where the camera looks from. The close-up comes round to the other side of the
 // piste, outside the sword arm, which is where the old books draw the grip and
-// the hand positions from; the camera turns it from there.
+// the hand positions from; the camera turns it from there. The 3D figures stand
+// as the skeleton has them, the fencer facing left with the sword arm on the
+// near side, so a close-up of that fencer's hand stays on this side.
 function viewCamera() {
-  return state.camera + (state.closeUp ? 180 : 0);
+  if (!state.closeUp) return state.camera;
+  const nearSide = showing3d() && state.mode === "creator" && editingFencer() === "B";
+  return state.camera + (nearSide ? 0 : 180);
 }
 
 function drawStage(now) {
   const camera = viewCamera();
-  setAttr(stageEl, "viewBox", frameFor(now).join(" "));
+  const view = frameFor(now);
+  setAttr(stageEl, "viewBox", view.join(" "));
   // The postures stand still, so they have no motion to show.
   const moving = state.mode !== "base";
   stagePanelEl.classList.toggle("is-solo", timeline.solo);
   setAttr(floorEl, "d", floorPath(camera));
-  // From outside the sword arm, in the close-up, the arm is in front of the body.
-  const backView = !state.closeUp;
-  drawFencer(fencers.A, inkFigure(now.A, 1, camera, { backView }));
-  drawFencer(fencers.B, inkFigure(now.B, -1, camera, { backView, older: true }));
+  const in3d = showing3d();
+  stagePanelEl.classList.toggle("is-3d", in3d);
+  canvas3dEl.classList.toggle("hidden", !in3d);
+  if (in3d) {
+    stage3d.draw({ poses: now, solo: timeline.solo, frame: view, camera });
+    setAttr(fencers.A.ground, "d", groundPath(now.A, 1, camera));
+    setAttr(fencers.B.ground, "d", groundPath(now.B, -1, camera));
+  } else {
+    // From outside the sword arm, in the close-up, the arm is in front of the body.
+    const backView = !state.closeUp;
+    drawFencer(fencers.A, inkFigure(now.A, 1, camera, { backView }));
+    drawFencer(fencers.B, inkFigure(now.B, -1, camera, { backView, older: true }));
+  }
   if (state.ink) setAttr(inkEl, "filter", "url(#ink-texture)");
   else inkEl.removeAttribute("filter");
 
@@ -1160,6 +1235,14 @@ function render() {
   else if (state.mode === "base") renderBase(index);
   else renderCreator(index, step);
   keepFocus();
+}
+
+// The canvas of the 3D figures is drawn at its size on the page, so a change of
+// size draws them again, even when nothing is playing.
+if (typeof ResizeObserver === "function") {
+  new ResizeObserver(() => {
+    if (showing3d()) render();
+  }).observe(canvas3dEl);
 }
 
 setSaved(readSaved(getStorage()));

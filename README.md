@@ -64,6 +64,15 @@ looks from the other side of the piste, outside the sword arm, which is where th
 old books draw the grip and the hand positions from, so the blade points the way
 it does in their plates; the camera turns it from there.
 
+**3D figures**, in every mode, puts two people on the stage in place of the
+drawing: bodies modelled in three dimensions, the young man and the older one,
+posed from the same numbers, so their feet, their hands and their blades are
+where the drawing has them, and drawn in ink. The floor, the marks round the
+feet, the motion ghosts and the blade paths stay as they are. They load the
+first time you turn them on, about 360 KB, and need a browser with WebGL 2; one
+without says so and keeps the drawing. They are new, and the drawing is still
+the default.
+
 The library and the Creator, which play scenes, add:
 - **Playback** at ¼, ½ or full speed, a step at a time, or scrubbed along the
   timeline, looped or once through.
@@ -177,6 +186,45 @@ front, so its calf swells on either side, fuller on the inside. The strokes are 
 moves as one drawing and does not flicker, and a pose that is held is drawn
 once.
 
+## The 3D figures
+The bodies are MakeHuman's: its base mesh, skeleton and skin weights, which its
+authors gave to the public domain, shaped into the two men with its body
+targets. `scripts/bake-fencers.js` makes them once, ahead of time, into one
+compressed file of 180 KB, `site/models/fencers.bin`: the young man athletic,
+the older one heavier and balding; their legs as long as the skeleton's, 90 cm
+from hip joint to ankle, and their arms 31 cm to the elbow and 27 cm to the
+wrist; and every point of each body on a garment, the jacket and breeches or
+trousers standing a little off the skin, the gloves, the shoes, the hair.
+
+Each frame poses the bodies from the pose's numbers. The hips go where the
+skeleton has them, square to its hips, and the chest turns and leans with its
+shoulders, the spine turning from one to the other; the neck and head lean and
+nod as the skeleton's do. Each ankle goes exactly where the skeleton's is, as
+far above the floor as the body's ankle is above the sole of its shoe, with the
+knee bending the skeleton's way, and the foot lies flat or tips up at the toe as
+it lifts. The rear hand goes where the skeleton has it. The sword hand closes
+round the grip as the drawing holds the hilt, the sabre exactly where the
+skeleton has it; a hand that would have to bend further at the wrist than a
+wrist can bends only that far, and the sabre turns between thumb and forefinger
+for the rest, as it does in a moulinet. The shoulder comes forward on the
+collarbone to let the hand reach, and in the few moments it still cannot, the
+hand falls short by at most a centimetre or so and the sabre goes with it.
+
+The fencer facing left stands as the skeleton has him, which is the one facing
+right turned round: his sword arm is on your side, and the blades meet in three
+dimensions at a parry, not only from the side. So his close-up stays on your
+side of the piste, outside his sword arm.
+
+They are drawn with [three.js](https://threejs.org), r170, kept in
+`site/vendor/`, three times over, off the page: in the flat colours of what they
+wear, in white under a light from high in front, and as which way each point of
+them faces and how far it is from you. Ink goes where the distance jumps, at
+their outline and where a part passes in front of another, where a surface turns
+sharply, and where one colour meets another, at a cuff or a collar; hatching
+goes where the light is low, crossed where it is lowest; everything else keeps
+its flat colour. The drawing is made finer than the screen, so the lines are
+smooth, on a canvas laid over the stage.
+
 ## Writing a phrase
 A scene is a phrase: JSON, with a few words about where it comes from. **Phrase
 data** shows the one on stage, a step per line:
@@ -286,8 +334,9 @@ and face protection in the second, the edge out to meet the cut; and parry 5 in
 the first, turned right over so the edge faces up.
 
 ## Run it on your own computer
-The page is plain HTML, CSS and JavaScript in `site/`, with no build step and
-no dependencies. Serve that folder with anything that serves files:
+The page is plain HTML, CSS and JavaScript in `site/`, with no build step; the
+one library it uses, three.js for the 3D figures, is kept in `site/vendor/`.
+Serve that folder with anything that serves files:
 
 ```bash
 git clone https://github.com/ftymoshchuk/moulinet.git
@@ -312,12 +361,27 @@ scenes (what they keep and what they leave alone) and the check that a
 reference link is a web address, the base postures, the drawing (the curves and
 brush strokes, the parts of a body and their proportions, the hilt and the hand in each hand position,
 and every phrase and posture at every moment from five camera angles, checked for
-broken path data and for shapes that do not merge), and the published files (only relative links to files that
-exist, no outside requests, every element the scripts need). Thirteen more run
+broken path data and for shapes that do not merge), the 3D figures (the bodies
+read back as they were baked, and posed in every scene with the ankles, the rear
+hand and the blade's point where the skeleton has them, from any camera, and the
+wrist bending no further than a wrist can), and the published files (only
+relative links to files that exist, no outside requests, every element the
+scripts need, and the licences of what is bundled). Fourteen more run
 in a real browser: headless Chrome or Chromium loads the page, then a driver
 page works every control of every mode, with hostile input among it, and checks
-the result, down to two tabs saving the same scene. They need Chrome or Chromium
+the result, down to two tabs saving the same scene and the 3D figures loading,
+or saying why they cannot. They need Chrome or Chromium
 on your `PATH`, or `CHROME_BIN` pointing at one, and are skipped without it.
+
+To change the bodies, edit `scripts/bake-fencers.js` and run it on MakeHuman's
+files, from its repository at the commit the script names:
+
+```bash
+git clone --filter=blob:none --sparse https://github.com/makehumancommunity/makehuman.git ../makehuman
+git -C ../makehuman sparse-checkout set makehuman/data/3dobjs makehuman/data/rigs makehuman/data/targets/macrodetails
+git -C ../makehuman checkout a8bc2d54ff0ac92e78ff71431b1023eda42bf482
+node scripts/bake-fencers.js ../makehuman/makehuman
+```
 
 CI runs the same on every pull request, with the runner's Chrome and the
 browser tests required. Its `ci-passed` job succeeds only when every other job
@@ -340,8 +404,12 @@ Project layout:
 - `site/js/library.js`: the poses, the built-in scenes and the sliders
 - `site/js/bases.js`: the base postures, in words
 - `site/js/scenes.js`: reference links, and the scenes saved on this device
+- `site/js/stage3d.js`: the 3D figures drawn in ink on a canvas over the stage
+- `site/js/rig.js`: the 3D bodies on their bones, posed from a pose's skeleton, and the sabre
+- `site/js/bodies.js`: reads the bodies from `site/models/fencers.bin`
+- `site/models/`: the bodies, with their licence; `site/vendor/`: three.js, with its licence
 - `site/fonts/`: Big Shoulders Display and IBM Plex, with their licences
-- `scripts/serve.js`: the local server; `scripts/protect-repo.sh`: repository settings
+- `scripts/serve.js`: the local server; `scripts/bake-fencers.js`: the bodies from MakeHuman's files; `scripts/protect-repo.sh`: repository settings
 - `tests/`
 
 ## Publishing
@@ -368,3 +436,8 @@ Moulinet is licensed under the [Apache License 2.0](LICENSE). The fonts in
 `site/fonts/` keep their own licence, the SIL Open Font License 1.1: see
 [OFL-BigShoulders.txt](site/fonts/OFL-BigShoulders.txt) for Big Shoulders
 Display and [OFL-IBMPlex.txt](site/fonts/OFL-IBMPlex.txt) for IBM Plex.
+three.js, in `site/vendor/`, is under the MIT License: see
+[MIT-three.js.txt](site/vendor/MIT-three.js.txt). The bodies in `site/models/`
+are made from MakeHuman's assets, which are in the public domain, and are
+dedicated to it likewise under CC0 1.0: see
+[CC0-MakeHuman.txt](site/models/CC0-MakeHuman.txt).

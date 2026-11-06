@@ -222,12 +222,6 @@ function draw(p, dir, camera, backView, older) {
   const legF = legPart(J, W, J.ankF, J.kF, { front: true, seat: backView, near: !backView, older });
   const legB = legPart(J, W, J.ankB, J.kB, { front: false, seat: !backView, near: backView, older });
 
-  // Strokes on the floor under each planted foot, shorter as it lifts. The foot behind is turned across, so they go all round it.
-  const ground = (ank, front) => {
-    const lift = ank[1] - 8;
-    return lift > 5 ? "" : groundStrokes(W, ank, front, front ? 7 : 9, 1 - lift / 6, front ? undefined : footSpan(W, J.toeBack));
-  };
-
   // Draw order: what the camera sees first goes last. The blade out beyond the far side of the sword arm goes behind the
   // whole body, arm and all; from the other side of the piste it is the nearest thing to the camera, and goes last.
   const order = backView ? [sword, legF, legB, torso, rear] : [rear, legB, legF, torso, sword];
@@ -242,8 +236,22 @@ function draw(p, dir, camera, backView, older) {
     head: headPart(J, W, older),
     l6: order[4],
     blade,
-    ground: ground(J.ankF, true) + ground(J.ankB, false),
+    ground: groundOf(J, W),
   };
+}
+
+// Strokes on the floor under each planted foot, shorter as it lifts. The foot behind is turned across, so they go all round it.
+function groundOf(J, W) {
+  const ground = (ank, front) => {
+    const lift = ank[1] - 8;
+    return lift > 5 ? "" : groundStrokes(W, ank, front, front ? 7 : 9, 1 - lift / 6, front ? undefined : footSpan(W, J.toeBack));
+  };
+  return ground(J.ankF, true) + ground(J.ankB, false);
+}
+
+/** The strokes on the floor under a fencer's planted feet, which the 3D figures stand on as the drawn ones do. */
+export function groundPath(p, dir, camera) {
+  return groundOf(skeleton(p), projector(p, dir, camera));
 }
 
 // How the stage looks at the piste unless a phrase asks for closer: x, y, width

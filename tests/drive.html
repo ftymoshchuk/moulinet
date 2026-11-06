@@ -16,16 +16,53 @@
       const results = { errors: [], seen: {} };
       const frame = document.getElementById("page");
 
-      frame.addEventListener("load", () => {
+      frame.addEventListener("load", async () => {
         const win = frame.contentWindow;
         win.addEventListener("error", (event) => results.errors.push(event.message));
+        win.addEventListener("unhandledrejection", (event) => results.errors.push(String(event.reason)));
         try {
           drive(win, frame.contentDocument, results.seen);
+          await drive3d(win, frame.contentDocument, results.seen);
         } catch (error) {
           results.errors.push(`${error.name}: ${error.message}`);
         }
         document.getElementById("results").textContent = JSON.stringify(results);
       });
+
+      // The 3D figures load when they are first turned on, and either take the
+      // stage's fencers' place or, in a browser that cannot draw them, say so
+      // and leave the pen and ink as they were.
+      async function drive3d(win, doc, seen) {
+        const $ = (selector) => doc.querySelector(selector);
+        const $$ = (selector) => [...doc.querySelectorAll(selector)];
+        const button = (name) => $$("button").find((b) => b.textContent.trim() === name || b.getAttribute("aria-label") === name);
+        const input = (el, value) => {
+          el.value = String(value);
+          el.dispatchEvent(new win.Event("input", { bubbles: true }));
+        };
+        const shown = () => ({
+          pressed: $("[data-toggle=figures3d]").getAttribute("aria-pressed"),
+          canvas: !$("#stage-3d").classList.contains("hidden"),
+          drawing: win.getComputedStyle($("#body-a")).display !== "none",
+        });
+        button("Practice library").click();
+        $$(".scene-button")[0].click();
+        button("3D figures").click();
+        seen.figures3d = { loading: $("#announcer").textContent, atOnce: shown() };
+        for (let wait = 0; wait < 400 && !/^(3D figures on|The 3D figures could not)/.test($("#announcer").textContent); wait++) {
+          await new Promise((resolve) => win.setTimeout(resolve, 50));
+        }
+        seen.figures3d.announced = $("#announcer").textContent;
+        seen.figures3d.loaded = shown();
+        // Every step, a turned camera and the close-up draw them too.
+        for (const step of $$(".step-button")) step.click();
+        input($("#camera"), 30);
+        button("Hand close-up").click();
+        button("Hand close-up").click();
+        input($("#camera"), 0);
+        button("3D figures").click();
+        seen.figures3d.off = shown();
+      }
 
       function drive(win, doc, seen) {
         const $ = (selector) => doc.querySelector(selector);
@@ -71,7 +108,7 @@
         const showing = () => ({
           chosen: $$("[data-mode]").filter((b) => b.getAttribute("aria-pressed") === "true").map((b) => b.dataset.mode),
           panels: $$("main section.panel").filter(visible).map(panelName),
-          controls: ["#play-button", ".speed", "#timeline", "#steps", "#timecode", "[data-toggle=ghosts]", "[data-toggle=trail]", "[data-toggle=ink]", "[data-toggle=loop]", "[data-toggle=closeUp]", "#camera"].filter((selector) => visible($(selector))),
+          controls: ["#play-button", ".speed", "#timeline", "#steps", "#timecode", "[data-toggle=ghosts]", "[data-toggle=trail]", "[data-toggle=ink]", "[data-toggle=loop]", "[data-toggle=closeUp]", "[data-toggle=figures3d]", "#camera"].filter((selector) => visible($(selector))),
         });
 
         // ---------- The practice library ----------
