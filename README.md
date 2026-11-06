@@ -1,6 +1,6 @@
 # Moulinet
 
-Sabre Motion Lab: sabre fencing drawn in pen and ink, in your browser. Study
+Sabre Motion Lab: sabre fencing drawn in ink, in your browser. Study
 the base postures, practise from a library of scenes, or make a scene of your
 own: slow it down, step through it and reshape any moment. Every pose is a
 handful of numbers and every scene a short list of keyframes, so a whole
@@ -60,17 +60,10 @@ the Creator keeps one view while you reshape a scene.
 
 **Hand close-up**, in every mode, looks closely at the sword hand instead, and
 follows it as it moves: A's, or in the Creator the fencer you are reshaping. It
-looks from the other side of the piste, outside the sword arm, which is where the
-old books draw the grip and the hand positions from, so the blade points the way
-it does in their plates; the camera turns it from there.
-
-**3D figures**, on unless you turn them off, puts two people on the stage:
-bodies modelled in three dimensions, the young man and the older one, posed from
-the same numbers as the drawing, so their feet, their hands and their blades are
-where the drawing has them, and drawn in ink. The floor, the marks round the
-feet, the motion ghosts and the blade paths are the same either way. They load
-as the page opens, about 370 KB, and need a browser with WebGL 2; turned off, or
-in a browser without it, the stage shows the fencers in pen and ink, as below.
+looks from outside the sword arm, which is where the old books draw the grip and
+the hand positions from, so the blade points the way it does in their plates:
+for A from the other side of the piste, and for B, whose sword arm is on your
+side, from this one. The camera turns it from there.
 
 The library and the Creator, which play scenes, add:
 - **Playback** at ¼, ½ or full speed, a step at a time, or scrubbed along the
@@ -97,146 +90,90 @@ In the Creator there is more:
   applied they wait, dimmed, so that nothing you typed is lost, and they take
   it up again as soon as it applies.
 
-## The drawing
-With the 3D figures off, the fencers are drawn in pen and ink. They are not
-pictures. Each is worked out from a pose, a few numbers for the joints, and
-drawn in the browser: a line round the body that
-is fine where it faces the light and heavy where it turns away, as a pen
-presses on the shadow side, and brush strokes that swell and end in points for
-the folds of the breeches, the creases of the jersey, the wrinkles of a stocking
-and the marks on the floor. The look follows the line illustrations of old
-sabre training books, as a model to draw from; no scan or trace of any of them
-is in this repository.
+## The figures
+The fencers are not pictures. Each is worked out from a pose, a few numbers for
+the joints, and drawn in the browser: two people modelled in three dimensions,
+the young man and the older one, drawn in ink. The look follows the line
+illustrations of old sabre training books, as a model to draw from; no scan or
+trace of any of them is in this repository.
 
-The shoulders are turned toward you, as in those books: the jersey is a stack
-of slices of the body, set round by the pose's `turn`, so it is broad at the
-shoulders and tapers to the waist, about 38 cm across against 28, and the camera
-swings it as it swings the piste. The sleeve of the arm on your side begins on
-the jersey itself, and the other arm lies behind it, set on the shoulder at the
-front of the chest and as long as an arm, its loose sleeve running on from the
-line of the shoulder into a gauntlet. A sleeve is loose over an arm about 10 cm
-thick: full over the upper arm, narrowing to the elbow, and fullest on the
-forearm just below it, narrowing to the wrist. The hips turn with the shoulders, if not as far,
-so each leg starts from a hip of its own, the leg behind on your side and the
-leg in front on the far side: the legs part at the crotch, under a wide front
-of the trousers, rather than from one point. The foot in front points at the
-opponent, and the foot behind is turned across, its toe at you and turned back a
-little by the pose's `toeBack`, so that the two make an L, as the stance is
-taught. Each shoe is 29 cm from heel to toe, as long as a shoe for a man of the
-fencers' height. The one behind is a few domes standing on the floor, which the camera turns
-with the piste, so it is seen end on, from a quarter or from the side as the
-camera moves. The guard is the plates' classic stance: wide, both knees bent,
-each over its own foot, so both shins stand upright. The knee of the leg behind
-is turned out toward you, over the foot, by the pose's `kneeOut`: a little in
-the guard, so side on it is seen bent back over the foot, as the plates draw it,
-and further, in proportion, as the weight sits back over that foot. In the lunge
-the back leg is straight and the body stays nearly upright over the front leg.
-
-The sabre is held as the plates of the grip and of the hand positions draw it,
-and is worked out in three dimensions, the hand with it. The thumb lies along the
-back of the grip, its tip just behind the guard, and the fingers curl round the
-grip, the forefinger least; behind them the hand bends at the wrist to meet the
-forearm in the mouth of the gauntlet, however the blade is held, and the grip
-runs on past the heel of the hand to the pommel, a nut at its end. The fist is
-one shape, with a line where one finger lies over the next or over the thumb,
-and a crease at each middle knuckle that faces you. A blade turned out beyond the
-far side of the sword arm is further from you than the body is, and is drawn
-behind it, as the arm is. So in the moulinet, where the wrist turns the blade out
-beyond the arm as it passes under and behind, and the elbow gives a little so the
-hand rises, the blade goes behind the shoulder and the head, and the wrist bends
-no further than it does in parry 5.
-
-The guard is one sheet of steel, light, with a line of ink round it: from a lip
-over the thumb it sweeps forward through the blade and round in front of the
-fingers, then back under them, narrowing to the knuckle bow, into the pommel.
-Across, it is bent like a bowl. So side on it is a crescent in front of and under
-the fingers, as in the plate of the grip; from the side the edge faces, a shield
-over the fist with the blade coming out of it; and from the side of the thumb you
-look into it, shaded inside, at the fist. The pose's hand position turns the hand
-and the hilt about the blade, as the books number the positions: in the third the
-thumb is up and the edge down; in the second the palm is down and the edge out; in
-the first the thumb is down and the edge up, with the knuckle bow over the fist;
-in the fourth the palm is up and the edge in; and there are halves between them,
-as the 2/3 of the guard.
-
-The head is drawn as the plates draw it: a long skull and a short, square face,
-carried forward on a thick neck. It is drawn a twentieth larger than life, as
-an illustrator draws one, so the fencer is seven and a half heads tall and the
-head holds its own against the jersey; the shadow under the jaw stops at its
-angle, and the cord of the neck runs down behind it. The neck takes only part of the body's lean
+**The skeleton.** A pose sets where the hips are, how far the body leans, where
+each foot stands and how far it is lifted, the angles of the arms and the blade,
+and the hand position. The shoulders are turned toward you, as in those books,
+by the pose's `turn`, and the hips with them, if not as far, so each leg starts
+from a hip of its own. The foot in front points at the opponent, and the foot
+behind is turned across, its toe at you and turned back a little by the pose's
+`toeBack`, so that the two make an L, as the stance is taught. The guard is the
+plates' classic stance: wide, both knees bent, each over its own foot. The knee
+of the leg behind is turned out toward you, over the foot, by the pose's
+`kneeOut`: a little in the guard, and further, in proportion, as the weight sits
+back over that foot. In the lunge the back leg is straight and the body stays
+nearly upright over the front leg. The neck takes only part of the body's lean
 and the head hardly any, so however the body leans the head is held up and the
-eyes look ahead. The hair is strokes of the pen, combed in rows round the
-crown, up off the forehead, back over the top and down the back of the head,
-sparse on top where the light falls and heavier at the back, and its strokes
-make the edge of the head where it grows. The shading is drawn the same way: a
-fan of folds from the crotch, the cloth bloused over the belt and gathered
-under it, shadow on the insides of the legs, where each faces the other, and
-under the cloth that hangs over the band below the knee, and folds from the
-armpits and at the elbows.
+eyes look ahead. The pose's hand position turns the hand and the hilt about the
+blade, as the books number the positions: in the third the thumb is up and the
+edge down; in the second the palm is down and the edge out; in the first the
+thumb is down and the edge up, with the knuckle bow over the fist; in the
+fourth the palm is up and the edge in; and there are halves between them, as
+the 2/3 of the guard.
 
-A young fencer wears knickerbockers and long stockings, an older one loose
-trousers gathered at the ankle, a belly and narrower shoulders. The
-knickerbockers are full at the hips and narrow to the knee, where the cloth
-hangs over the band in a bag about a third wider than the stocking, as the
-plates draw it. The stocking is drawn over a lower leg as one is shaped: from
-the side, the shin runs nearly straight down the front and the calf swells
-behind, widest just under the band, then narrows into an ankle about half as
-wide; the leg behind, its foot and knee turned toward you, is seen from the
-front, so its calf swells on either side, fuller on the inside. The strokes are placed by rule and never by chance, so a figure
-moves as one drawing and does not flicker, and a pose that is held is drawn
-once.
-
-## The 3D figures
-The bodies are MakeHuman's: its base mesh, skeleton and skin weights, which its
-authors gave to the public domain, shaped into the two men with its body
+**The bodies** are MakeHuman's: its base mesh, skeleton and skin weights, which
+its authors gave to the public domain, shaped into the two men with its body
 targets. `scripts/bake-fencers.js` makes them once, ahead of time, into one
-compressed file of 190 KB, `site/models/fencers.bin`: the young man athletic,
-the older one heavier and balding; their legs as long as the skeleton's, 90 cm
-from hip joint to ankle, and their arms 31 cm to the elbow and 27 cm to the
-wrist; and every point of each body on a garment, the jacket and breeches or
-trousers standing a little off the skin, the gloves, the shoes, the hair. The
-cloth is smoothed so it runs over the hollows of the body instead of into them,
-the seat spans the cleft of the buttocks, and the bare feet are rounded into
-shoes. Each garment ends in a straight seam round the body, at the waist, below
-the knee, at the collar and at the cuffs, where the ink draws a line, as the
-drawing draws its hems.
+compressed file of 190 KB, `site/models/fencers.bin`: the young man athletic, in
+knickerbockers and long stockings, and the older one heavier and balding, in
+trousers to the ankle; their legs as long as the skeleton's, 90 cm from hip
+joint to ankle, and their arms 31 cm to the elbow and 27 cm to the wrist; and
+every point of each body on a garment, the jacket and breeches or trousers
+standing a little off the skin, the gloves, the shoes, the hair. The cloth is
+smoothed so it runs over the hollows of the body instead of into them, the seat
+spans the cleft of the buttocks, and the bare feet are rounded into shoes. Each
+garment ends in a straight seam round the body, at the waist, below the knee,
+at the collar and at the cuffs, where the ink draws a line, as an illustrator
+draws a hem.
 
-Each frame poses the bodies from the pose's numbers. The hips go where the
+**Posing.** Each frame poses the bodies from the skeleton. The hips go where the
 skeleton has them, square to its hips, and the chest turns and leans with its
 shoulders, the spine turning from one to the other; the neck and head lean and
 nod as the skeleton's do. Each ankle goes exactly where the skeleton's is, as
 far above the floor as the body's ankle is above the sole of its shoe, with the
 knee bending the skeleton's way, and the foot lies flat or tips up at the toe as
-it lifts. The rear hand goes where the skeleton has it. The sword hand closes
-round the grip as the drawing holds the hilt, its thumb along the back of the
-grip, the sabre exactly where the skeleton has it; a hand that would have to
-bend further at the wrist, or turn further about the forearm, than an arm can
-goes only so far, and the sabre turns between thumb and forefinger for the
-rest, as it does in a moulinet. The shoulder comes forward on the collarbone to
-let the hand reach, and in the few moments of the moulinet it still cannot, the
-hand falls short by a few centimetres and the sabre goes with it. An arm or a
-leg all but straight turns its elbow or knee the way the skeleton's would bend,
-or failing that the way the hand or the foot has it, so a limb passing through
-straight never turns over: no bone turns more than 25° in 4 ms.
+it lifts. The rear hand goes where the skeleton has it, on the hip. The sword
+hand closes round the grip, the fingers curled round it, the forefinger least,
+and the thumb along its back, its tip just behind the guard; the sabre is
+exactly where the skeleton has it. A hand that would have to bend further at
+the wrist, or turn further about the forearm, than an arm can goes only so far,
+and the sabre turns between thumb and forefinger for the rest, as it does in a
+moulinet. The shoulder comes forward on the collarbone to let the hand reach,
+and in the few moments of the moulinet it still cannot, the hand falls short by
+a few centimetres and the sabre goes with it. An arm or a leg all but straight
+turns its elbow or knee the way the skeleton's would bend, or failing that the
+way the hand or the foot has it, so a limb passing through straight never turns
+over: no bone turns more than 25° in 4 ms.
 
 The fencer facing left stands as the skeleton has him, which is the one facing
 right turned round: his sword arm is on your side, and the blades meet in three
-dimensions at a parry, not only from the side. So his close-up stays on your
-side of the piste, outside his sword arm.
+dimensions at a parry, not only from the side, as the scenes are worked out.
 
-They are drawn with [three.js](https://threejs.org), r170, kept in
-`site/vendor/`, three times over, off the page: in the flat colours of what they
-wear, in white under a light from high in front, and as which way each point of
-them faces and how far it is from you. Ink goes where the distance jumps, at
-their outline and where a part passes in front of another, where a surface turns
-sharply, and where one colour meets another, at a seam; the line is heavier on
-the side away from the light, as a pen presses on the shadow side. Hatching goes
-where the light is low, crossed where it is lowest, ruled from a point on each
-fencer so that it moves with him rather than staying on the screen; the young
-man's hair is dark, the older man's grey hair strokes of the pen; everything
-else keeps its flat colour. With **Ink texture** on, the pen wavers a little
-along its lines, as the drawing's does. The drawing is made finer than the
-screen, so the lines are smooth, on a canvas laid over the stage.
+**The ink.** The figures are drawn with [three.js](https://threejs.org), r170,
+kept in `site/vendor/`, three times over, off the page: in the flat colours of
+what they wear, in white under a light from high in front, and as which way each
+point of them faces and how far it is from you. Ink goes where the distance
+jumps, at their outline and where a part passes in front of another, where a
+surface turns sharply, and where one colour meets another, at a seam; the line
+is heavier on the side away from the light, as a pen presses on the shadow
+side. Hatching goes where the light is low, crossed where it is lowest, ruled
+from a point on each fencer so that it moves with him rather than staying on the
+screen; the young man's hair is dark, the older man's grey hair strokes of the
+pen; everything else keeps its flat colour. With **Ink texture** on, the pen
+wavers a little along its lines. The drawing is made finer than the screen, so
+the lines are smooth, on a canvas laid over the stage, whose floor, motion
+ghosts and blade paths show through, and three strokes of the pen on the floor
+under each planted shoe, shorter as it lifts.
+
+The figures load as the page opens, about 370 KB, and need a browser with WebGL
+2. The stage waits a moment for them; in a browser without it, stick figures
+stand in, and a note under the stage says why.
 
 ## Writing a phrase
 A scene is a phrase: JSON, with a few words about where it comes from. **Phrase
@@ -371,20 +308,21 @@ the timeline and its maths, with how the body moves between steps (through a ste
 it passes, the feet that stay and the feet that step, and a wrist that never bends
 past what parry 5 asks), the edits the Creator makes to a scene, the saved
 scenes (what they keep and what they leave alone) and the check that a
-reference link is a web address, the base postures, the drawing (the curves and
-brush strokes, the parts of a body and their proportions, the hilt and the hand in each hand position,
-and every phrase and posture at every moment from five camera angles, checked for
-broken path data and for shapes that do not merge), the 3D figures (the bodies
-read back as they were baked, and posed in every scene with the ankles, the rear
-hand and the blade's point where the skeleton has them, from any camera, and the
-wrist bending no further than a wrist can), and the published files (only
-relative links to files that exist, no outside requests, every element the
-scripts need, and the licences of what is bundled). Fourteen more run
-in a real browser: headless Chrome or Chromium loads the page, then a driver
-page works every control of every mode, with hostile input among it, and checks
-the result, down to two tabs saving the same scene and the 3D figures loading,
-or saying why they cannot. They need Chrome or Chromium
-on your `PATH`, or `CHROME_BIN` pointing at one, and are skipped without it.
+reference link is a web address, the base postures, the skeleton and the camera
+(the knees and the arms, the hand positions, where the stage looks, and every
+phrase and posture at every moment from eight camera angles, checked for broken
+path data), the figures (the bodies read back as they were baked, and posed in
+every scene with the ankles, the rear hand and the blade's point where the
+skeleton has them, from any camera, the wrist bending no further than a wrist
+can and no bone turning over), and the published files (only relative links to
+files that exist, no outside requests, every element the scripts need, and the
+licences of what is bundled). Fifteen more run in a real browser: headless
+Chrome or Chromium loads the page, then a driver page works every control of
+every mode, with hostile input among it, and checks the result, down to two tabs
+saving the same scene and the 3D figures taking the stage; and once more with
+WebGL turned off, where the stick figures stand in and the note says why. They
+need Chrome or Chromium on your `PATH`, or `CHROME_BIN` pointing at one, and are
+skipped without it.
 
 To change the bodies, edit `scripts/bake-fencers.js` and run it on MakeHuman's
 files, from its repository at the commit the script names:
@@ -409,16 +347,12 @@ Project layout:
 - `site/index.html` and `site/css/styles.css`: the page
 - `site/js/app.js`: the modes, the controls, and drawing each frame
 - `site/js/phrase.js`: phrases as data: timeline, in-betweens, text, edits
-- `site/js/figure.js`: a pose's skeleton, the camera, where the stage looks, and the fencer drawn from them
-- `site/js/body.js`: the parts of a fencer: jersey, arms, legs, head, and the sabre with the hand that holds it
-- `site/js/parts.js`: the head, hands, shoes and the slices of the jersey, drawn by hand: as points, the shoe behind as a few domes, and the hilt and the fist round it in the frame of the hand
-- `site/js/folds.js`: the ink work: cloth folds, creases, hems, stockings, floor strokes
-- `site/js/ink.js`: pen and ink as SVG path data: curves, outlines and tapered brush strokes
+- `site/js/figure.js`: a pose's skeleton, the hand on the blade, the camera, where the stage looks, the motion ghosts, the blade paths and the marks on the floor
 - `site/js/library.js`: the poses, the built-in scenes and the sliders
 - `site/js/bases.js`: the base postures, in words
 - `site/js/scenes.js`: reference links, and the scenes saved on this device
-- `site/js/stage3d.js`: the 3D figures drawn in ink on a canvas over the stage
-- `site/js/rig.js`: the 3D bodies on their bones, posed from a pose's skeleton, and the sabre
+- `site/js/stage3d.js`: the figures drawn in ink on a canvas over the stage
+- `site/js/rig.js`: the bodies on their bones, posed from a pose's skeleton, and the sabre
 - `site/js/bodies.js`: reads the bodies from `site/models/fencers.bin`
 - `site/models/`: the bodies, with their licence; `site/vendor/`: three.js, with its licence
 - `site/fonts/`: Big Shoulders Display and IBM Plex, with their licences

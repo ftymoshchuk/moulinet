@@ -55,7 +55,7 @@
             </div>
 
             <div class="stage__frame">
-              <svg id="stage" class="stage__view" viewBox="-80 -236 420 254" role="img" aria-label="Pen-and-ink side view of the fencing phrase, animated">
+              <svg id="stage" class="stage__view" viewBox="-80 -236 420 254" role="img" aria-label="Side view of the fencing phrase, the fencers drawn in ink, animated">
                 <defs>
                   <filter id="ink-texture" x="-10%" y="-10%" width="120%" height="120%">
                     <feTurbulence type="fractalNoise" baseFrequency="0.08" numOctaves="2" seed="3" result="noise" />
@@ -76,15 +76,14 @@
                 <g id="ink" class="ink">
                   <path id="ground-a" class="ground" />
                   <path id="ground-b" class="ground fencer-b" />
-                  <g id="body-a" class="fencer fencer--a"></g>
-                  <g id="body-b" class="fencer fencer--b fencer-b"></g>
-                  <g id="blade-a" class="fencer fencer--a"></g>
-                  <g id="blade-b" class="fencer fencer--b fencer-b"></g>
+                  <path id="stick-a" class="stick" />
+                  <path id="stick-b" class="stick fencer-b" />
                 </g>
               </svg>
-              <!-- The 3D figures, when they are on: drawn over the stage, whose floor, ghosts and blade paths show through. -->
+              <!-- The fencers, drawn in 3D over the stage, whose floor, ghosts and blade paths show through. -->
               <canvas id="stage-3d" class="stage__3d hidden" aria-hidden="true"></canvas>
             </div>
+            <p id="stage-note" class="stage__note hidden" role="status"></p>
 
             <div class="transport">
               <div class="transport__buttons">
@@ -115,7 +114,6 @@
                 <button class="toggle" type="button" data-toggle="ink" aria-pressed="true"><span class="toggle__dot" aria-hidden="true"></span>Ink texture</button>
                 <button class="toggle" type="button" data-toggle="loop" aria-pressed="true" data-modes="library creator"><span class="toggle__dot" aria-hidden="true"></span>Loop</button>
                 <button class="toggle" type="button" data-toggle="closeUp" aria-pressed="false"><span class="toggle__dot" aria-hidden="true"></span>Hand close-up</button>
-                <button class="toggle" type="button" data-toggle="figures3d" aria-pressed="true"><span class="toggle__dot" aria-hidden="true"></span>3D figures</button>
               </div>
 
               <div class="camera">

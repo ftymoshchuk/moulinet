@@ -77,13 +77,8 @@
   --floor: #cbc5b9;
   --ghost: #a39c8f;
   --ink: #1d1b18;
-  --hair-grey: #7a746a;
   --fencer-a: #f6f3ec;
   --fencer-b: #e0dacd;
-  --fencer-b-trousers: #cdc6b5;
-  --fencer-b-face: #ebe6da;
-  --steel: #eceae4;
-  --steel-shade: #dfdbd2;
   --trail-a: #9a3a27;
   --trail-b: #2f4f7f;
 
@@ -560,9 +555,9 @@ textarea:focus-visible {
   border-radius: 10px;
 }
 
-/* The 3D figures are drawn on a canvas laid exactly over the stage, which keeps
-   its floor, motion ghosts and blade paths under them; the stage's own drawing
-   of the fencers is put away while they are on. */
+/* The fencers are drawn in 3D on a canvas laid exactly over the stage, which
+   keeps its floor, motion ghosts and blade paths under them. Without it, they
+   are stick figures, and a note under the stage says why. */
 .stage__frame {
   position: relative;
 }
@@ -576,9 +571,12 @@ textarea:focus-visible {
   pointer-events: none;
 }
 
-.panel--stage.is-3d .fencer {
-  display: none;
+.stage__note {
+  margin: 8px 0 0;
+  color: var(--text-quiet);
+  font-size: 0.875rem;
 }
+
 
 /* A phrase for one fencer hides everything of fencer B, and the legend that
    tells two fencers apart. */
@@ -650,81 +648,11 @@ textarea:focus-visible {
   stroke: none;
 }
 
-.fencer--a {
-  --fencer: var(--fencer-a);
-  --hair: var(--ink);
-}
-
-.fencer--b {
-  --fencer: var(--fencer-b);
-  --hair: var(--hair-grey);
-}
-
-/* Each layer is drawn twice: the line of ink round every shape, then the shapes
-   filled over it, which hides the line where one part lies on another, so
-   overlapping parts read as one silhouette. */
-.figure__outline {
-  fill: var(--ink);
-  stroke: none;
-}
-
-.figure__fill {
-  fill: var(--fencer);
-  stroke: none;
-}
-
-/* The older man's trousers are a shade darker than his jersey, and his face is paper. */
-.fencer--b .figure__fill--trousers {
-  fill: var(--fencer-b-trousers);
-}
-
-.fencer--b .figure__fill--face {
-  fill: var(--fencer-b-face);
-}
-
-/* The hair, drawn in strokes of the pen. */
-.figure__hair {
-  fill: var(--hair);
-  stroke: none;
-}
-
-/* Brush strokes: tapered shapes of ink, for the shading and the heavy lines. */
-.figure__ink {
-  fill: var(--ink);
-  stroke: none;
-}
-
-.figure__detail {
+/* Stick figures stand in for the 3D figures when this browser cannot draw them. */
+.stick {
   fill: none;
   stroke: var(--ink);
-  stroke-width: 0.42;
-  stroke-linecap: round;
-}
-
-/* The sabre: a blade of ink, and the bell guard in light steel with a line of
-   ink round it, shaded inside. */
-.blade__steel,
-.blade__outline,
-.blade__shade {
-  fill: var(--ink);
-  stroke: none;
-}
-
-.blade__guard {
-  fill: var(--steel);
-  stroke: none;
-}
-
-.blade__inside {
-  fill: var(--steel-shade);
-  stroke: none;
-}
-
-.blade__rim {
-  fill: none;
-  stroke: var(--ink);
-  stroke-width: 0.35;
-  stroke-linecap: round;
+  stroke-width: 1.6;
 }
 
 .trails {

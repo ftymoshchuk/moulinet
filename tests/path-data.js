@@ -1,7 +1,7 @@
 // Path data read back as points, so a test can check what was drawn. It knows
-// only what the drawing writes: M, then relative c and l (or absolute L, which
-// the blade uses), and Z. Anything else, or a number run into the one before it,
-// is an error, so a change in the way paths are written is noticed here.
+// only what the stage writes: M, then relative c and l, or absolute L and Q, and
+// Z. Anything else, or a number run into the one before it, is an error, so a
+// change in the way paths are written is noticed here.
 
 /**
  * The shapes in `d`, each as `{ points, controls, closed }`: every point the
@@ -35,6 +35,13 @@ export function readPath(d) {
         [x, y] = [n[i], n[i + 1]];
         shape.points.push([x, y]);
       }
+    } else if (op === "Q") {
+      if (!shape || n.length === 0 || n.length % 4) throw new Error(`"Q" takes groups of four numbers: "${args}"`);
+      for (let i = 0; i < n.length; i += 4) {
+        shape.controls.push([n[i], n[i + 1]]);
+        [x, y] = [n[i + 2], n[i + 3]];
+        shape.points.push([x, y]);
+      }
     } else if (op === "Z" || op === "z") {
       if (!shape) throw new Error("a path cannot start by closing");
       shape.closed = true;
@@ -44,13 +51,6 @@ export function readPath(d) {
     }
   }
   return shapes;
-}
-
-/** Every string of path data in a drawing, which is nested objects of them. */
-export function allPaths(value, out = []) {
-  if (typeof value === "string") out.push(value);
-  else if (value && typeof value === "object") Object.values(value).forEach((v) => allPaths(v, out));
-  return out;
 }
 
 /** The corners of the box round every point of `shapes`. */

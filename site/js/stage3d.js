@@ -83,7 +83,7 @@ const FRAGMENT = `
   }
   void main() {
     vec2 px = 1.0 / resolution;
-    // The pen wavers a little along its line, as the drawing's ink texture has it.
+    // With the ink texture on, the pen wavers a little along its line.
     vec2 at = gl_FragCoord.xy / (36.0 * detail);
     vec2 uv = vUv + wobble * 1.1 * detail * px * vec2(noise(at) - 0.5, noise(at + 31.7) - 0.5);
     float d = depthAt(uv);
@@ -158,7 +158,7 @@ function hairOf(bodies, garment) {
 /**
  * Sets up the 3D figures on `canvas` and loads their bodies. Resolves to `draw(view)`, which draws the fencers for
  * `view`: { poses: { A, B }, solo, frame: [x, y, w, h] as the stage's viewBox, camera in degrees, and ink, whether the
- * pen wavers as the drawing's ink texture does }; `lost`, true once the browser has taken the drawing away; and
+ * pen wavers a little along its lines }; `lost`, true once the browser has taken the drawing away; and
  * `fencers`, the figures as rig.js makes them.
  */
 export async function createStage3d(canvas) {

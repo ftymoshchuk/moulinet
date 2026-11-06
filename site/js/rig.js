@@ -9,21 +9,26 @@
 // from its parent. Both fencers are posed in that frame, as figure.js has them;
 // the fencer facing left is then turned round to face the other way.
 import { Bone, BoxGeometry, BufferAttribute, BufferGeometry, CatmullRomCurve3, CylinderGeometry, Group, Matrix4, Mesh, Quaternion, Skeleton, SkinnedMesh, SphereGeometry, TubeGeometry, Vector3 } from "../vendor/three.module.min.js";
-import { gripFrame } from "./body.js";
-import { hiltParts } from "./parts.js";
-import { knee3, kneeBehind, skeleton } from "./figure.js";
+import { gripFrame, knee3, kneeBehind, skeleton } from "./figure.js";
 
 const RAD = Math.PI / 180;
 const X = new Vector3(1, 0, 0);
 const Y = new Vector3(0, 1, 0);
 
-// How far back along the blade from the hand's point on it the middle of the fist is (cm), as parts.js has the hilt,
+// How far back along the blade from the hand's point on it the middle of the fist is (cm),
 // and where the forefinger and the thumb pinch the grip, which the sabre turns about in the fingers, as it does in a
 // moulinet, when the wrist cannot bend as far as the blade would have it.
 const FIST = 4.8;
 const PINCH = 1.9;
 // How far the hand may bend at the wrist from the line of the forearm (degrees).
 const WRIST_BEND = 50;
+// The thumb lies along the back of the grip, its tip just behind the guard: its knuckle where it leaves the hand, its
+// middle joint and its tip, in the frame of the hand on the blade (cm).
+const THUMB = [
+  [-6.4, -2.8, -1.0],
+  [-3.4, -2.3, -0.3],
+  [-0.8, -2.05, 0.1],
+];
 // How the grip lies across the open hand at rest: turned this far from the line of the knuckles toward the fingers
 // (degrees), this far behind the knuckles and this far out from the bones of the hand on the side of the palm (cm).
 const GRIP_ACROSS = 40;
@@ -211,14 +216,14 @@ function makeRig(bodies, figure) {
     return turns;
   };
 
-  // The sword hand's thumb lies along the back of the grip, as parts.js has it: each of its bones turns to point at
-  // the next of the thumb's joints there, the knuckle where it leaves the hand, the middle joint and the tip.
+  // The sword hand's thumb lies along the back of the grip: each of its bones turns to point at the next of THUMB's
+  // joints, the knuckle where it leaves the hand, the middle joint and the tip.
   const thumbAlongGrip = (side) => {
     const h = hand(side);
     const g = GRIP_ACROSS * RAD;
     const edge = h.out.clone().multiplyScalar(Math.cos(g)).addScaledVector(h.across, Math.sin(g));
     const point = ([x, y, z]) => h.centre.clone().addScaledVector(h.grip, x + FIST).addScaledVector(edge, y).addScaledVector(h.palm, z);
-    const targets = hiltParts().thumb.joints.map(point);
+    const targets = THUMB.map(point);
     const turns = new Map();
     // The turn of the bone before, which at rest is the hand's: none.
     let before = new Quaternion();
@@ -346,7 +351,7 @@ export function poseRig(rig, p) {
 
   // The sword hand, the model's left, closes round the grip as gripFrame has the hilt in the hand: the grip along the
   // blade, the palm the way the hand's frame says, the middle of the fist a little back from the hand's point.
-  const G = gripFrame(J, { dir: 1 });
+  const G = gripFrame(J);
   const [ga, gs] = [V(G.a), V(G.s)];
   const hand = rig.hands.L;
   const pinch = V(J.hn).addScaledVector(ga, -PINCH);

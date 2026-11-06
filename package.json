@@ -1,7 +1,7 @@
 {
   "name": "moulinet",
   "private": true,
-  "description": "Sabre Motion Lab: sabre phrases drawn in pen and ink, to slow down, step through and reshape in the browser.",
+  "description": "Sabre Motion Lab: sabre phrases drawn in ink, to slow down, step through and reshape in the browser.",
   "homepage": "https://ftymoshchuk.github.io/moulinet/",
   "repository": {
     "type": "git",
