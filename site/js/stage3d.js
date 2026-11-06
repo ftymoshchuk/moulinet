@@ -85,7 +85,7 @@ const FRAGMENT = `
     vec2 px = 1.0 / resolution;
     // The pen wavers a little along its line, as the drawing's ink texture has it.
     vec2 at = gl_FragCoord.xy / (36.0 * detail);
-    vec2 uv = vUv + wobble * 1.6 * detail * px * vec2(noise(at) - 0.5, noise(at + 31.7) - 0.5);
+    vec2 uv = vUv + wobble * 1.1 * detail * px * vec2(noise(at) - 0.5, noise(at + 31.7) - 0.5);
     float d = depthAt(uv);
     vec3 n = normalAt(uv);
     vec4 c0 = texture2D(tColor, uv);
@@ -96,7 +96,7 @@ const FRAGMENT = `
       vec2 q = uv + vec2(float(i), float(j)) * px * line * detail * 2.0;
       if (inside(q)) shade = max(shade, 1.0 - texture2D(tLight, q).r);
     }
-    float reach = line * detail * (1.0 + 1.2 * shade);
+    float reach = line * detail * (1.0 + 0.75 * shade);
     float edge = 0.0;
     for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) {
       vec2 o = vec2(float(i), float(j)) * px * reach;
