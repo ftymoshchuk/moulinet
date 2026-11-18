@@ -12,7 +12,7 @@
 
 ## 13. The fencing stance (*Vívóállás*)
 
-On the command "Fencing stance!" (*Vívni állás!*), starting from the basic stance, the fencer bends the legs at the knees so far that the knees come above the corresponding toes, then places the right foot about two foot-lengths straight forward and sets it on the ground with a light stamp of the heel, and the sabre comes into "tierce position". The weight of the body is distributed over both legs.
+On the command "Fencing *stance!*" (*Vívni állás!*), starting from the basic stance, the fencer bends the legs at the knees so far that the knees come above the corresponding toes, then places the right foot about two foot-lengths straight forward and sets it on the ground with a light stamp of the heel, and the sabre comes into "tierce position". The weight of the body is distributed over both legs.
 
 ![Fig. 17. Tierce position, from the side.](../figures/fig-17-tierce-in-fencing-stance-side-view.jpg)
 
@@ -60,10 +60,11 @@ After mastering the simple foot and body movements, they must be practised in co
 The last two foot and body movements occur during fencing, so they can be practised, but the above are the most important.
 
 > **Translator's notes on §14.**
-> - The book numbers the foot and body movements 1–14 (items 9–14 are the combined commands). Items 1–3 and 5–8 are each commanded with a word ending in "– one!"; the recovery (4) is commanded "Position!".
+> - The book numbers the foot and body movements 1–14. Items 1–8 are the simple movements (1–3 and 5–8 are commanded with a word ending in "– one!", the recovery, 4, with "Position!"). Items 9–14 stand under the introduction "after mastering the simple movements, practise them in combination, on the following commands": 9–12 are combinations, while 13 and 14 are two further exercises, which the book says "occur during fencing".
 > - *Lábhossz* ("foot-length") is the length of the foot, used as a measure; *lépésnyire* is "about a step". The two foot-lengths of §13 and the foot-length of the step in §14 are the book's own units; no metric figures are given in the pages translated so far.
 > - Italian terms are kept as printed: *patinando*, *ballestra*, *radoppió*, *passatto sotto* (modern Italian spellings: *pattinando*, *balestra*, *raddoppio*, *passata sotto*). Here the book itself equates *patinando* with "forward and lunge", *ballestra* with "jump forward and lunge" and *radoppió* with the double lunge.
-> - In the combined commands, "Forward" and "Back" mean the step forward and the step back (items 1 and 2), as in "Forward and lunge", i.e. a step forward followed by a lunge.
+> - In the combined commands, "Forward" and "Back" presumably mean the step forward and the step back (items 1 and 2), so that "Forward and lunge" is a step forward followed by a lunge; the page does not say so in words.
+> - In item 6, "blow" renders *ütés*. In a blade attack this is presumably the beat (the contents list §30 as *Ütések (battuta)*, "beats"); §30 is not yet translated.
 
 ## 15. Air cuts (*Levegővágások*)
 
@@ -114,7 +115,7 @@ Commands for practising these: "Seconde *position!*" "With inner swing, head cut
 | 4 | inner-face cut | circular | outer swing |
 | 5 | chest cut | circular | outer swing |
 | 6 | belly cut | circular | outer swing |
-| 7 [p. 18] | side cut | short | — |
+| [p. 18] 7 | side cut | short | — |
 | 8 | outer-face cut | short | — |
 
 Commands for practising these: "Prime *position!*" "With inner swing, side cut – *one!*" "Prime *position!*" "Forward, with outer swing, chest cut – *one!*" "Prime *position!*" etc.
@@ -150,18 +151,26 @@ Commands for practising these: "Quinte *position!*" "With inner swing, side cut 
 
 > **Translator's notes on §15.**
 > - **Misprint.** In the tierce list the sixth item (belly cut) is printed "5." (the print reads 1, 2, 3, 4, 5, 5, 7, 8, 9). It is numbered 6 here.
-> - **The braces.** In the print, a brace groups items 1–3 (head, side, outer-face) with "to be carried out with the inner swing", and a second brace groups items 4–6 (inner-face, chest, belly) with "to be carried out with the outer swing". The same grouping appears in the lists from seconde, prime and quinte, and the quarte list has one brace over its items 1–2 ("with inner swing"). The "Carried out with" column simply restates this. The short-swing items have no brace.
+> - **The braces.** In the print, a brace groups items 1–3 (head, side, outer-face) with "to be carried out with the inner swing", and a second brace groups items 4–6 (inner-face, chest, belly) with "to be carried out with the outer swing". The same grouping appears in the lists from seconde, prime and quinte. In the quarte list no brace is drawn: the words "to be carried out with the inner swing" are simply set beside items 1–2. The "Carried out with" column restates this. The short-swing items have no brace or label.
 > - **An inconsistency in the examples.** The brace puts the head cut with the inner swing, but the example command for tierce is "With *outer* swing, head cut" (and for seconde, "With *inner* swing, head cut"). §10 has both an inner and an outer swing to the head, so the book seems to allow either; which one goes with which starting position is not spelled out beyond these examples.
 > - **"Outer" and "inner" mean two things.** In *outer-face cut* and *inner-face cut* the words name the target on the imaginary opponent (§9). In *inner swing* and *outer swing* they name the path of the swing (§10). The book's tables pair the outer-face cut with the inner swing, and the inner-face cut with the outer swing.
-> - "Forward" in the example commands is a step forward (§14, items 1 and 9), as in "Forward and lunge".
+> - "Forward" in the example commands is presumably the step forward (§14, items 1 and 9), as in "Forward and lunge".
 
 ## 16. Parry swings combined with air cuts (*Hárítási lendítések levegővágásokkal összekötve*)
 
 ### A) Simple parry swings combined with air cuts
 
-From any of tierce / seconde / prime / quarte / quinte position, **first** a parry swing into seconde / prime / quarte / quinte / tierce, **and after it** a cut at the head / side / chest / belly / outer face.
+The book prints three bracketed columns, reproduced here side by side:
 
-> The book prints this as three bracketed columns of alternatives (the position; the parry swing; the cut). The rows of the columns are not pairs. The inner-face cut is not in this list, though it is in B) and C) and in the example below.
+| From position, first | parry swing (into) | and after it a cut at the |
+|---|---|---|
+| tierce | seconde | head |
+| seconde | prime | side |
+| prime | quarte | chest |
+| quarte | quinte | belly |
+| quinte | tierce | outer face |
+
+> **Translator's note.** Each column has its own bracket; the rows of the table only show how the words line up on the page. The book does not say in words how the columns combine. §12 A allows a parry swing from each position into each of the other four, and the example below varies only the cut (tierce → seconde, then head cut, side cut, …), so I read each column as a list of alternatives; that is an inference. The inner-face cut is not in this list, although B), C) and the example below include it.
 
 [p. 19]
 
@@ -169,7 +178,16 @@ Example: "Tierce *position!*" "Seconde and\* head cut – *one!*" "*Position!*" 
 
 ### B) Counter-parry swings combined with air cuts
 
-From any of tierce / seconde / prime / quarte / quinte **invitation**, **first** the counter-parry swing "counter-tierce" / "counter-seconde" / "counter-prime" / "counter-quarte" / "counter-quinte", **and after it** a cut at the head / side / chest / belly / outer face / inner face.
+| From the invitation, first | parry swing | and after it a cut at the |
+|---|---|---|
+| tierce | "counter-tierce" | head |
+| seconde | "counter-seconde" | side |
+| prime | "counter-prime" | chest |
+| quarte | "counter-quarte" | belly |
+| quinte | "counter-quinte" | outer face |
+| | | inner face |
+
+(As under A), each column is bracketed separately in the print. Here the swings are named after the invitations they start from and return to, as in §12 B.)
 
 For practising them, the examples are to be composed in the same way as under A).
 
@@ -184,8 +202,6 @@ For practising them, the examples are to be composed in the same way as under A)
 
 **and after it** a cut at the head / side / chest / belly / outer face / inner face.
 
-### The three combined
-
 After practising those under A) to C), their combination can be practised on the following commands: "Tierce *position!*" "Back, seconde and head cut – *one!*" "Quinte *position!*" "Counter-quinte and side cut – *one!*" "Seconde *position!*" "Half-counter-quarte, back and head cut – *one!*" "Tierce *position!*" "*Basic stance!*" "*At ease!*"
 
 ---
@@ -196,5 +212,5 @@ After practising those under A) to C), their combination can be practised on the
 
 > **Translator's notes on §16.**
 > - In the example under A) the printed footnote marks fall where shown above: `*` after "Seconde and", `**` after the second "Position!".
-> - "Back" in the last example commands ("Back, seconde and head cut") is the step back (§14, item 2).
+> - "Back" in the last example commands ("Back, seconde and head cut") is presumably the step back (§14, item 2).
 > - The book's contents list this section as "Parry swings combined with air cuts", and Chapter II ends here, at the foot of book p. 19. Chapter III (school fencing in pairs, "master–pupil") begins on p. 20.

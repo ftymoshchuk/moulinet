@@ -14,7 +14,7 @@
 
 ## 5. The basic stance (*Alapállás*)
 
-In the basic stance the heels touch, the feet form a 90° angle, and the toe of the right foot is pointed straight toward the imaginary opponent. The body stands in a natural, upright carriage, "half-left" (*fél bal*): the left shoulder is turned back, the right hip is drawn in a little, and the left hand is placed on the left hip. We hold the sabre with the regular grip, the edge turned to the right, the arm extended, at shoulder height, horizontally, the point forward. The sabre forms an obtuse angle with the extended arm.
+In the basic stance the heels touch, the feet form a 90° angle, and the toe of the right foot is pointed straight toward the imaginary opponent. The body stands in a natural, upright carriage, "half-left" (*fél bal*), the left shoulder turned back, the right hip drawn in a little, and the left hand placed on the left hip. We hold the sabre with the regular grip, the edge turned to the right, the arm extended, at shoulder height, horizontally, the point forward. The sabre forms an obtuse angle with the extended arm.
 
 ![Fig. 2. Basic stance.](../figures/fig-02-basic-stance.jpg)
 
@@ -27,7 +27,7 @@ In the basic stance the heels touch, the feet form a 90° angle, and the toe of 
 Starting from the basic stance, we rotate the arm, extended horizontally forward, about its own axis so that in the **1st** sabre attitude the edge of the blade turns upward (the obtuse angle remains, so the point of the sabre goes slightly down); the **2nd** sabre attitude is identical with the basic stance; in the **3rd** attitude the edge of the blade faces downward (the point of the sabre is directed slightly upward); in the **4th** attitude the edge of the blade turns fully to the left (the blade [p. 4] is horizontal, its point slightly to the right); in the **5th** attitude the sabre is between the 3rd and 4th attitudes; and in the **6th** attitude, between the 2nd and 3rd.
 
 > **Translator's notes.**
-> - *Kardhelyzet* ("sabre attitude", numbered 1–6) and *kardállás* ("sabre position", named tierce, seconde, etc., see §11) are two different things in the book, so they get two different English words. An attitude is the roll of the arm and blade about the arm's axis; a position (§11) is where the hand and point are held.
+> - *Kardhelyzet* ("sabre attitude", numbered 1–6) and *kardállás* ("sabre position", named tierce, seconde, etc., see §11) are two different things in the book, so they get two different English words. An attitude is the roll of the arm and blade about the arm's axis; a position (§11) is where the hand and point are held. The distinction is not kept perfectly: the description of septime says "from the sixte *helyzet*", which I translate "from the sixte position".
 > - Restated as a table (from the text above, nothing added):
 >
 > | Attitude | Edge of the blade faces | Other detail given |
@@ -80,8 +80,9 @@ Within this division, the openings can also be defined more closely according to
 - **Inner lower openings** (*belső alsó rések*): chest and belly.
 
 > **Translator's notes.**
-> - The drawing is a front view of the upper body and head. The outer openings are on its left, the inner on its right, the upper ones above a slanting line across the torso and the lower ones below it, down to a horizontal line at the hips. The text says only that the division is made "with reference to the opponent's right arm"; if the picture is read as a front view of the opponent, the outer side is the side of that arm.
+> - The drawing shows the head and upper body from the front, with a vertical centre line from the top of the head down to a horizontal line at the hips. The outer openings are on the left of the picture, the inner on the right. A line across the torso divides upper from lower: it starts at the left (outer) side at about armpit height and slopes down to the right (inner) side, where it meets the body below the armpit, so the inner upper openings reach lower than the outer upper ones. The arrow *mell* points at the right (inner) shoulder and upper chest, *oldal* at the left (outer) flank, and *has* at the lower right. The text says only that the division is made "with reference to the opponent's right arm"; if the picture is read as a front view of the opponent, the outer side is the side of that arm.
 > - The chest (*mell*) appears in two of the lists: with the inner upper openings and with the inner lower openings. This is as printed.
+> - In "outer upper arm and hand" (*külső felső kar és kéz*) and "lower arm and hand underneath" (*alsó kar és kéz alul*), *kar* is simply "arm", qualified by the region words (outer, upper, lower). Elsewhere the book uses *felkar* for the upper arm and *alkar* for the forearm (§10), so these phrases do not necessarily mean those parts: they probably mean the arm and hand as they fall within the outer-upper or the lower opening. That is my reading; the print does not say.
 > - "Rules of chivalry" (*a lovagiasság szabályai*): the book limits fencing to targets above the hip.
 
 [p. 5]
@@ -111,7 +112,7 @@ We carry out the circular swings in a large arc. They are:
 
 **Inner swing to the head** (*belső lendítés a fejre*). From the basic stance I first pass to the 1st sabre attitude; from there the forearm, lowering the point of the sabre, swings it out in a circular movement in front of the left hip, chest and face, so that the basket, alongside the extended arm, comes level with my right shoulder and the sabre, having come forward (edge forward), forms an obtuse angle with the arm.
 
-**Outer swing to the head** (*külső lendítés a fejre*). Starting from the basic stance, I bring the sabre into the 4th sabre attitude; from there, bending the elbow and taking it back, I swing the sabre to the right and back, and from there in an upward-moving circular arc I bring it forward beside the right cheek, so that the basket and the extended arm come level with my right shoulder [p. 6] and the sabre, edge forward, forms an obtuse angle with the arm. This swing must be assisted by arching the body (*a test homorításával*).
+**Outer swing to the head** (*külső lendítés a fejre*). Starting from the basic stance, I bring the sabre into the 4th sabre attitude; from there, bending the elbow and taking it back, I swing the sabre to the right and back, and from there in an upward-moving circular arc I bring it forward beside the right side of the face, so that the basket and the extended arm come level with my right shoulder [p. 6] and the sabre, edge forward, forms an obtuse angle with the arm. This swing must be assisted by arching the body (*a test homorításával*).
 
 **Inner swing to the side** (*belső lendítés az oldalba*). Starting from the basic stance, I swing the sabre with the forearm (raising its point toward myself), passing by the face, the left shoulder and the left hip, forward and up in an arc, so that afterwards the arm is extended, the upper edge of the basket is level with the shoulder, the edge is slanted up to the right, and the point of the sabre swung forward stands level with my right hip.
 
@@ -166,7 +167,7 @@ We teach the starting sabre positions first in the basic stance, but immediately
 
 *Fig. 7. Tierce position* (*7. ábra. Terc-állás*) — book p. 8
 
-**II. Seconde** (*Szekond*). Starting from the basic stance, the forearm brings the sabre back in a circular movement in front of the face and chest, and swings it on in an arc forward and to the right so far that the point of the sabre comes level with our right hip, in the low line, with its blade slanting up to the right, and the upper edge of the basket comes level with the right shoulder; the arm is moderately bent at the elbow.
+**II. Seconde** (*Szekond*). Starting from the basic stance, the forearm brings the sabre back in a circular movement in front of the face and chest, and swings it on in an arc forward and to the right so far that the point of the sabre comes level with our right hip, in the low line, its blade obliquely to the right and up (*pengéje rézsút jobbra fölfelé*), and the upper edge of the basket comes level with the right shoulder; the arm is moderately bent at the elbow.
 
 ![Fig. 8. Seconde position.](../figures/fig-08-seconde-position.jpg)
 
@@ -178,13 +179,13 @@ We teach the starting sabre positions first in the basic stance, but immediately
 
 *Fig. 9. Prime position* (*9. ábra. Prim-állás*) — book p. 9
 
-**IV. Quinte** (*Kvint*). Starting from the basic stance, we bring our sabre in front of the right cheek with a movement similar to the seconde swing, and from face height swing it forward and up, so that the basket comes in front of the right temple and the point of the sabre a little to the left of, and higher than, the left temple — so high that the inner face is not left uncovered; the arm is moderately bent at the elbow.
+**IV. Quinte** (*Kvint*). Starting from the basic stance, we bring our sabre in front of the right side of the face with a movement similar to the seconde swing, and from face height swing it forward and up, so that the basket comes in front of the right temple and the point of the sabre a little to the left of, and higher than, the left temple — so high that the inner face is not covered [*sic*]; the arm is moderately bent at the elbow.
 
 ![Fig. 10. Quinte position.](../figures/fig-10-quinte-position.jpg)
 
 *Fig. 10. Quinte position* (*10. ábra. Kvint-állás*) — book p. 9
 
-> **Translator's note — a doubtful phrase.** The printed words are *hogy a belső arc fedezve ne legyen*, literally "so that the inner face is **not** covered". That would contradict the purpose of the position: §12 says that after the quinte "the head" is protected. I have translated the evidently intended sense ("is not left uncovered"), as if the book had *fedezetlen ne legyen*. If the literal reading matters, check the last lines of the left-hand text column on book p. 9 (PDF p. 21).
+> **Translator's note — a doubtful phrase [*sic*].** The printed words are *hogy a belső arc fedezve ne legyen*, literally "so that the inner face is **not** covered", and that is what the text above says. It contradicts the purpose of the position: §12 says that after the quinte "the head" is protected, Fig. 10 shows the blade above the head, and the book itself uses *fedezve legyen* for "be covered" in the description of tierce. The intended sense is almost certainly "is not left uncovered" (as if the book had *fedezetlen ne legyen*), or simply "is covered". The point and basket positions in the same sentence are not affected. The words stand at the end of the left-hand text column on book p. 9 (PDF p. 21).
 
 **V. Quarte** (*Kvárt*). Starting from the basic stance, we draw the basket sharply (*rántjuk*) in front of the pit of our stomach (*gyomorgödör*) in such a way that the blade comes into the 5th attitude, the elbow sinks to the hip, the forearm stands horizontal, half-left (*félbalra*), and the point of the sabre stands to the left, outside the line, level with the left eye.
 
@@ -192,7 +193,7 @@ We teach the starting sabre positions first in the basic stance, but immediately
 
 *Fig. 11. Quarte position* (*11. ábra. Kvárt-állás*) — book p. 10
 
-**VI. Low tierce** (*Mélyterc*). I bend and lower the arm so far that the elbow rests on the right hip, the forearm is directed slightly downward, the lower edge of the basket comes to rest lower than the right hip, the edge of the sabre is turned [p. 10–11] outward, and the point of the sabre stands level with the right temple, outside the line.
+**VI. Low tierce** (*Mélyterc*). I bend and lower the arm so far that the elbow rests on the right hip, the forearm is directed slightly downward, the lower edge of the basket comes to rest lower than the right hip, the edge of the sabre is turned outward [p. 10–11], and the point of the sabre stands level with the right temple, outside the line.
 
 ![Fig. 12. Low tierce position.](../figures/fig-12-low-tierce-position.jpg)
 
@@ -231,6 +232,7 @@ The sabre positions low tierce, low quarte 1 and 2, sixte and septime, as auxili
 > - The book numbers the positions I–VIII (tierce, seconde, prime, quinte, quarte, low tierce, low quarte, sixte); septime has no numeral. Note that quinte (IV) comes before quarte (V) here.
 > - "In the line" / "outside the line" refer to the fencing line of §8. "Low line" (*alsó vonal*) is the line below shoulder height.
 > - *Mélykvárt* (VII) has two forms that the book calls (1) and (2); the figures are labelled the same way (Figs. 13, 14).
+> - *Pengéje rézsút jobbra fölfelé* (seconde) has no verb. It is not clear whether it gives the slope of the blade or the direction the edge faces (for prime the book says "the edge faces obliquely left and up"). The translation keeps the wording neutral; treat this as unresolved when building a posture.
 > - *Gyomorgödör* is the hollow below the breastbone (the pit of the stomach).
 > - *Félbalra* is the drill term "half-left", here a direction for the forearm: horizontal, pointing diagonally to the left.
 > - A table of the nine positions, with the openings each protects (§12), is in the [glossary](../glossary.md#the-sabre-positions-kardállások).
@@ -258,6 +260,8 @@ From each sabre position we can carry out 4 simple parry swings one after anothe
 Similarly from "seconde" into the other four sabre positions, and likewise from "prime", "quarte" and "quinte"; thus in all there are 5 × 4 = 20 parry swings.
 
 Commands: "*Basic stance!*" "Tierce – *one!*" "Seconde – *one!*" "Quinte – *one!*" etc. "*Basic stance!*" "*At ease!*"
+
+> **Translator's note.** "From each sabre position" means each of the five named in the example and in the count (tierce, seconde, prime, quarte, quinte), as 5 × 4 = 20 shows. The other positions of §11 are not part of this count.
 
 [p. 13]
 

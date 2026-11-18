@@ -14,12 +14,12 @@ Hungarian terms of the book and the English used in the translation, for the par
 
 ## The sabre positions (*kardállások*)
 
-§11 describes the nine positions (the book numbers I–VIII; septime has no number); §12 says which openings each protects. The figures are photographs; §11 says they show the positions as practised in the fencing stance ("the accompanying drawings were made accordingly"). The book does not say who is pictured, and Fig. 15 shows a different man (in a white jacket) from the others.
+§11 describes the nine positions (the book numbers I–VIII; septime has no number); §12 says which openings each protects. The figures are photographs; §11 says they show the positions as practised in the fencing stance ("the accompanying drawings were made accordingly"). The book does not say who is pictured. Fig. 15 is the only photograph in a white jacket.
 
 | Position | Hungarian | Book no. | Fig. | Hand and sabre (restated from §11) | Protects (§12) |
 |---|---|---|---|---|---|
 | **Tierce** | terc | I | 7 (also 17) | Basket drawn back by moderately bending the elbow, so that hand and forearm are covered by the basket (elbow pressed down); sabre in the 6th attitude; point at the height of the right eye, in the line | outer upper openings |
-| **Seconde** | szekond | II | 8 | Sabre brought back in a circle in front of face and chest, then swung forward and to the right: point level with the right hip, in the low line; blade slanting up to the right; upper edge of the basket level with the right shoulder; arm moderately bent | outer lower openings |
+| **Seconde** | szekond | II | 8 | Sabre brought back in a circle in front of face and chest, then swung forward and to the right: point level with the right hip, in the low line; blade "obliquely to the right and up" (the text has no verb, so it is unclear whether this is the slope of the blade or the direction of the edge; see the §11 note); upper edge of the basket level with the right shoulder; arm moderately bent | outer lower openings |
 | **Prime** | prím | III | 9 | Swung forward and to the left: point in the low line, level with the left knee; edge faces obliquely left and up; upper edge of the basket at left-shoulder height; arm moderately bent | inner lower openings |
 | **Quinte** | kvint | IV | 10 | Basket in front of the right temple; point a little left of, and higher than, the left temple; arm moderately bent | the head |
 | **Quarte** | kvárt | V | 11 | Basket drawn sharply in front of the pit of the stomach; blade in the 5th attitude; elbow sinks to the hip; forearm horizontal, half-left; point to the left, outside the line, level with the left eye | inner upper openings |
@@ -114,6 +114,8 @@ The parts of the opponent's body above the hip that may be attacked (§9).
 | belső felső rések | inner upper openings | head, inner face, chest, arm and hand on the inside |
 | belső alsó rések | inner lower openings | chest and belly |
 
+In the first and second lists, "arm" translates *kar* qualified by a region word; it is not necessarily the anatomical upper arm or forearm (see the note in §9).
+
 ### Swings, cuts and parries
 
 | Hungarian | English | Note |
@@ -178,7 +180,7 @@ Executive words are in italics, as in the print.
 |---|---|---|
 | Alapállás! | *Basic stance!* | §12, §15 |
 | Pihenj! | *At ease!* | §7, §12, §15 |
-| Vívni állás! | *Fencing stance!* | §13 |
+| Vívni állás! | Fencing *stance!* | §13 |
 | Terc-állás! (Szekond-, Prím-, Kvárt-, Kvint-) | Tierce *position!* (Seconde, Prime, Quarte, Quinte) | §15 |
 | Állás! | *Position!* — return to the stance or position the exercise started from | §14.4, §15, §16 |
 | Terc-egy! (Szekond-, Prím-, Kvárt-, Kvint-) | Tierce – *one!* — parry swing into the named position | §12 A |

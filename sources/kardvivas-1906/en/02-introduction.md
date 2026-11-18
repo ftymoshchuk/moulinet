@@ -13,7 +13,7 @@ Sabre fencing is the art of handling the sabre consciously and effectively.
 
 ## 2. The aim of sabre fencing (*A kardvívás célja*)
 
-The aim of sabre fencing is, on the one hand, to defend our bodily integrity against an attacker armed with a sword, and on the other, to render the opponent incapable of fighting. Fencing is not merely physical skill, nor is it merely knowledge, but the complete union of the two in an action that engages body and soul fully. The practice of fencing develops willpower, heightens the ability to notice and observe, and increases the speed of decision. So, on the one hand, it is suited to developing valuable qualities of mind, and on the other, it increases bodily strength and skill and makes the carriage and movements of the body light and easy.
+The aim of sabre fencing is, on the one hand, to defend our bodily integrity against an attacker armed with a sabre, and on the other, to render the opponent incapable of fighting. Fencing is not merely physical skill, nor is it merely knowledge, but the complete union of the two in an action that engages body and soul fully. The practice of fencing develops willpower, heightens the ability to notice and observe, and increases the speed of decision. So, on the one hand, it is suited to developing valuable qualities of mind, and on the other, it increases bodily strength and skill and makes the carriage and movements of the body light and easy.
 
 ## 3. The component parts of the fencing sabre (*A vívókard alkotó részei*)
 
