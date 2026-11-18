@@ -631,3 +631,35 @@ test("no scene bends a sword wrist further than a wrist goes, nor passes a blade
   }
 });
 
+
+test("the sword arm can be turned out of the plane of its shoulder, across the chest; turned by nothing, it stays in that plane", () => {
+  const length = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+  const plain = skeleton(resolvePose({ pose: "guard" }));
+  assert.equal(plain.el[2], plain.sh[2], "the elbow is in the plane of the sword shoulder");
+  assert.equal(plain.hn[2], plain.sh[2], "and so is the hand");
+  // Every pose that does not turn the arm keeps it there, as before the arm could be turned.
+  for (const name of Object.keys(POSES)) {
+    if ("armYaw" in POSES[name] || "foreYaw" in POSES[name]) continue;
+    const J = skeleton(resolvePose({ pose: name }));
+    assert.equal(J.hn[2], J.sh[2], `${name}: the hand stays in the plane`);
+  }
+  // Turned either way, the upper arm and the forearm are as long as they were.
+  for (const adj of [{ armYaw: 40 }, { foreYaw: -50 }, { armYaw: 79, arm: -6, foreYaw: -9, fore: 77 }, { armYaw: -60, foreYaw: 80, fore: -120 }]) {
+    const J = skeleton(resolvePose({ pose: "guard", adj }));
+    near(length(J.sh, J.el), 32, 1e-9, `${JSON.stringify(adj)}: the upper arm`);
+    near(length(J.el, J.hn), 37, 1e-9, `${JSON.stringify(adj)}: the forearm`);
+  }
+  // Toward the camera is across the chest from the sword side, as the blade's yaw turns it: the elbow goes that way by the
+  // sine of the turn, and the forearm, turned by nothing, goes on in the plane the elbow is in.
+  const across = skeleton(resolvePose({ pose: "guard", adj: { armYaw: 40 } }));
+  near(across.el[2] - across.sh[2], 32 * Math.sin((40 * Math.PI) / 180), 1e-9, "the elbow goes across by the sine of the turn");
+  assert.equal(across.hn[2], across.el[2], "the forearm stays level with the elbow");
+  near(across.el[0] - across.sh[0], 32 * Math.cos((-24 * Math.PI) / 180) * Math.cos((40 * Math.PI) / 180), 1e-9, "and goes forward as far as the turn leaves it");
+  // The forearm turned across takes the hand across, and the turn of each adds.
+  const both = skeleton(resolvePose({ pose: "guard", adj: { armYaw: 20, foreYaw: 30 } }));
+  near(both.hn[2] - both.sh[2], 32 * Math.sin((20 * Math.PI) / 180) + 37 * Math.sin((30 * Math.PI) / 180), 1e-9, "the hand goes across by both");
+  // The sabre goes where the hand does: its point moves with it, and the blade's own direction is not changed.
+  const at = (adj) => skeleton(resolvePose({ pose: "guard", adj }));
+  const [a, b] = [at({}), at({ armYaw: 40 })];
+  near(b.tip[2] - a.tip[2], b.hn[2] - a.hn[2], 1e-9, "the point moves across as far as the hand");
+});
