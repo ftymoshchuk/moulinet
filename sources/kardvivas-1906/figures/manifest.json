@@ -1,0 +1,266 @@
+{
+  "source": "../../../17152.pdf",
+  "note": "Each figure is cropped from the single embedded JPEG of its PDF page (pdfimages -j -f PAGE -l PAGE). crop_px = [x0, y0, x1, y1] in that image's pixels.",
+  "page_image_px": [
+    1517,
+    2416
+  ],
+  "dpi": 300,
+  "figures": [
+    {
+      "figure": 1,
+      "file": "fig-01-grip.jpg",
+      "section": "§4",
+      "book_page": 2,
+      "pdf_page": 14,
+      "caption_hu": "(1. ábra.) A vívókard fogása.",
+      "caption_en": "Fig. 1. The grip of the fencing sabre.",
+      "crop_px": [
+        421,
+        385,
+        1087,
+        1306
+      ]
+    },
+    {
+      "figure": 2,
+      "file": "fig-02-basic-stance.jpg",
+      "section": "§5",
+      "book_page": 3,
+      "pdf_page": 15,
+      "caption_hu": "(2. ábra.) Alapállás.",
+      "caption_en": "Fig. 2. Basic stance.",
+      "crop_px": [
+        815,
+        1121,
+        1407,
+        2078
+      ]
+    },
+    {
+      "figure": 3,
+      "file": "fig-03-openings-diagram.jpg",
+      "section": "§9",
+      "book_page": 4,
+      "pdf_page": 16,
+      "caption_hu": "(3. ábra). A rések.",
+      "caption_en": "Fig. 3. The openings.",
+      "crop_px": [
+        85,
+        872,
+        872,
+        1852
+      ]
+    },
+    {
+      "figure": 4,
+      "file": "fig-04-short-swing-to-head-1st-movement.jpg",
+      "section": "§10",
+      "book_page": 6,
+      "pdf_page": 18,
+      "caption_hu": "(4. ábra). Rövid lendítés a fejre 1. mozdulat.",
+      "caption_en": "Fig. 4. Short swing to the head, 1st movement.",
+      "crop_px": [
+        112,
+        1261,
+        740,
+        2204
+      ]
+    },
+    {
+      "figure": 5,
+      "file": "fig-05-short-swing-to-side-1st-movement.jpg",
+      "section": "§10",
+      "book_page": 7,
+      "pdf_page": 19,
+      "caption_hu": "(5. ábra). Rövid lendítés az oldalba 1-ső mozdulat.",
+      "caption_en": "Fig. 5. Short swing to the side, 1st movement.",
+      "crop_px": [
+        774,
+        174,
+        1394,
+        1106
+      ]
+    },
+    {
+      "figure": 6,
+      "file": "fig-06-short-swing-to-face-from-left-1st-movement.jpg",
+      "section": "§10",
+      "book_page": 7,
+      "pdf_page": 19,
+      "caption_hu": "(6. ábra). Rövid lendítés az arcra balról 1-ső mozdulat.",
+      "caption_en": "Fig. 6. Short swing to the face from the left, 1st movement.",
+      "crop_px": [
+        107,
+        1292,
+        744,
+        2160
+      ]
+    },
+    {
+      "figure": 7,
+      "file": "fig-07-tierce-position.jpg",
+      "section": "§11",
+      "book_page": 8,
+      "pdf_page": 20,
+      "caption_hu": "(7. ábra). Terc-állás.",
+      "caption_en": "Fig. 7. Tierce position.",
+      "crop_px": [
+        116,
+        280,
+        713,
+        1236
+      ]
+    },
+    {
+      "figure": 8,
+      "file": "fig-08-seconde-position.jpg",
+      "section": "§11",
+      "book_page": 8,
+      "pdf_page": 20,
+      "caption_hu": "(8. ábra). Szekond-állás.",
+      "caption_en": "Fig. 8. Seconde position.",
+      "crop_px": [
+        817,
+        1247,
+        1406,
+        2186
+      ]
+    },
+    {
+      "figure": 9,
+      "file": "fig-09-prime-position.jpg",
+      "section": "§11",
+      "book_page": 9,
+      "pdf_page": 21,
+      "caption_hu": "(9. ábra). Prim-állás.",
+      "caption_en": "Fig. 9. Prime position.",
+      "crop_px": [
+        784,
+        165,
+        1393,
+        1107
+      ]
+    },
+    {
+      "figure": 10,
+      "file": "fig-10-quinte-position.jpg",
+      "section": "§11",
+      "book_page": 9,
+      "pdf_page": 21,
+      "caption_hu": "(10. ábra). Kvint-állás.",
+      "caption_en": "Fig. 10. Quinte position.",
+      "crop_px": [
+        115,
+        1252,
+        698,
+        2200
+      ]
+    },
+    {
+      "figure": 11,
+      "file": "fig-11-quarte-position.jpg",
+      "section": "§11",
+      "book_page": 10,
+      "pdf_page": 22,
+      "caption_hu": "(11. ábra). Kvárt-állás.",
+      "caption_en": "Fig. 11. Quarte position.",
+      "crop_px": [
+        99,
+        177,
+        690,
+        1130
+      ]
+    },
+    {
+      "figure": 12,
+      "file": "fig-12-low-tierce-position.jpg",
+      "section": "§11",
+      "book_page": 10,
+      "pdf_page": 22,
+      "caption_hu": "(12. ábra). Mélyterc-állás.",
+      "caption_en": "Fig. 12. Low tierce position.",
+      "crop_px": [
+        818,
+        169,
+        1432,
+        1135
+      ]
+    },
+    {
+      "figure": 13,
+      "file": "fig-13-low-quarte-1-position.jpg",
+      "section": "§11",
+      "book_page": 10,
+      "pdf_page": 22,
+      "caption_hu": "(13. ábra). Mélykvárt (1) állás.",
+      "caption_en": "Fig. 13. Low quarte (1) position.",
+      "crop_px": [
+        97,
+        1303,
+        657,
+        2244
+      ]
+    },
+    {
+      "figure": 14,
+      "file": "fig-14-low-quarte-2-position.jpg",
+      "section": "§11",
+      "book_page": 10,
+      "pdf_page": 22,
+      "caption_hu": "(14. ábra). Mélykvárt (2) állás.",
+      "caption_en": "Fig. 14. Low quarte (2) position.",
+      "crop_px": [
+        794,
+        1294,
+        1421,
+        2251
+      ]
+    },
+    {
+      "figure": 15,
+      "file": "fig-15-sixte-position.jpg",
+      "section": "§11",
+      "book_page": 11,
+      "pdf_page": 23,
+      "caption_hu": "(15. ábra). Szext-állás.",
+      "caption_en": "Fig. 15. Sixte position.",
+      "crop_px": [
+        765,
+        163,
+        1410,
+        1134
+      ]
+    },
+    {
+      "figure": 16,
+      "file": "fig-16-septime-position.jpg",
+      "section": "§11",
+      "book_page": 11,
+      "pdf_page": 23,
+      "caption_hu": "(16. ábra). Szeptim-állás.",
+      "caption_en": "Fig. 16. Septime position.",
+      "crop_px": [
+        115,
+        1230,
+        714,
+        2189
+      ]
+    },
+    {
+      "figure": 17,
+      "file": "fig-17-tierce-in-fencing-stance-side-view.jpg",
+      "section": "§13",
+      "book_page": 14,
+      "pdf_page": 26,
+      "caption_hu": "(17. ábra). Tercállás oldalról.",
+      "caption_en": "Fig. 17. Tierce position, from the side.",
+      "crop_px": [
+        121,
+        830,
+        1394,
+        1656
+      ]
+    }
+  ]
+}
