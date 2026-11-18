@@ -8,7 +8,7 @@
 // toward the camera for the fencer facing right) and only then made into a turn
 // from its parent. Both fencers are posed in that frame, as figure.js has them;
 // the fencer facing left is then turned round to face the other way.
-import { Bone, BoxGeometry, BufferAttribute, BufferGeometry, CatmullRomCurve3, CylinderGeometry, Group, Matrix4, Mesh, Quaternion, Skeleton, SkinnedMesh, SphereGeometry, TubeGeometry, Vector3 } from "../vendor/three.module.min.js";
+import { Bone, BufferAttribute, BufferGeometry, CatmullRomCurve3, CylinderGeometry, Group, Matrix4, Mesh, Quaternion, Skeleton, SkinnedMesh, SphereGeometry, TubeGeometry, Vector3 } from "../vendor/three.module.min.js";
 import { gripFrame, knee3, kneeBehind, skeleton } from "./figure.js";
 
 const RAD = Math.PI / 180;
@@ -116,23 +116,74 @@ const part = (geometry, name, matrix) => {
   return mesh;
 };
 
+// The blade, along its length from where it leaves the guard to the point (cm): how wide it is from the back to the
+// edge where it leaves the guard and where the point begins, and how thick it is at the back there and at the point.
+// Over its last few centimetres the back sweeps down to meet the edge. The part of its width nearest the edge is the
+// edge itself, ground thin, and drawn apart from the rest so that the way the edge faces can be seen.
+const BLADE = { from: 3, to: 88, wide: [3.6, 1.8], thick: [0.6, 0.24], point: 9, edge: 0.5 };
+
+/**
+ * The blade's cross-section at x cm along it from the hand: the back and the edge across it (y, toward the edge),
+ * where the edge begins, and how thick the blade is at the back and where the edge begins.
+ */
+export function bladeSection(x) {
+  const start = BLADE.to - BLADE.point;
+  const along = Math.min(1, (x - BLADE.from) / (start - BLADE.from));
+  const half = (BLADE.wide[0] + (BLADE.wide[1] - BLADE.wide[0]) * along) / 2;
+  const thick = BLADE.thick[0] + ((BLADE.thick[1] - BLADE.thick[0]) * (x - BLADE.from)) / (BLADE.to - BLADE.from);
+  const s = Math.max(0, (x - start) / BLADE.point);
+  const edge = half * (1 - 0.3 * s);
+  const back = -half + (half + edge - 0.04) * s ** 1.6;
+  const ground = edge - BLADE.edge * (edge - back);
+  return { back, edge, ground, thick, groundThick: thick * 0.7 };
+}
+
+// The blade as two solids, the body and the edge, in the sabre's frame, with a flat face to each side so the ink
+// draws where they turn.
+function bladeGeometries() {
+  const stations = [];
+  for (let i = 0; i <= 40; i++) stations.push(BLADE.from + (BLADE.to - BLADE.from) * (1 - (1 - i / 40) ** 1.3));
+  const sections = stations.map((x) => ({ x, ...bladeSection(x) }));
+  // Round each cross-section, as [y, z] pairs, for the body and for the edge.
+  const body = (c) => [[c.back, c.thick / 2], [c.ground, c.groundThick / 2], [c.ground, -c.groundThick / 2], [c.back, -c.thick / 2]];
+  const edge = (c) => [[c.ground, c.groundThick / 2], [c.edge, 0.02], [c.edge, -0.02], [c.ground, -c.groundThick / 2]];
+  const solid = (outline) => {
+    const out = [];
+    const quad = (a, b, c, d) => out.push(...a, ...b, ...c, ...a, ...c, ...d);
+    for (let i = 0; i + 1 < sections.length; i++) {
+      const [p, q] = [sections[i], sections[i + 1]];
+      const [P, Q] = [outline(p), outline(q)];
+      for (let j = 0; j < P.length; j++) {
+        const k = (j + 1) % P.length;
+        quad([p.x, ...P[j]], [q.x, ...Q[j]], [q.x, ...Q[k]], [p.x, ...P[k]]);
+      }
+    }
+    // Close the end at the guard, and the point.
+    for (const [c, flip] of [[sections[0], true], [sections.at(-1), false]]) {
+      const ring = outline(c).map(([y, z]) => [c.x, y, z]);
+      if (flip) ring.reverse();
+      quad(ring[0], ring[1], ring[2], ring[3]);
+    }
+    const geometry = new BufferGeometry();
+    geometry.setAttribute("position", new BufferAttribute(new Float32Array(out), 3));
+    geometry.computeVertexNormals();
+    return geometry;
+  };
+  return { body: solid(body), edge: solid(edge) };
+}
+
 /**
  * The sabre, in the frame of the hand on the blade as gripFrame has it: x along the blade toward its point from the
- * hand's point on it, y toward the edge, z = x × y. Its parts are named for the renderer to colour: the blade, the
- * bell guard and the knuckle bow round the fist, the grip and the pommel.
+ * hand's point on it, y toward the edge, z = x × y. Its parts are named for the renderer to colour: the blade and its
+ * edge, the bell guard and the knuckle bow round the fist, the grip and the pommel.
  */
 function makeSabre() {
   const sabre = new Group();
   sabre.name = "sabre";
-  // The blade, from where it comes out of the guard to the point: narrower and thinner toward the point.
-  const blade = new BoxGeometry(1, 1, 1, 1, 1, 1);
-  const pos = blade.getAttribute("position");
-  for (let i = 0; i < pos.count; i++) {
-    const t = pos.getX(i) + 0.5;
-    pos.setXYZ(i, 3 + t * 85, pos.getY(i) * (1.25 - 0.8 * t), pos.getZ(i) * (0.4 - 0.2 * t));
-  }
-  blade.computeVertexNormals();
-  sabre.add(part(blade, "blade"));
+  // The blade, from where it comes out of the guard to the point, and its edge.
+  const blade = bladeGeometries();
+  sabre.add(part(blade.body, "blade"));
+  sabre.add(part(blade.edge, "edge"));
   // The bell: a shallow dome over the fist, its crown toward the point, deeper on the side of the edge.
   const bell = new SphereGeometry(6.2, 32, 10, 0, Math.PI * 2, 0, Math.PI * 0.42);
   sabre.add(part(bell, "guard", new Matrix4().makeTranslation(-3.1, 2.0, 0).multiply(new Matrix4().makeScale(1, 1, 0.85)).multiply(new Matrix4().makeRotationZ(-Math.PI / 2))));

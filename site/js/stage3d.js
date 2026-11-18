@@ -46,7 +46,11 @@ const COLOURS = {
   A: { jacket: "#f6f3ec", breeches: "#eee9df", stocking: "#f8f6f1", shoe: "#3a332c", glove: "#e6dfcf", skin: "#efe4d3", hair: "#26211d", eye: "#3a342e" },
   B: { jacket: "#e0dacd", breeches: "#cdc6b5", stocking: "#cdc6b5", shoe: "#3a332c", glove: "#e6dfcf", skin: "#ebe2d2", hair: "#8d877c", eye: "#3a342e" },
 };
-const SABRE = { blade: "#2a2723", guard: "#eceae4", grip: "#3a352f", pommel: "#eceae4" };
+// The sabre: a steel blade, the guard and pommel bright, the grip dark.
+const SABRE = { blade: "#bdb6a8", guard: "#eceae4", grip: "#3a352f", pommel: "#eceae4" };
+// Each fencer's edge in the colour of his blade's path on the stage (--trail-a and --trail-b in the page's styles), so the
+// way it faces shows even where the blade is thin on the page.
+const EDGE = { A: "#9a3a27", B: "#2f4f7f" };
 // The camera stands this far from the pivot of the piste (cm), which only has to be beyond everything it sees.
 const DISTANCE = 2000;
 // How many pixels the figures are drawn with for each pixel of the page at most, and at least: drawn finer than the
@@ -62,7 +66,10 @@ const WHO = { A: 0.2, B: 0.6 };
 const HAIR = 0.2;
 
 const VERTEX = "varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }";
+// How much finer the pen is round the sabres than round the bodies.
+const SABRE_LINE = 0.7;
 const FRAGMENT = `
+  #define SABRE_LINE ${SABRE_LINE.toFixed(2)}
   uniform sampler2D tColor, tLight, tNormal, tDepth;
   uniform vec2 resolution, anchorA, anchorB;
   uniform float detail, range, line, wobble;
@@ -92,11 +99,18 @@ const FRAGMENT = `
     bool figure = inside(uv);
     // The line is heavier where the figure turns from the light, as a pen presses on the shadow side.
     float shade = figure ? 1.0 - texture2D(tLight, uv).r : 0.0;
+    // The sabres are drawn in the light pass with no green, so the pen can tell them: a blade is so narrow that the
+    // line round it, as heavy as round a body, would hide its edge, so near one the pen is finer.
+    float sabre = 0.0;
     for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) {
       vec2 q = uv + vec2(float(i), float(j)) * px * line * detail * 2.0;
-      if (inside(q)) shade = max(shade, 1.0 - texture2D(tLight, q).r);
+      if (inside(q)) {
+        vec4 l = texture2D(tLight, q);
+        shade = max(shade, 1.0 - l.r);
+        if (l.r - l.g > 0.2) sabre = 1.0;
+      }
     }
-    float reach = line * detail * (1.0 + 0.75 * shade);
+    float reach = line * detail * (1.0 + 0.75 * shade) * (1.0 - SABRE_LINE * sabre);
     float edge = 0.0;
     for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) {
       vec2 o = vec2(float(i), float(j)) * px * reach;
@@ -184,6 +198,8 @@ export async function createStage3d(canvas) {
   tones.minFilter = tones.magFilter = NearestFilter;
   tones.needsUpdate = true;
   const light = new MeshToonMaterial({ color: 0xffffff, gradientMap: tones });
+  // The sabres take the same light with no green in it, which marks them for the pen (see the shader).
+  const lightSabre = new MeshToonMaterial({ color: 0xff00ff, gradientMap: tones });
   const normals = new MeshNormalMaterial();
   // In flat colour, unblended, so the alpha is kept as it is.
   const flat = (options) => new MeshBasicMaterial({ ...options, blending: NoBlending });
@@ -202,7 +218,10 @@ export async function createStage3d(canvas) {
     }
     figure.mesh.geometry.setAttribute("color", new BufferAttribute(colours, 4));
     figure.mesh.userData.flat = flat({ vertexColors: true });
-    for (const part of figure.sabre.children) part.userData.flat = flat({ color: new Color(SABRE[part.name] ?? INK), opacity: WHO[who] });
+    for (const part of figure.sabre.children) {
+      part.userData.flat = flat({ color: new Color(part.name === "edge" ? EDGE[who] : (SABRE[part.name] ?? INK)), opacity: WHO[who] });
+      part.userData.sabre = true;
+    }
     scene.add(figure.group);
     fencers[who] = figure;
   }
@@ -212,7 +231,7 @@ export async function createStage3d(canvas) {
     if (o.isMesh) meshes.push(o);
   });
   const use = (pass) => {
-    for (const mesh of meshes) mesh.material = pass === "flat" ? mesh.userData.flat : light;
+    for (const mesh of meshes) mesh.material = pass === "flat" ? mesh.userData.flat : mesh.userData.sabre ? lightSabre : light;
   };
 
   const camera = new OrthographicCamera(-1, 1, 1, -1, 1, DISTANCE * 2);

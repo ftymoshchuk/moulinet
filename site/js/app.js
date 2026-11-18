@@ -83,6 +83,7 @@ const scenesSavedEl = document.getElementById("scenes-saved");
 const scenesEmptyEl = document.getElementById("scenes-empty");
 const sceneTitleEl = document.getElementById("scene-title");
 const sceneKindEl = document.getElementById("scene-kind");
+const sceneSourceEl = document.getElementById("scene-source");
 const sceneEventEl = document.getElementById("scene-event");
 const sceneReferenceEl = document.getElementById("scene-reference");
 const sceneNoteEl = document.getElementById("scene-note");
@@ -100,10 +101,13 @@ const baseKeyEl = document.getElementById("base-key");
 // The Creator.
 const metaInputs = {
   name: document.getElementById("meta-name"),
+  source: document.getElementById("meta-source"),
   event: document.getElementById("meta-event"),
   reference: document.getElementById("meta-reference"),
   note: document.getElementById("meta-note"),
 };
+// The sources the scenes in the library already name, offered as the source is typed, so they are spelt alike.
+const sourceListEl = document.getElementById("source-list");
 const metaSoloEl = document.getElementById("meta-solo");
 const referenceHintEl = document.getElementById("reference-hint");
 const saveStatusEl = document.getElementById("save-status");
@@ -446,7 +450,7 @@ function say(message, tone = "ok") {
 }
 
 // What a scene's texts are called when one is too long.
-const TEXT_NAMES = { name: "name", event: "event", reference: "reference link", note: "note" };
+const TEXT_NAMES = { name: "name", source: "source", event: "event", reference: "reference link", note: "note" };
 
 // The first of the scene's texts, or a step's label, that is longer than it may be: the field to
 // take the cursor to (and the step to show, for a label), and what to say.
@@ -746,7 +750,10 @@ function renderSceneList() {
   sceneButtons = scenes.map((scene) => {
     const button = element("button", "scene-button");
     button.type = "button";
-    button.append(element("span", "scene-button__title", sceneName(scene.phrase)), element("span", "scene-button__meta", sceneSummary(scene.phrase)));
+    button.append(element("span", "scene-button__title", sceneName(scene.phrase)));
+    const source = sceneText(scene.phrase, "source");
+    if (source) button.append(element("span", "scene-button__source", source));
+    button.append(element("span", "scene-button__meta", sceneSummary(scene.phrase)));
     const event = sceneText(scene.phrase, "event");
     if (event) button.append(element("span", "scene-button__event", event));
     button.addEventListener("click", () => showScene(scene.key));
@@ -755,6 +762,8 @@ function renderSceneList() {
   scenesBuiltinEl.replaceChildren(...sceneButtons.filter((scene) => scene.builtin).map((scene) => scene.button));
   scenesSavedEl.replaceChildren(...sceneButtons.filter((scene) => !scene.builtin).map((scene) => scene.button));
   scenesEmptyEl.classList.toggle("hidden", saved.length > 0);
+  const sources = [...new Set(scenes.map((scene) => sceneText(scene.phrase, "source")).filter(Boolean))].sort();
+  sourceListEl.replaceChildren(...sources.map((source) => Object.assign(document.createElement("option"), { value: source })));
 }
 
 // The step buttons follow the phrase, so they are rebuilt when its steps change.
@@ -1040,6 +1049,7 @@ function renderLibrary() {
   const { phrase } = scene;
   setText(sceneTitleEl, sceneName(phrase));
   setText(sceneKindEl, scene.builtin ? "Built in" : "Saved on this device");
+  setFact(sceneSourceEl, sceneText(phrase, "source"), "Not noted yet");
   setFact(sceneEventEl, sceneText(phrase, "event"), "Not noted yet");
   setFact(sceneNoteEl, sceneText(phrase, "note"), "None");
   const reference = metaText(phrase, "reference").trim();

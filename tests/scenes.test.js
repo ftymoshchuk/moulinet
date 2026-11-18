@@ -63,6 +63,9 @@ test("a scene is described in words: pair or solo, steps, seconds", () => {
     "Pair · 5 steps · 3.4 s",
     "Pair · 4 steps · 2.8 s",
     "Solo · 7 steps · 2.7 s",
+    "Pair · 6 steps · 3.2 s",
+    "Pair · 10 steps · 3.7 s",
+    "Pair · 10 steps · 3.8 s",
   ]);
   assert.equal(sceneSummary(newPhrase()), "Pair · 1 step · 0.6 s");
 });

@@ -66,6 +66,10 @@
         };
         button("Practice library").click();
         $$(".scene-button")[0].click();
+        // Picking the scene plays it. Pause it while the figures load: a browser with no graphics card draws them in
+        // software, and while a scene plays it draws them frame after frame, however little of the page's time passes,
+        // for as long as this waits. The figures are drawn when they are loaded, playing or not.
+        button("Pause")?.click();
         seen.figures3d = { loaded: await settled(win, doc) };
         // Every step, a turned camera and the close-up draw them too; one fencer alone is one figure.
         for (const step of $$(".step-button")) step.click();
@@ -77,6 +81,8 @@
         seen.figures3d.solo = $("#stage-3d").dataset.fencers ?? "";
         $$(".scene-button")[0].click();
         seen.figures3d.pair = $("#stage-3d").dataset.fencers ?? "";
+        // And pause it again, or the browser goes on drawing it, as above, after the last thing checked.
+        button("Pause")?.click();
       }
 
       async function driveFallback(win, doc, seen) {
@@ -143,6 +149,8 @@
             title: text("#scene-title"),
             pressed: card.getAttribute("aria-pressed"),
             card: card.querySelector(".scene-button__meta").textContent,
+            source: card.querySelector(".scene-button__source")?.textContent ?? "",
+            sourceFact: text("#scene-source"),
             count: text("#step-count"),
             solo: $("#stage-panel").classList.contains("is-solo"),
             camera: $("#camera").value,
@@ -166,6 +174,8 @@
         seen.builtIn = {
           title: text("#scene-title"),
           kind: text("#scene-kind"),
+          source: text("#scene-source"),
+          sourceNone: $("#scene-source").classList.contains("is-empty"),
           event: text("#scene-event"),
           eventNone: $("#scene-event").classList.contains("is-empty"),
           reference: text("#scene-reference"),
@@ -652,7 +662,7 @@
         button("Creator").click();
         answer = true;
         button("New scene").click();
-        const editorSelector = "#meta-name, #meta-event, #meta-reference, #meta-note, #meta-solo, #step-name, #step-ms, #step-hold, #step-ease, #step-add, #step-remove, #reset-step, #joints input, .pose-button";
+        const editorSelector = "#meta-name, #meta-source, #meta-event, #meta-reference, #meta-note, #meta-solo, #step-name, #step-ms, #step-hold, #step-ease, #step-add, #step-remove, #reset-step, #joints input, .pose-button";
         const editors = () => ({ total: $$(editorSelector).length, off: $$(editorSelector).filter((el) => el.disabled).map((el) => el.id || el.textContent.slice(0, 12)).length });
         input($("#meta-name"), "Kept name");
         seen.fieldsOn = editors();
@@ -693,23 +703,26 @@
           return { status: text("#save-status"), isError: $("#save-status").classList.contains("phrase-status--error"), focus: doc.activeElement?.id, added: savedScenes().length - before };
         };
         seen.longName = saveAndSay({ name: "x".repeat(101), steps: [{ label: "A" }] });
+        seen.longSource = saveAndSay({ name: "ok", source: "s".repeat(41), steps: [{ label: "A" }] });
         seen.longEvent = saveAndSay({ name: "ok", event: "e".repeat(161), steps: [{ label: "A" }] });
         seen.longNote = saveAndSay({ name: "ok", note: "n".repeat(1001), steps: [{ label: "A" }] });
         seen.longLink = saveAndSay({ name: "ok", reference: `https://example.com/${"a".repeat(1990)}`, steps: [{ label: "A" }] });
         seen.longLabel = saveAndSay({ name: "ok", steps: [{ label: "A" }, { label: "L".repeat(101) }] });
-        seen.longest = saveAndSay({ name: "n".repeat(100), event: "e".repeat(160), note: "t".repeat(1000), steps: [{ label: "l".repeat(100) }] });
+        seen.longest = saveAndSay({ name: "n".repeat(100), source: "s".repeat(40), event: "e".repeat(160), note: "t".repeat(1000), steps: [{ label: "l".repeat(100) }] });
 
         // A scene saved elsewhere with far more than that is shown cut short, so it cannot slow the page.
         const huge = "W".repeat(30000);
-        keepScenes([...savedScenes(), { id: "huge", phrase: { name: huge, event: huge, note: huge, steps: [{ label: huge, hold: 500 }, { label: "Two", ms: 100, hold: 500 }] } }]);
+        keepScenes([...savedScenes(), { id: "huge", phrase: { name: huge, source: huge, event: huge, note: huge, steps: [{ label: huge, hold: 500 }, { label: "Two", ms: 100, hold: 500 }] } }]);
         button("Practice library").click();
         const hugeCard = $$("#scenes-saved .scene-button").find((card) => card.textContent.includes("WWWW"));
         hugeCard.click();
         seen.huge = {
           card: hugeCard.querySelector(".scene-button__title").textContent.length,
+          cardSource: hugeCard.querySelector(".scene-button__source").textContent.length,
           cardEvent: hugeCard.querySelector(".scene-button__event").textContent.length,
           title: text("#scene-title").length,
           titleEnd: text("#scene-title").slice(-1),
+          source: text("#scene-source").length,
           event: text("#scene-event").length,
           note: text("#scene-note").length,
           stage: text("#step-label").length,
