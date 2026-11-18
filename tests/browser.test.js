@@ -138,19 +138,29 @@ test("in a browser, working every control logs nothing and draws no broken path"
   assert.equal(seen.badPaths, 0, "paths with NaN, Infinity or undefined");
 });
 
+// What a library card and the scene beside it say of where a scene comes from: nothing yet, or live learning.
+const NO_SOURCE = { source: "", sourceFact: "Not noted yet" };
+const LIVE = { source: "Live learning", sourceFact: "Live learning" };
+
 test("in a browser, the practice library plays each scene and says what it is", { skip, timeout: 120_000 }, async () => {
   const { seen } = await drive();
   assert.deepEqual(seen.scenes, [
-    { title: "Advance, lunge, head cut", pressed: "true", card: "Pair · 8 steps · 3.4 s", count: "01 / 08", solo: false, camera: "0", time: "0.00 / 3.39 s", scrubbedTo: "08 / 08" },
-    { title: "Lunge to the chest, parry 3, riposte", pressed: "true", card: "Pair · 4 steps · 3.3 s", count: "01 / 04", solo: false, camera: "0", time: "0.00 / 3.32 s", scrubbedTo: "04 / 04" },
-    { title: "Head attack, parry 5, riposte to head", pressed: "true", card: "Pair · 5 steps · 3.4 s", count: "01 / 05", solo: false, camera: "28", time: "0.00 / 3.44 s", scrubbedTo: "05 / 05" },
-    { title: "Outside face cut, face protection", pressed: "true", card: "Pair · 4 steps · 2.8 s", count: "01 / 04", solo: false, camera: "0", time: "0.00 / 2.76 s", scrubbedTo: "04 / 04" },
-    { title: "Moulinet to the head", pressed: "true", card: "Solo · 7 steps · 2.7 s", count: "01 / 07", solo: true, camera: "25", time: "0.00 / 2.68 s", scrubbedTo: "07 / 07" },
+    { title: "Advance, lunge, head cut", pressed: "true", card: "Pair · 8 steps · 3.4 s", ...NO_SOURCE, count: "01 / 08", solo: false, camera: "0", time: "0.00 / 3.39 s", scrubbedTo: "08 / 08" },
+    { title: "Lunge to the chest, parry 3, riposte", pressed: "true", card: "Pair · 4 steps · 3.3 s", ...NO_SOURCE, count: "01 / 04", solo: false, camera: "0", time: "0.00 / 3.32 s", scrubbedTo: "04 / 04" },
+    { title: "Head attack, parry 5, riposte to head", pressed: "true", card: "Pair · 5 steps · 3.4 s", ...NO_SOURCE, count: "01 / 05", solo: false, camera: "28", time: "0.00 / 3.44 s", scrubbedTo: "05 / 05" },
+    { title: "Outside face cut, face protection", pressed: "true", card: "Pair · 4 steps · 2.8 s", ...NO_SOURCE, count: "01 / 04", solo: false, camera: "0", time: "0.00 / 2.76 s", scrubbedTo: "04 / 04" },
+    { title: "Moulinet to the head", pressed: "true", card: "Solo · 7 steps · 2.7 s", ...NO_SOURCE, count: "01 / 07", solo: true, camera: "25", time: "0.00 / 2.68 s", scrubbedTo: "07 / 07" },
+    // The drills from the class say what kind of learning they come from, on the card and beside the scene.
+    { title: "Light cut on the blade, riposte to the top of the glove", pressed: "true", card: "Pair · 6 steps · 3.2 s", ...LIVE, count: "01 / 06", solo: false, camera: "0", time: "0.00 / 3.22 s", scrubbedTo: "06 / 06" },
+    { title: "Light cut on the blade, riposte to the side of the glove", pressed: "true", card: "Pair · 10 steps · 3.7 s", ...LIVE, count: "01 / 10", solo: false, camera: "0", time: "0.00 / 3.73 s", scrubbedTo: "10 / 10" },
+    { title: "Light cut on the blade, tierce, Hungarian cut under the glove", pressed: "true", card: "Pair · 10 steps · 3.8 s", ...LIVE, count: "01 / 10", solo: false, camera: "0", time: "0.00 / 3.75 s", scrubbedTo: "10 / 10" },
   ]);
   // A built-in scene has no event or link to give, and says so, and cannot be deleted.
   assert.deepEqual(seen.builtIn, {
     title: "Lunge to the chest, parry 3, riposte",
     kind: "Built in",
+    source: "Not noted yet",
+    sourceNone: true,
     event: "Not noted yet",
     eventNone: true,
     reference: "No link yet",
@@ -441,7 +451,7 @@ test("in a browser, text that is not a phrase yet keeps the fields still, and wh
   const { seen } = await drive();
   // The controls that edit a scene: twelve fields and buttons for the scene and its step, a slider for each joint and a
   // button for each pose.
-  const EDITORS = 12 + JOINTS.length + Object.keys(POSE_NAMES).length;
+  const EDITORS = 13 + JOINTS.length + Object.keys(POSE_NAMES).length;
   // A new scene: every control that edits it is on, but for the move time of its first step and removing its only one.
   assert.deepEqual(seen.fieldsOn, { total: EDITORS, off: 2 });
   assert.match(seen.onHold.status, /^Not applied: .+\. The fields are on hold until it is\.$/);
@@ -464,6 +474,7 @@ test("in a browser, text longer than a field allows is not saved, and longer tex
   const { seen } = await drive();
   const refused = (status, focus) => ({ status, isError: true, focus, added: 0 });
   assert.deepEqual(seen.longName, refused("The name can be up to 100 characters, and this one has 101.", "meta-name"));
+  assert.deepEqual(seen.longSource, refused("The source can be up to 40 characters, and this one has 41.", "meta-source"));
   assert.deepEqual(seen.longEvent, refused("The event can be up to 160 characters, and this one has 161.", "meta-event"));
   assert.deepEqual(seen.longNote, refused("The note can be up to 1000 characters, and this one has 1001.", "meta-note"));
   assert.deepEqual(seen.longLink, refused("The reference link can be up to 2000 characters, and this one has 2010.", "meta-reference"));
@@ -471,7 +482,7 @@ test("in a browser, text longer than a field allows is not saved, and longer tex
   // As long as each may be is saved.
   assert.deepEqual({ status: seen.longest.status, isError: seen.longest.isError, added: seen.longest.added }, { status: "Saved to the practice library on this device.", isError: false, added: 1 });
   // Thirty thousand characters of each, written into storage behind the page's back.
-  assert.deepEqual(seen.huge, { card: 100, cardEvent: 160, title: 100, titleEnd: "…", event: 160, note: 1000, stage: 100, stepButton: 102, other: "02Two" });
+  assert.deepEqual(seen.huge, { card: 100, cardSource: 40, cardEvent: 160, title: 100, titleEnd: "…", source: 40, event: 160, note: 1000, stage: 100, stepButton: 102, other: "02Two" });
 });
 
 test("in a browser, scenes saved by a newer version of the page are left alone", { skip, timeout: 120_000 }, async () => {

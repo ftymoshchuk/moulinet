@@ -128,3 +128,13 @@ test("the fields hold typing to the same limits the scene is saved and shown wit
   for (const key of TEXT_KEYS) assert.equal(limitOf(`meta-${key}`), TEXT_LIMITS[key], `#meta-${key}`);
   assert.equal(limitOf("step-name"), TEXT_LIMITS.label, "#step-name");
 });
+
+test("each fencer's sabre edge is drawn in the colour of his blade's path, as the page's styles have it", () => {
+  const css = read("css/styles.css");
+  const stage = read("js/stage3d.js");
+  const edges = stage.match(/const EDGE = \{ A: "(#[0-9a-f]{6})", B: "(#[0-9a-f]{6})" \};/);
+  assert.ok(edges, "the edge colours are set in stage3d.js");
+  for (const [who, colour] of [["a", edges[1]], ["b", edges[2]]]) {
+    assert.equal(css.match(new RegExp(`--trail-${who}: (#[0-9a-f]{6});`))?.[1], colour, `fencer ${who.toUpperCase()}`);
+  }
+});

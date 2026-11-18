@@ -12,20 +12,29 @@ Scenes you save stay in your browser's own storage, on that device.
 
 The name comes from the *moulinet*, the sabre's circular cut: the blade drops
 forward past the arm, swings up behind and comes down over the top. It is one
-of the five scenes built in.
+of the eight scenes built in.
 
 ## Three modes
 One stage, three ways to use it. Choose the mode at the top of the page.
 
-**Practice library.** Scenes to practise from, each with the event it was noted
-at and a link to a reference, such as a video of the bout. Pick a scene and it
-plays; the five built in are an advance, lunge and head cut; a chest cut
-parried in 3 and riposted; a head attack parried in 5 and riposted to the head;
-a cut at the outside of the face met with face protection, as an old plate
-draws it; and the moulinet, solo. In the pairs the older man holds a guard of
-his own, standing a little higher, with the sword arm bent and tucked in, so
-the two do not stand as mirror images. The built-in scenes have no event or link,
-because there is no real bout behind them. Scenes you save in the Creator are
+**Practice library.** Scenes to practise from, each with the kind of learning
+it comes from, such as a class taken in person, a video or a book, the event it
+was noted at and a link to a reference, such as a video of the bout. Pick a
+scene and it plays; the eight built in are an advance, lunge and head cut; a
+chest cut parried in 3 and riposted; a head attack parried in 5 and riposted to
+the head; a cut at the outside of the face met with face protection, as an old
+plate draws it; the moulinet, solo; and three drills from a class, as they were
+taught there. In each of the drills the attacker cuts lightly across the
+defender's blade, level, just above the guard, and the defender ripostes to the
+attacker's sword hand: down onto the top of the glove; in onto its outside, level,
+when the attacker raises the point; or, when the attacker turns the guard out over
+that side, which is tierce, round and under the hand and up into the underside of
+the glove, the Hungarian cut. In the pairs the older man holds a guard of his
+own, standing a little higher, with the sword arm bent and tucked in, so the two
+do not stand as mirror images. The drills say where they come from: live
+learning, at Warsaw advanced sabre on 15 November 2026. The other built-in scenes
+have no source, event or link, because there is no real bout behind them. A
+scene's source shows as a tag on its card. Scenes you save in the Creator are
 listed below them, with whatever you noted, and a link opens in a new tab. They
 live in your browser's storage, so one saved or deleted in another tab of the
 page appears or goes here too.
@@ -44,7 +53,7 @@ scene**, or from a scene in the library: a built-in one opens as a copy, with
 **Edit a copy in the Creator**, and one of your own opens as it is, with **Edit
 in the Creator**, where **Save changes** writes over it. Add and remove steps,
 name them, time them, give each fencer a pose and reshape it, then name the
-scene, say where it was noted, add a reference link and keep it with **Save to
+scene, say where it comes from and where it was noted, add a reference link and keep it with **Save to
 library**. A scene can be for one fencer or two. It asks before it replaces a
 scene with changes that are not saved, and before you leave the page with one;
 the camera angle counts, since a saved scene keeps it. If you save a scene that
@@ -146,7 +155,10 @@ the wrist, or turn further about the forearm, than an arm can goes only so far,
 and the sabre turns between thumb and forefinger for the rest, as it does in a
 moulinet. The shoulder comes forward on the collarbone to let the hand reach,
 and in the few moments of the moulinet it still cannot, the hand falls short by
-a few centimetres and the sabre goes with it. An arm or a leg all but straight
+a few centimetres and the sabre goes with it. The blade is drawn as a blade, broad at
+the guard and narrowing to the point, the back sweeping down to meet the edge there,
+and the edge, ground thin, in the colour of its fencer's blade path, so that which way
+it faces shows in every cut and parry, even where the blade is thin on the page. An arm or a leg all but straight
 turns its elbow or knee the way the skeleton's would bend, or failing that the
 way the hand or the foot has it, so a limb passing through straight never turns
 over: no bone turns more than 25° in 4 ms.
@@ -162,7 +174,7 @@ point of them faces and how far it is from you. Ink goes where the distance
 jumps, at their outline and where a part passes in front of another, where a
 surface turns sharply, and where one colour meets another, at a seam; the line
 is heavier on the side away from the light, as a pen presses on the shadow
-side. Hatching goes where the light is low, crossed where it is lowest, ruled
+side, and finer round the sabres, so as not to hide a blade's edge. Hatching goes where the light is low, crossed where it is lowest, ruled
 from a point on each fencer so that it moves with him rather than staying on the
 screen; the young man's hair is dark, the older man's grey hair strokes of the
 pen; everything else keeps its flat colour. With **Ink texture** on, the pen
@@ -182,6 +194,7 @@ data** shows the one on stage, a step per line:
 ```json
 {
   "name": "Advance, lunge, head cut",
+  "source": "Live learning",
   "event": "Club night, October",
   "reference": "https://example.com/watch?v=abc",
   "note": "The arm moves before the legs.",
@@ -195,6 +208,10 @@ data** shows the one on stage, a step per line:
 ```
 
 - `name`: the scene's title in the library, up to 100 characters.
+- `source`: the kind of learning it comes from, in your own words: a class taken
+  in person (live learning, as the drills from the class say), a video, a book.
+  It shows as a tag on the scene's card, and the Creator offers the sources the
+  library already has as you type. Up to 40 characters.
 - `event`: where it was noted, in your own words: the competition and round,
   say. Up to 160 characters.
 - `reference`: a link to where you can see it, up to 2,000 characters. Only
@@ -314,7 +331,10 @@ phrase and posture at every moment from eight camera angles, checked for broken
 path data), the figures (the bodies read back as they were baked, and posed in
 every scene with the ankles, the rear hand and the blade's point where the
 skeleton has them, from any camera, the wrist bending no further than a wrist
-can and no bone turning over), and the published files (only relative links to
+can and no bone turning over, and the drills from the class landing where the class
+has them: the light cut on the inside of the defender's blade just above his guard,
+and each riposte edge first on the attacker's glove, on top, on the outside or
+underneath, with no blade going into an arm at any moment), and the published files (only relative links to
 files that exist, no outside requests, every element the scripts need, and the
 licences of what is bundled). Fifteen more run in a real browser: headless
 Chrome or Chromium loads the page, then a driver page works every control of

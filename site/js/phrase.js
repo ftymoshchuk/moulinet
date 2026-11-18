@@ -17,13 +17,14 @@ const STEP_MIN = 2;
 // What a pose can hold. An adjustment to anything else is ignored.
 const POSE_KEYS = new Set(Object.keys(POSES.guard));
 // The text a scene carries about itself, and the order the data shows it in:
-// these, then the camera and solo, then the steps.
-export const TEXT_KEYS = ["name", "event", "reference", "note"];
+// these, then the camera and solo, then the steps. The source says what kind of
+// learning a scene comes from, such as a class taken in person, a video or a book.
+export const TEXT_KEYS = ["name", "source", "event", "reference", "note"];
 const HEAD_KEYS = [...TEXT_KEYS, "camera", "solo"];
 // The most each of them may say, and a step's label. The fields hold typing to
 // these, a scene is saved only within them, and the page shows no more than they
 // allow: a wall of pasted text would otherwise take seconds to lay out.
-export const TEXT_LIMITS = { name: 100, event: 160, reference: 2000, note: 1000, label: 100 };
+export const TEXT_LIMITS = { name: 100, source: 40, event: 160, reference: 2000, note: 1000, label: 100 };
 // A step's own keys, in the order its line shows them.
 const STEP_KEYS = ["label", "ms", "hold", "ease", "A", "B"];
 // The longest move or hold the controls will write, in milliseconds.
@@ -246,7 +247,7 @@ function between(from, to, who, u, span) {
 
 /**
  * The phrase as the page shows it: one line per setting, one line per step.
- * The name, event, reference and note come first, then the camera and solo,
+ * The name, source, event, reference and note come first, then the camera and solo,
  * then anything else, so a setting added later does not land after the steps.
  */
 export function phraseToText(phrase) {
@@ -316,7 +317,7 @@ export function newPhrase() {
 }
 
 /**
- * `phrase` with one of its text keys (name, event, reference or note) set to
+ * `phrase` with one of its text keys (name, source, event, reference or note) set to
  * `value`. Text that is empty or only spaces removes the key.
  */
 export function setMeta(phrase, key, value) {
