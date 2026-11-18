@@ -45,20 +45,30 @@ Foreword, Introduction and **Part One** (Chapters I–II): everything up to the 
 
 ## Method and checking
 
-The PDF's text layer is good for running prose but unreliable for the things that matter most here: it drops words printed letter-spaced (the command words), cannot read the diagram labels or the bracketed tables, and merges figure captions into the text. Every page in scope was therefore read from its page image against the text layer, and doubtful spots were checked in 300 dpi crops. Examples of what this caught: the lunge description lost the words *gyors előre* ("quickly forward") in the text layer; the commands of §12–§16 were garbled; the labels of Fig. 3 and the brace groupings of the air-cut lists exist only in the image.
+The PDF's text layer is good for running prose but unreliable for the things that matter most here: it drops words printed letter-spaced (the command words), cannot read the diagram labels or the bracketed tables, and merges figure captions into the text. Every page in scope was therefore read from its page image against the text layer, and doubtful spots were checked in 300 dpi crops. Examples of what this caught: the lunge description lost the words *gyors előre* ("quickly forward") in the text layer; the commands of §12–§16 were garbled; the labels of Fig. 3 and the brace groupings of the air-cut lists exist only in the image. Also, the sans-serif section headings print the digit 1 as a bare vertical bar, so the text layer reads the headings of §1, §11 and §13 as "I.", "II." and "I3."; they are the numbers 1, 11 and 13.
 
-The translation was made by Claude, an AI model, working from the page images. It has not been reviewed by a Hungarian speaker or a fencing historian, so a few terms may not be the ones a specialist would choose. Doubtful points are flagged in the translator's notes. Treat it as a careful working translation, not a certified one.
+The translation was made by Claude, an AI model, working from the page images. After the first draft, two independent review passes (also AI, each given only the PDF and the translation) re-read every translated page against its scan. They reported no wrong side, direction, number, foot, command or table cell in the main text. They did raise wording, page-marker and note issues; I checked each against the page images, and the valid ones were applied. The translation has still not been reviewed by a Hungarian speaker or a fencing historian, so a few terms may not be the ones a specialist would choose. Doubtful points are flagged in the translator's notes and listed below. Treat it as a careful working translation, not a certified one.
 
 ## Known problems in the original
 
 As printed; none is changed silently in the translation.
 
-1. **§11 IV, quinte (book p. 9).** The text says the point must be so high "that the inner face is *not* covered" (*fedezve ne legyen*). That contradicts the position's purpose (§12: after the quinte the head is protected). Translated as "not left uncovered", with a note.
+1. **§11 IV, quinte (book p. 9).** The text says the point must be so high "that the inner face is *not* covered" (*fedezve ne legyen*). That contradicts the position's purpose (§12: after the quinte the head is protected). Translated literally and marked [*sic*], with a note on the likely intended sense.
 2. **§12 B (book p. 13).** The counter-parry list is numbered 1, 3, 3, 4, 5. Renumbered 1–5.
 3. **§15 I (book p. 17).** The tierce list is numbered 1, 2, 3, 4, 5, 5, 7, 8, 9. The sixth item is numbered 6 here.
 4. **§16 A (book p. 18).** The bracketed list of cuts omits the inner-face cut, which B), C) and the example on p. 19 include.
-5. **Headings.** The headings of §1 (p. 1) and §11 (p. 8) print the numerals as "I." and "II."; the contents give 1 and 11.
-6. **§15, head cut.** The brace puts the head cut with the inner swing, but the example command for tierce uses the outer swing. See the note in Chapter II.
+5. **§15, head cut.** The brace puts the head cut with the inner swing, but the example command for tierce uses the outer swing. See the note in Chapter II.
+
+## Open questions
+
+Points the page does not settle. Keep them open when turning the text into postures.
+
+- **Seconde (§11 II):** *pengéje rézsút jobbra fölfelé* has no verb. Is it the slope of the blade or the direction its edge faces?
+- **Half-left (§5):** the angle of the body is not given, only the drill term and the positions of the shoulder and hip.
+- **Grip (§4):** "first joint" (*első íz*) of the index finger and thumb: counted from the fingertip or from the hand?
+- **Fencing line (§8):** the text says "the straight line" joining the corresponding shoulders. Two lines (a corridor) or one?
+- **Openings (§9):** *kar* in "outer upper arm and hand" and "lower arm and hand": the anatomical upper arm and forearm, or the arm by region?
+- **Combining the drills (§16 A, B):** the book prints lists in columns and gives one example; it does not say in words how they combine.
 
 ## Rights
 
