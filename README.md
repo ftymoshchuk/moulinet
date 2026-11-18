@@ -32,12 +32,18 @@ page appears or goes here too.
 
 **Base postures.** One fencer, never a pair, in one posture at a time, with the
 posture described in words: what it is for, and the parts worth looking at,
-the hand that holds the sabre among them. Pick a posture from the list, or use the arrows under the stage. The fourteen
-postures are the poses of the library, in the order they are learned: the
-guard; the two halves of an advance; the arm extended and the blade up; the
-lunge in flight, to the head and to the chest; parry 3, and parry 3 with the
-weight drawn back; face protection; parry 5, and parry 5 with the weight drawn
-back; and the riposte.
+the hand that holds the sabre among them. Pick a posture from the list, or use the arrows under the stage. The
+postures are the poses of the library, twenty-six of them. The first fourteen
+are in the order they are learned: the guard; the two halves of an advance; the
+arm extended and the blade up; the lunge in flight, to the head and to the
+chest; parry 3, and parry 3 with the weight drawn back; face protection; parry
+5, and parry 5 with the weight drawn back; and the riposte. The last twelve are
+a group of their own, taken from the base chapters of Leszák Károly's
+*Kardvívás* (1906), whose translation is in
+[`sources/kardvivas-1906`](sources/kardvivas-1906/): the basic stance and the
+stance at ease, then the nine sabre positions the book teaches: tierce, seconde,
+prime, quinte, quarte, low tierce, low quarte in its two forms, sixte and
+septime. Each says where in the book it is, and what the book leaves open.
 
 **Creator.** Make a scene of your own. Start from a blank one with **New
 scene**, or from a scene in the library: a built-in one opens as a copy, with
@@ -78,12 +84,13 @@ In the Creator there is more:
 - **This step:** its label, how long it takes to move into it and to stay on
   it, and whether it moves smoothly, snaps or keeps one speed. A step with no
   time to stay on it is passed through, and says so.
-- **Adjust this moment:** sixteen sliders reshape either fencer on the current
+- **Adjust this moment:** eighteen sliders reshape either fencer on the current
   step, from where they stand on the piste, through the turn of the back foot
-  and knee, the shoulders and the rear arm, to the angle and turn of the blade
-  and the position of the hand that holds it, which moves in steps of 15° and
-  says when it is on one of the books' hand positions.
-- **Poses:** fourteen named poses to put on any step.
+  and knee, the shoulders and the rear arm, to the sword arm, which can be
+  turned out of the plane of its shoulder across the chest, the angle and turn
+  of the blade and the position of the hand that holds it, which moves in steps
+  of 15° and says when it is on one of the books' hand positions.
+- **Poses:** twenty-six named poses to put on any step.
 - **Phrase data:** the whole scene as text. Edit it in place or paste one in;
   it applies as you type, and says why when it can't. The fields above it and
   the text are the same thing, and follow each other. While the text can't be
@@ -99,7 +106,11 @@ trace of any of them is in this repository.
 
 **The skeleton.** A pose sets where the hips are, how far the body leans, where
 each foot stands and how far it is lifted, the angles of the arms and the blade,
-and the hand position. The shoulders are turned toward you, as in those books,
+and the hand position. The sword arm lies in the plane of its own shoulder
+unless the pose turns the upper arm and the forearm out of it toward you, across
+the chest, by `armYaw` and `foreYaw`, as `yaw` turns the blade: that is how
+prime and sixte bring the hand across the body. The shoulders are turned toward
+you, as in those books,
 by the pose's `turn`, and the hips with them, if not as far, so each leg starts
 from a hip of its own. The foot in front points at the opponent, and the foot
 behind is turned across, its toe at you and turned back a little by the pose's
@@ -311,7 +322,8 @@ scenes (what they keep and what they leave alone) and the check that a
 reference link is a web address, the base postures, the skeleton and the camera
 (the knees and the arms, the hand positions, where the stage looks, and every
 phrase and posture at every moment from eight camera angles, checked for broken
-path data), the figures (the bodies read back as they were baked, and posed in
+path data), the postures of the 1906 book, each checked against what the book
+says of it, the figures (the bodies read back as they were baked, and posed in
 every scene with the ankles, the rear hand and the blade's point where the
 skeleton has them, from any camera, the wrist bending no further than a wrist
 can and no bone turning over), and the published files (only relative links to
@@ -357,6 +369,7 @@ Project layout:
 - `site/models/`: the bodies, with their licence; `site/vendor/`: three.js, with its licence
 - `site/fonts/`: Big Shoulders Display and IBM Plex, with their licences
 - `scripts/serve.js`: the local server; `scripts/bake-fencers.js`: the bodies from MakeHuman's files; `scripts/protect-repo.sh`: repository settings
+- `sources/kardvivas-1906/`: the translation of the base chapters of a Hungarian sabre book of 1906, with its glossary and figures, which the last twelve base postures are taken from (not part of the published site)
 - `tests/`
 
 ## Publishing

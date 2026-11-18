@@ -31,6 +31,27 @@ Foreword, Introduction and **Part One** (Chapters I–II): everything up to the 
 | [`glossary.md`](glossary.md) | Hungarian ↔ English terms, the nine sabre positions at a glance, commands | — | — |
 | [`figures/`](figures/) | Figures 1–17 cropped from the scan, and `manifest.json` | — | — |
 
+## Postures made from it
+
+The last twelve base postures of the app (the group "Leszák, 1906" in `site/js/bases.js`, the poses in `site/js/library.js`) are taken from this translation. `tests/book.test.js` checks each against what the book says of it.
+
+| Pose | Book | Figure | Where the model only approximates the book |
+|---|---|---|---|
+| `basicStance` | §5 | 2 | Heels touching: the feet are 12 cm apart. |
+| `atEase` | §7 | — | The book gives only the sabre and the "comfortable stance"; the rest is the app's. |
+| `tierce` | §11 I | 7, 17 | Close to the existing guard, with the elbow more bent. |
+| `seconde` | §11 II | 8 | The edge read as "up and to the right", the 1/2 position (see the open questions below). |
+| `prime` | §11 III | 9 | The edge "left and up" is shown in the 4th position, the nearest the hand slider has. |
+| `quinte` | §11 IV | 10 | The book names no hand position: the 1st, as in parry 5. |
+| `quarte` | §11 V | 11 | — |
+| `lowTierce` | §11 VI | 12 | — |
+| `lowQuarte1` | §11 VII.1 | 13 | — |
+| `lowQuarte2` | §11 VII.2 | 14 | — |
+| `sixte` | §11 VIII | 15 | The edge "up" is shown in the 4th position, which gives it with the blade turned out to the right. |
+| `septime` | §11 | 16 | The book names no hand position: the 2nd. |
+
+Where the book puts the hand across the body (prime, quarte, low quarte 1, sixte), the pose turns the upper arm and the forearm out of the plane of the sword shoulder, with two numbers the pose model gained for it, `armYaw` and `foreYaw`. The photographs are views from the front, as the opponent sees the fencer, and the app's figure is the mirror image of the book's right-handed one, so to compare one with the other, flip the photograph and set the stage's camera to about −60° to −75° (the slider stops at −60°).
+
 **Not yet translated:** Chapter III onwards (book p. 20 on). Chapter III starts Part Two with the master–pupil method, fencing distance, the salute, invitations, thrusts and the cuts proper (§§17–26). The foreword says Chapter III is where the master–pupil method is applied.
 
 ## Conventions
