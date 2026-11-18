@@ -66,6 +66,10 @@
         };
         button("Practice library").click();
         $$(".scene-button")[0].click();
+        // Picking the scene plays it. Pause it while the figures load: a browser with no graphics card draws them in
+        // software, and while a scene plays it draws them frame after frame, however little of the page's time passes,
+        // for as long as this waits. The figures are drawn when they are loaded, playing or not.
+        button("Pause")?.click();
         seen.figures3d = { loaded: await settled(win, doc) };
         // Every step, a turned camera and the close-up draw them too; one fencer alone is one figure.
         for (const step of $$(".step-button")) step.click();
@@ -77,6 +81,8 @@
         seen.figures3d.solo = $("#stage-3d").dataset.fencers ?? "";
         $$(".scene-button")[0].click();
         seen.figures3d.pair = $("#stage-3d").dataset.fencers ?? "";
+        // And pause it again, or the browser goes on drawing it, as above, after the last thing checked.
+        button("Pause")?.click();
       }
 
       async function driveFallback(win, doc, seen) {

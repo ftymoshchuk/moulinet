@@ -104,9 +104,11 @@ const FRAGMENT = `
     float sabre = 0.0;
     for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) {
       vec2 q = uv + vec2(float(i), float(j)) * px * line * detail * 2.0;
-      vec4 l = texture2D(tLight, q);
-      if (inside(q)) shade = max(shade, 1.0 - l.r);
-      if (inside(q) && l.r - l.g > 0.2) sabre = 1.0;
+      if (inside(q)) {
+        vec4 l = texture2D(tLight, q);
+        shade = max(shade, 1.0 - l.r);
+        if (l.r - l.g > 0.2) sabre = 1.0;
+      }
     }
     float reach = line * detail * (1.0 + 0.75 * shade) * (1.0 - SABRE_LINE * sabre);
     float edge = 0.0;
