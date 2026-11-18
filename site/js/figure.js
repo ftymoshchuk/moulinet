@@ -133,8 +133,13 @@ export function skeleton(p) {
   const N = (a, b) => [nk[0] + nu[0] * a + nf[0] * b, nk[1] + nu[1] * a + nf[1] * b];
   // The head is carried forward of the shoulders on the neck, as the plates have it.
   const hd = N(15.5, 6.5);
-  const el = [sh[0] + UPPER_ARM * Math.cos(p.arm * RAD), sh[1] + UPPER_ARM * Math.sin(p.arm * RAD), sh[2]];
-  const hn = [el[0] + FOREARM * Math.cos(p.fore * RAD), el[1] + FOREARM * Math.sin(p.fore * RAD), sh[2]];
+  // The sword arm lies in the plane of its own shoulder, `arm` and `fore` being how high each part of it points in
+  // that plane. A pose can also turn the upper arm, and then the forearm, out of the plane toward the camera, across
+  // the chest from the sword side (`armYaw`, `foreYaw`), as the blade is turned by `yaw`: both 0 leaves it in the plane.
+  const ay = (p.armYaw ?? 0) * RAD;
+  const fy = (p.foreYaw ?? 0) * RAD;
+  const el = [sh[0] + UPPER_ARM * Math.cos(p.arm * RAD) * Math.cos(ay), sh[1] + UPPER_ARM * Math.sin(p.arm * RAD) * Math.cos(ay), sh[2] + UPPER_ARM * Math.sin(ay)];
+  const hn = [el[0] + FOREARM * Math.cos(p.fore * RAD) * Math.cos(fy), el[1] + FOREARM * Math.sin(p.fore * RAD) * Math.cos(fy), el[2] + FOREARM * Math.sin(fy)];
   const bp = p.blade * RAD;
   const by = p.yaw * RAD;
   const bd = [Math.cos(bp) * Math.cos(by), Math.sin(bp) * Math.cos(by), Math.sin(by)];

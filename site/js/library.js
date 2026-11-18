@@ -12,7 +12,10 @@
 //                 guard, and further as they sit back over the foot: 0 is flat
 //   lean          torso lean, forward positive
 //   turn          how far the shoulders are turned toward the camera, 0 side on
-//   arm, fore     sword arm: upper arm and forearm
+//   arm, fore     sword arm: upper arm and forearm, how high each points
+//   armYaw,       how far each is turned out of the plane of the sword shoulder, toward
+//   foreYaw       the camera, which is across the chest from the sword side: 0 keeps the
+//                 arm in that plane, as in the guard, and more brings the hand across
 //   blade         the sabre; yaw turns it toward the camera
 //   hand          how far the sword hand is turned about the blade, in the hand
 //                 positions of the old sabre books: 0 is the third, thumb up and the
@@ -48,7 +51,7 @@
 // protection; and right over, to the first, for parry 5, so the edge faces up at a
 // cut to the head.
 export const POSES = {
-  guard: { hipX: 41, hipY: 77, footF: 84, liftF: 0, liftB: 0, lean: 0, turn: 58, arm: -24, fore: -4, blade: 34, yaw: 0, hand: -45, rArm: -140, rFore: -28, toeBack: 14, kneeOut: 40 },
+  guard: { hipX: 41, hipY: 77, footF: 84, liftF: 0, liftB: 0, lean: 0, turn: 58, arm: -24, fore: -4, armYaw: 0, foreYaw: 0, blade: 34, yaw: 0, hand: -45, rArm: -140, rFore: -28, toeBack: 14, kneeOut: 40 },
   advLift: { hipX: 44, hipY: 79, footF: 103, liftF: 4 },
   advLand: { hipX: 52.5, hipY: 79, footF: 114 },
   prep: { hipX: 42, lean: 1, arm: 15, fore: 30, blade: 85, hand: 0 },
@@ -211,6 +214,8 @@ export const JOINTS = [
   { key: "turn", label: "Shoulder turn toward camera", min: 0, max: 90, unit: "°" },
   { key: "arm", label: "Upper arm", min: -120, max: 120, unit: "°" },
   { key: "fore", label: "Forearm", min: -100, max: 130, unit: "°" },
+  { key: "armYaw", label: "Upper arm turn toward camera", min: -90, max: 90, unit: "°" },
+  { key: "foreYaw", label: "Forearm turn toward camera", min: -90, max: 90, unit: "°" },
   { key: "blade", label: "Blade angle", min: -180, max: 180, unit: "°" },
   { key: "yaw", label: "Blade turn toward camera", min: -85, max: 85, unit: "°" },
   { key: "hand", label: "Hand position", min: -180, max: 90, step: 15, unit: "°", names: HAND_POSITIONS },
