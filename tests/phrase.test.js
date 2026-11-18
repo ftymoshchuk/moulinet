@@ -327,11 +327,16 @@ test("the turns of the foot and the knee behind are angles like the others: the 
   assert.equal(POSES.guard.toeBack, 14, "the toe behind is turned back a little from straight at the camera");
   assert.equal(POSES.guard.kneeOut, 40, "and the knee behind is turned out toward it");
   assert.ok(POSES.guard.toeBack > 0 && POSES.guard.toeBack < 30, "turned back from the camera a little, as in the plates, and not away from it");
-  for (const name of Object.keys(POSES)) {
+  // Only the basic stance of the 1906 book sets either of its own: its feet make a right angle, the foot behind
+  // square across, which no fencing stance has. Every other pose leaves them out and keeps the guard's.
+  const setsOwn = Object.keys(POSES).filter((name) => name !== "guard" && ("toeBack" in POSES[name] || "kneeOut" in POSES[name]));
+  assert.deepEqual(setsOwn, ["basicStance"]);
+  for (const [name, own] of Object.entries(POSES)) {
     const pose = resolvePose({ pose: name });
-    assert.equal(pose.toeBack, 14, `${name}: a pose that leaves them out keeps the guard's`);
-    assert.equal(pose.kneeOut, 40, name);
+    assert.equal(pose.toeBack, own.toeBack ?? 14, `${name}: a pose that leaves them out keeps the guard's`);
+    assert.equal(pose.kneeOut, own.kneeOut ?? 40, name);
   }
+  assert.equal(POSES.basicStance.toeBack, 0, "the basic stance has the feet at a right angle, an exact L");
   const set = resolvePose({ pose: "lungeChest", adj: { toeBack: 20, kneeOut: 60 } });
   assert.deepEqual([set.toeBack, set.kneeOut], [20, 60]);
   // Phrase text keeps them, and reads back the same.
@@ -348,6 +353,17 @@ test("the turns of the foot and the knee behind are angles like the others: the 
   assert.equal(halfway.toeBack, 24, "halfway from 14 to 34");
   assert.equal(halfway.kneeOut, 50, "and from 40 to 60");
   assert.equal(mixPoses({ kneeOut: 350 }, { kneeOut: 10 }, 0.5).kneeOut, 360, "the short way round");
+});
+
+test("the turns of the sword arm across the chest are angles like the others, and ease the short way round", () => {
+  assert.equal(POSES.guard.armYaw, 0, "the guard keeps the arm in the plane of its shoulder");
+  assert.equal(POSES.guard.foreYaw, 0);
+  assert.equal(resolvePose({ pose: "tierce" }).armYaw, 0, "a pose that leaves them out keeps the guard's");
+  assert.equal(resolvePose({ pose: "sixte", adj: { armYaw: 20 } }).armYaw, 20, "a phrase can set them");
+  assert.equal(mixPoses({ armYaw: 170 }, { armYaw: -170 }, 0.5).armYaw, 180, "the short way round");
+  assert.equal(mixPoses({ foreYaw: 0 }, { foreYaw: 50 }, 0.5).foreYaw, 25);
+  const phrase = { steps: [{ A: { pose: "guard", adj: { armYaw: 30, foreYaw: -20 } } }] };
+  assert.deepEqual(parsePhrase(phraseToText(phrase)), phrase, "phrase text keeps them");
 });
 
 test("the hand turns through its positions in order, never the short way round past the fourth to the first", () => {

@@ -2,8 +2,12 @@
 // order they are learned, and the phrase that shows them one fencer at a time.
 import { POSE_NAMES } from "./library.js";
 
-// What each posture is for, in the order the page groups them.
-export const BASE_GROUPS = ["Stance", "Footwork", "Attack", "Defence"];
+// What each posture is for, in the order the page groups them. The last group is
+// not a purpose but a source: the postures of the base chapters of Leszák Károly's
+// Kardvívás (1906), as the translation in sources/kardvivas-1906 gives them. They
+// come last so that the others keep their numbers, and each says where in the book
+// it is, and what the book leaves open.
+export const BASE_GROUPS = ["Stance", "Footwork", "Attack", "Defence", "Leszák, 1906"];
 
 // Where the one fencer stands for every posture (cm), the same for all, so
 // moving from one to the next changes the fencer and not the view.
@@ -180,6 +184,153 @@ export const BASES = [
       ["Blade", "Level or a little below the hand, the cut dropping onto the target."],
       ["Body", "Leans into the cut, the hips travelling forward."],
       ["Hand", "Back in the third position, the edge coming down onto the head."],
+    ],
+  },
+  {
+    pose: "basicStance",
+    group: "Leszák, 1906",
+    text: "The position every drill in the 1906 book begins from. The fencer stands upright, heels together, with the sabre arm held out level and the left hand on the hip; the swings and the sabre positions are learned from here before the fencing stance is taken.",
+    points: [
+      ["Feet", "The heels touch and the feet make a right angle, the toe of the front foot pointing straight at the opponent."],
+      ["Body", "Upright and natural, turned half left: the left shoulder drawn back and the right hip drawn in a little."],
+      ["Sword arm", "Straight out in front, level with the shoulder."],
+      ["Sabre", "The point forward, turned a little across the arm, so that the sabre and the extended arm make an obtuse angle."],
+      ["Hand", "In the second position, palm down and the edge out to the right: the book's 2nd attitude."],
+      ["Left hand", "On the left hip."],
+      ["Book", "Leszák Károly, Kardvívás (1906), §5, Fig. 2."],
+    ],
+  },
+  {
+    pose: "atEase",
+    group: "Leszák, 1906",
+    text: "The rest taken on the command At ease. The sabre arm is lowered until the point touches the ground in front of the right foot, and the fencer may shift the left hand and the right foot and stand comfortably.",
+    points: [
+      ["Sword arm", "Lowered with the sabre, hanging at the side."],
+      ["Point", "Touches the ground in front of the right foot."],
+      ["Left hand and right foot", "Free to leave their places, so the stance is the fencer's own."],
+      ["Body", "Upright and easy; the book gives no further rule."],
+      ["Book", "Leszák Károly, Kardvívás (1906), §7."],
+    ],
+  },
+  {
+    pose: "tierce",
+    group: "Leszák, 1906",
+    text: "The first of the starting sabre positions, and the one the fencing stance begins in. The hand is drawn back a little with the elbow pressed down, so that the basket covers it, and the point looks at the opponent at the height of the right eye.",
+    points: [
+      ["Sword arm", "The elbow bent moderately and pressed down, drawing the basket back a little."],
+      ["Cover", "The basket covers the hand and the forearm."],
+      ["Blade", "The point at the height of your right eye, and in the line."],
+      ["Hand", "Half way between the second position and the third, the 2/3, as in the guard: the book's 6th attitude."],
+      ["Covers", "The outer upper openings, once a parry swing has brought the sabre here."],
+      ["Book", "Leszák Károly, Kardvívás (1906), §11 I, Figs. 7 and 17. Close to the Guard, the first posture in the list."],
+    ],
+  },
+  {
+    pose: "seconde",
+    group: "Leszák, 1906",
+    text: "The low position on the outside. The sabre is swung down in front of the body and out to the right, the hand at shoulder height and the point at hip height; it covers the lower outside openings.",
+    points: [
+      ["Sword arm", "The elbow moderately bent, the upper edge of the basket level with the right shoulder."],
+      ["Blade", "The point level with the right hip, in the low line, pointing forward and a little to the right."],
+      ["Hand", "The book says the blade slants up to the right; read here as the edge turned up and out, the 1/2, half way between the first position and the second."],
+      ["Covers", "The outer lower openings."],
+      ["Book", "Leszák Károly, Kardvívás (1906), §11 II, Fig. 8."],
+    ],
+  },
+  {
+    pose: "prime",
+    group: "Leszák, 1906",
+    text: "The low position on the inside. The sabre is brought in front of the chest and swung forward and to the left, the point down at the height of the left knee; it covers the lower inside openings.",
+    points: [
+      ["Sword arm", "The hand in front of the chest, the upper edge of the basket level with the left shoulder, the elbow moderately bent."],
+      ["Blade", "The point in the low line, level with the left knee, pointing forward and to the left."],
+      ["Hand", "The book turns the edge obliquely left and up. The nearest position here is the fourth, palm up and the edge in."],
+      ["Covers", "The inner lower openings."],
+      ["Book", "Leszák Károly, Kardvívás (1906), §11 III, Fig. 9."],
+    ],
+  },
+  {
+    pose: "quinte",
+    group: "Leszák, 1906",
+    text: "The parry for the head. The basket stands in front of the right temple and the blade slants up across the head, so that a cut to the head lands on it.",
+    points: [
+      ["Sword arm", "Raised, the elbow moderately bent, the basket in front of the right temple."],
+      ["Blade", "Slanting up across the head, the point a little left of the left temple and higher."],
+      ["Hand", "The book names no hand position. Shown in the first, thumb down and the edge up, as in parry 5."],
+      ["Covers", "The head."],
+      ["Book", "Leszák Károly, Kardvívás (1906), §11 IV, Fig. 10. The printed words about the inner face are doubtful; the translation has a note."],
+    ],
+  },
+  {
+    pose: "quarte",
+    group: "Leszák, 1906",
+    text: "The parry for the inside of the body. The basket is snatched in to the pit of the stomach, the elbow drops to the hip and the blade stands up and across to the left, outside the line.",
+    points: [
+      ["Sword arm", "The elbow sunk to the hip, the forearm level and pointing half left, the basket in front of the pit of the stomach."],
+      ["Blade", "The point to the left, outside the line, at the height of the left eye."],
+      ["Hand", "Half way between the third position and the fourth, the 3/4: the book's 5th attitude, the edge turned down and left."],
+      ["Covers", "The inner upper openings."],
+      ["Book", "Leszák Károly, Kardvívás (1906), §11 V, Fig. 11."],
+    ],
+  },
+  {
+    pose: "lowTierce",
+    group: "Leszák, 1906",
+    text: "Tierce with the hand brought right down. The elbow rests on the right hip and the blade stands up and out to the right; it covers the lower outside openings and belongs to school fencing and free fencing.",
+    points: [
+      ["Sword arm", "Bent, the elbow on the right hip, the forearm sloping a little down, the lower edge of the basket below the hip."],
+      ["Blade", "The point at the height of the right temple, outside the line."],
+      ["Hand", "In the second position, the edge turned out."],
+      ["Covers", "The outer lower openings."],
+      ["Book", "Leszák Károly, Kardvívás (1906), §11 VI, Fig. 12. An auxiliary parry."],
+    ],
+  },
+  {
+    pose: "lowQuarte1",
+    group: "Leszák, 1906",
+    text: "The first of two low quartes, which covers the belly. The elbow is pressed to the hip and the forearm lies across the front of the body, down and to the left, with the blade rising steeply outside the line.",
+    points: [
+      ["Sword arm", "The elbow pressed to the hip, the forearm pointing to the left and down."],
+      ["Blade", "The edge to the left and down; the point outside the line, at eye height."],
+      ["Hand", "The 3/4, the book's 5th attitude: the edge down and left."],
+      ["Covers", "The belly."],
+      ["Book", "Leszák Károly, Kardvívás (1906), §11 VII.1, Fig. 13. An auxiliary parry."],
+    ],
+  },
+  {
+    pose: "lowQuarte2",
+    group: "Leszák, 1906",
+    text: "The second low quarte: the bent arm is jerked down with a blow, so that the sabre lies level across the front of the hips, its point fully to the left. It is quinte turned over, and covers against low thrusts.",
+    points: [
+      ["Sword arm", "The bent arm jerked down, the hand low at the right hip."],
+      ["Blade", "Level, the point turned fully to the left, the forte of the blade below the hip."],
+      ["Hand", "In the third position, the edge turned down."],
+      ["Covers", "Against low thrusts."],
+      ["Book", "Leszák Károly, Kardvívás (1906), §11 VII.2, Fig. 14. An auxiliary parry."],
+    ],
+  },
+  {
+    pose: "sixte",
+    group: "Leszák, 1906",
+    text: "A parry for the head, reached from tierce. The elbow lifts toward the left shoulder with the forearm upright and the hand at the left eye, and the blade lies out to the right above the head.",
+    points: [
+      ["Sword arm", "The elbow raised toward the left shoulder, the forearm upright, the hand toward the left eye."],
+      ["Blade", "Out to the right across the head, close to level."],
+      ["Hand", "The edge faces up. With the blade turned out to the right that is the fourth position here."],
+      ["Covers", "The head."],
+      ["Book", "Leszák Károly, Kardvívás (1906), §11 VIII, Fig. 15. An auxiliary parry."],
+    ],
+  },
+  {
+    pose: "septime",
+    group: "Leszák, 1906",
+    text: "The yielding parry, begun as sixte. The blade is taken almost straight down while the hand stays to the right of the right temple at head height, so that the sabre also covers the outer upper openings.",
+    points: [
+      ["Sword arm", "Raised, the hand to the right of the right temple and at head height."],
+      ["Blade", "Almost vertical, the point down, a little out to the right."],
+      ["Hand", "The book names no hand position. Shown in the second, the edge out to meet a cut from the outside."],
+      ["Covers", "The outer upper openings."],
+      ["Book", "Leszák Károly, Kardvívás (1906), §11 after VIII, Fig. 16. A yielding parry, and an auxiliary one."],
     ],
   },
 ];
