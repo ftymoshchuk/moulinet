@@ -137,6 +137,10 @@
             </div>
             <dl class="facts">
               <div class="fact">
+                <dt>Source</dt>
+                <dd id="scene-source"></dd>
+              </div>
+              <div class="fact">
                 <dt>Event</dt>
                 <dd id="scene-event"></dd>
               </div>
@@ -172,13 +176,18 @@
               <h3 id="scene-form-title" class="panel__title">Scene</h3>
               <span id="save-status" class="phrase-status" role="status"></span>
             </div>
-            <p class="panel__intro">Name it, say where it was noted, and keep it in the practice library on this device.</p>
+            <p class="panel__intro">Name it, say where it comes from and where it was noted, and keep it in the practice library on this device.</p>
             <div class="fields">
               <div class="field">
                 <label class="field__label" for="meta-name">Name</label>
                 <input id="meta-name" class="field__input" type="text" maxlength="100" autocomplete="off" />
               </div>
               <div class="field">
+                <label class="field__label" for="meta-source">Source</label>
+                <input id="meta-source" class="field__input" type="text" maxlength="40" autocomplete="off" list="source-list" placeholder="Live learning, a video, a book" />
+                <datalist id="source-list"></datalist>
+              </div>
+              <div class="field field--wide">
                 <label class="field__label" for="meta-event">Event</label>
                 <input id="meta-event" class="field__input" type="text" maxlength="160" autocomplete="off" placeholder="Where it was noted" />
               </div>

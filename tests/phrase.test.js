@@ -73,6 +73,9 @@ test("the built-in phrases have the lengths the page reports", () => {
     [5, 3440],
     [4, 2760],
     [7, 2680],
+    [6, 3220],
+    [10, 3730],
+    [10, 3750],
   ]);
 });
 
@@ -458,11 +461,11 @@ test("picking a pose or resetting drops the step's adjustments, and keeps its po
   assert.deepEqual(reset, { pose: "guard", x: 50 });
 });
 
-test("the name, event, reference and note come first in the text, then the camera and solo", () => {
-  const phrase = { steps: [{ label: "Only" }], extra: 1, solo: true, note: "n", camera: 5, reference: "r", name: "N", event: "e" };
+test("the name, source, event, reference and note come first in the text, then the camera and solo", () => {
+  const phrase = { steps: [{ label: "Only" }], extra: 1, solo: true, note: "n", camera: 5, reference: "r", name: "N", event: "e", source: "s" };
   assert.deepEqual(
-    phraseToText(phrase).split("\n").slice(1, 8).map((line) => line.trim().split(":")[0]),
-    ['"name"', '"event"', '"reference"', '"note"', '"camera"', '"solo"', '"extra"'],
+    phraseToText(phrase).split("\n").slice(1, 9).map((line) => line.trim().split(":")[0]),
+    ['"name"', '"source"', '"event"', '"reference"', '"note"', '"camera"', '"solo"', '"extra"'],
   );
   assert.deepEqual(parsePhrase(phraseToText(phrase)), phrase, "the order is only how it is shown");
 });
@@ -488,7 +491,8 @@ test("text keys are set, and removed by empty text or only spaces, and no other 
   assert.equal(setMeta(phrase, "name", "Budapest ").name, "Budapest ", "a space typed at the end is kept");
   assert.deepEqual(phrase, before, "the original phrase is left alone");
   for (const key of ["steps", "camera", "solo", "__proto__", "constructor"]) assert.equal(setMeta(phrase, key, "x"), null, key);
-  assert.deepEqual(TEXT_KEYS, ["name", "event", "reference", "note"]);
+  assert.equal(setMeta(phrase, "source", "Live learning").source, "Live learning", "the source is one of them");
+  assert.deepEqual(TEXT_KEYS, ["name", "source", "event", "reference", "note"]);
 });
 
 test("solo is switched on and off, and nothing else changes", () => {
@@ -646,7 +650,7 @@ test("text is cut to the limit with an ellipsis, and never in the middle of a ch
 });
 
 test("each kind of text has a limit, and the fields on the page hold to the same ones", () => {
-  assert.deepEqual(TEXT_LIMITS, { name: 100, event: 160, reference: 2000, note: 1000, label: 100 });
+  assert.deepEqual(TEXT_LIMITS, { name: 100, source: 40, event: 160, reference: 2000, note: 1000, label: 100 });
   for (const key of TEXT_KEYS) assert.ok(Number.isInteger(TEXT_LIMITS[key]) && TEXT_LIMITS[key] > 0, key);
 });
 

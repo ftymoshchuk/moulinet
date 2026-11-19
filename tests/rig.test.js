@@ -8,10 +8,10 @@ import { gunzipSync } from "node:zlib";
 import { BONES, GARMENTS, SOURCE, pack } from "../scripts/bake-fencers.js";
 import { Vector3 } from "../site/vendor/three.module.min.js";
 import { readBodies } from "../site/js/bodies.js";
-import { projector, skeleton } from "../site/js/figure.js";
+import { gripFrame, projector, skeleton } from "../site/js/figure.js";
 import { POSES, PRESETS } from "../site/js/library.js";
 import { buildTimeline, poseAt, resolvePose } from "../site/js/phrase.js";
-import { createFigure, poseRig } from "../site/js/rig.js";
+import { bladeSection, createFigure, poseRig } from "../site/js/rig.js";
 
 const bufferOf = (bytes) => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
 const bodies = readBodies(bufferOf(gunzipSync(readFileSync(new URL("../site/models/fencers.bin", import.meta.url)))));
@@ -173,6 +173,140 @@ test("the body moves smoothly: through every scene, no bone turns more than 25 d
           }
         }
         before = q.map((turn) => turn.clone());
+      }
+    }
+  }
+});
+
+// ---------- The drills from the class ----------
+//
+// The class's drills are kept as they were taught, so where each cut lands is held here: the light cut on the inside
+// of B's blade just above his guard, and each riposte edge first on A's glove, on top, on the outside or underneath,
+// with no blade going into an arm on the way. The blades are measured as they are drawn: the edge and the back of each
+// as far either side of its middle as the blade is wide there, and the glove and sleeve as the body is skinned.
+
+// The sword arm's glove and sleeve below the elbow, skinned as the page draws them, on the piste, each point with the
+// way the surface faces there.
+const SWORD_ARM = /^(lowerarm|wrist|finger).*\.L$/;
+function armSurface(who, p) {
+  const { q, at } = poseRig(figures[who].rig, p);
+  const { heads, position, garment } = bodies.figures[who];
+  const normal = figures[who].mesh.geometry.getAttribute("normal").array;
+  const worn = new Set(["glove", "jacket"].map((g) => bodies.garments.indexOf(g)));
+  const out = [];
+  for (let v = 0; v < bodies.vertices; v++) {
+    if (!worn.has(garment[v]) || !SWORD_ARM.test(bodies.bones[bodies.skinIndex[4 * v]].name)) continue;
+    const P = new Vector3();
+    const N = new Vector3();
+    for (let j = 0; j < 4; j++) {
+      const w = bodies.skinWeight[4 * v + j] / 255;
+      if (!w) continue;
+      const b = bodies.skinIndex[4 * v + j];
+      P.add(new Vector3(position[3 * v] - heads[b][0], position[3 * v + 1] - heads[b][1], position[3 * v + 2] - heads[b][2]).applyQuaternion(q[b]).add(at[b]).multiplyScalar(w));
+      N.add(new Vector3(normal[3 * v], normal[3 * v + 1], normal[3 * v + 2]).applyQuaternion(q[b]).multiplyScalar(w));
+    }
+    const d = DIR[who];
+    out.push({ p: new Vector3(p.x + d * P.x, P.y, d * P.z), n: new Vector3(d * N.x, N.y, d * N.z).normalize(), glove: bodies.garments[garment[v]] === "glove" });
+  }
+  return out;
+}
+
+// A blade as the page draws it, on the piste: its middle k cm out from the hand, its edge and its back, and the way the
+// edge faces; moved with a hand that falls short.
+function bladeOf(who, p) {
+  const J = skeleton(p);
+  const { short } = poseRig(figures[who].rig, p);
+  const d = DIR[who];
+  const G = gripFrame(J);
+  const middle = (k) => {
+    const q = J.at(k);
+    return new Vector3(p.x + d * (q[0] + short.x), q[1] + short.y, d * (q[2] + short.z));
+  };
+  const edge = new Vector3(d * G.e[0], G.e[1], d * G.e[2]);
+  const along = (k, y) => middle(k).addScaledVector(edge, y);
+  return { middle, edge, edgeAt: (k) => along(k, bladeSection(k).edge), backAt: (k) => along(k, bladeSection(k).back) };
+}
+
+// Where a blade comes nearest a sword arm: how far its edge is from the surface (negative inside it), which way the
+// surface faces there, how far out along the blade, and whether that is the glove; and the deepest any part goes.
+function touch(blade, arm) {
+  const lo = new Vector3(Infinity, Infinity, Infinity);
+  const hi = new Vector3(-Infinity, -Infinity, -Infinity);
+  for (const s of arm) [lo.min(s.p), hi.max(s.p)];
+  lo.subScalar(4);
+  hi.addScalar(4);
+  let edge = null;
+  let deepest = Infinity;
+  for (let k = 3; k <= 88; k += 1) {
+    for (const [line, x] of [["edge", blade.edgeAt(k)], ["middle", blade.middle(k)], ["back", blade.backAt(k)]]) {
+      if (x.x < lo.x || x.y < lo.y || x.z < lo.z || x.x > hi.x || x.y > hi.y || x.z > hi.z) continue;
+      let near = null;
+      let nd = Infinity;
+      for (const s of arm) {
+        const d = x.distanceToSquared(s.p);
+        if (d < nd) [nd, near] = [d, s];
+      }
+      const signed = x.clone().sub(near.p).dot(near.n);
+      if (nd < 16) deepest = Math.min(deepest, signed);
+      if (line === "edge" && (!edge || nd < edge.nd)) edge = { nd, k, signed, n: near.n, glove: near.glove };
+    }
+  }
+  return { edge, deepest };
+}
+
+const CLASS_DRILLS = {
+  "class-light-cut-top-of-glove": { where: "on top", facing: new Vector3(0, 1, 0) },
+  "class-light-cut-side-of-glove": { where: "on the outside", facing: new Vector3(0.4, 0, -0.92).normalize() },
+  "class-light-cut-tierce-hungarian-cut": { where: "underneath", facing: new Vector3(0, -1, -0.3).normalize() },
+};
+
+test("the drills from the class: the light cut lands on the inside of B's blade, just above his guard, from A's own side", () => {
+  for (const id of Object.keys(CLASS_DRILLS)) {
+    const { phrase } = PRESETS.find((preset) => preset.id === id);
+    const cut = buildTimeline(phrase).steps.find((step) => step.label.startsWith("A cuts lightly"));
+    const [a, b] = [bladeOf("A", cut.A), bladeOf("B", cut.B)];
+    // The middles of the blades, and how far apart their surfaces are where they come nearest.
+    let near = { gap: Infinity };
+    for (let i = 3; i <= 88; i += 0.5) {
+      for (let j = 3; j <= 40; j += 0.5) {
+        const [p, q] = [a.middle(i), b.middle(j)];
+        const toward = q.clone().sub(p).normalize();
+        const reach = (blade, k, n) => {
+          const e = blade.edge.dot(n);
+          return (e > 0 ? bladeSection(k).edge : -bladeSection(k).back) * Math.abs(e);
+        };
+        const gap = p.distanceTo(q) - reach(a, i, toward) - reach(b, j, toward.clone().negate());
+        if (gap < near.gap) near = { gap, i, j, side: q.z - p.z };
+      }
+    }
+    assert.ok(near.gap > -0.1 && near.gap < 0.6, `${id}: the blades meet, ${near.gap.toFixed(2)} cm apart`);
+    assert.ok(near.j > 8 && near.j < 20, `${id}: just above B's guard, ${near.j} cm out along his blade`);
+    assert.ok(near.i > 45 && near.i < 70, `${id}: with the middle of A's blade, ${near.i} cm out`);
+    assert.ok(near.side > 0, `${id}: A's blade comes from his own side of the line, onto the inside of B's`);
+  }
+});
+
+test("the drills from the class: each riposte lands edge first on A's glove, on top, on the outside or underneath as the class has it, on the foible, and no blade goes into an arm on the way", () => {
+  for (const [id, { where, facing }] of Object.entries(CLASS_DRILLS)) {
+    const { phrase } = PRESETS.find((preset) => preset.id === id);
+    const timeline = buildTimeline(phrase);
+    // The riposte is the step B holds longest.
+    const hit = timeline.steps.reduce((best, step) => (step.end - step.holdStart > best.end - best.holdStart && step.specB.pose !== "guard" ? step : best));
+    const blade = bladeOf("B", hit.B);
+    const { edge, deepest } = touch(blade, armSurface("A", hit.A));
+    assert.ok(edge.glove, `${id}: on the glove`);
+    assert.ok(edge.signed > -0.1 && edge.signed < 0.6, `${id}: the edge touches it, ${edge.signed.toFixed(2)} cm off`);
+    assert.ok(deepest > -0.1, `${id}: and nothing goes into it (${deepest.toFixed(2)})`);
+    assert.ok(edge.k > 50 && edge.k < 82, `${id}: on the middle or the foible, ${edge.k} cm out`);
+    const angle = (edge.n.angleTo(facing) * 180) / Math.PI;
+    assert.ok(angle < 30, `${id}: ${where}, the glove facing ${angle.toFixed(0)}° from that`);
+    assert.ok(blade.edge.dot(edge.n) < -0.8, `${id}: edge first`);
+    // Every 10 ms, neither blade goes into the other's sword arm.
+    for (let ms = 0; ms <= timeline.duration; ms += 10) {
+      const now = poseAt(timeline, ms);
+      for (const [who, other] of [["B", "A"], ["A", "B"]]) {
+        const { deepest: d } = touch(bladeOf(who, now[who]), armSurface(other, now[other]));
+        assert.ok(d > -0.2, `${id} at ${ms} ms: ${who}'s blade goes ${(-d).toFixed(2)} cm into ${other}'s arm`);
       }
     }
   }

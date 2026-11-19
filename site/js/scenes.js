@@ -1,5 +1,5 @@
 // Scenes people make: the link that says where one was noted, and the scenes
-// saved on this device. A scene is a phrase, with its name, event, reference
+// saved on this device. A scene is a phrase, with its name, source, event, reference
 // and note beside the steps.
 import { buildTimeline, isPlainObject } from "./phrase.js";
 
