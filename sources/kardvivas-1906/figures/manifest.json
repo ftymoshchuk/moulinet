@@ -1,5 +1,5 @@
 {
-  "source": "../../../17152.pdf",
+  "source": "17152.pdf (a copy of the scan; the file is not kept in this repository)",
   "note": "Each figure is cropped from the single embedded JPEG of its PDF page (pdfimages -j -f PAGE -l PAGE). crop_px = [x0, y0, x1, y1] in that image's pixels.",
   "page_image_px": [
     1517,

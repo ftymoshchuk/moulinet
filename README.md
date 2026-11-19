@@ -111,8 +111,9 @@ The fencers are not pictures. Each is worked out from a pose, a few numbers for
 the joints, and drawn in the browser: two people modelled in three dimensions,
 the young man and the older one, drawn in ink. The look follows the line
 illustrations of old sabre training books, as a model to draw from; none of them
-is scanned or traced into the figures. The one old book kept here, under
-`sources/`, is a source for the base postures, not a picture to draw from.
+is scanned or traced into the figures. The one old book used here is kept as a
+translation under `sources/`: a source for the base postures, not a picture to
+draw from.
 
 **The skeleton.** A pose sets where the hips are, how far the body leans, where
 each foot stands and how far it is lifted, the angles of the arms and the blade,

@@ -11,7 +11,7 @@ An English translation of the opening chapters of a Hungarian sabre-fencing text
 | Edition | 2nd edition, Budapest, 1906, "Molnárok Lapja" press; property of the author |
 | Standing | Textbook adopted for the Ludovika Academy and the Honvéd cadet schools by Ministry of Defence Decree No. 5791/21 of 30 January 1906 |
 | Language | Hungarian |
-| Source file | [`17152.pdf`](../../17152.pdf) in the repository root: 146 pages, 300 dpi scan with an OCR text layer (ABBYY FineReader 12, 2017) |
+| Source file | `17152.pdf`, **not kept in this repository** (see [Rights](#rights)): 146 pages, 300 dpi scan with an OCR text layer (ABBYY FineReader 12, 2017) |
 
 The scanned pages carry a faint "OSZK" watermark and library stamps (Országos Széchényi Könyvtár, the Hungarian National Széchényi Library). The file name `17152` may be a catalogue number; I have not checked.
 
@@ -93,11 +93,11 @@ Points the page does not settle. Keep them open when turning the text into postu
 
 ## Rights
 
-The book dates from 1906, but I have not confirmed the author's dates or the reuse terms of the book, of the OSZK scan or of the figures cropped from it. Check this before the translation or the figures are published anywhere (for example on the project's GitHub Pages site). Nothing here is published by the site as it stands: the Pages workflow deploys only `site/`.
+The book dates from 1906, but I have not confirmed the author's dates or the reuse terms of the book, of the OSZK scan or of the figures cropped from it. The scan itself is not kept in the repository; the translation and the figures cropped from it are, so the question is open for them too. Check this before they are published anywhere (for example on the project's GitHub Pages site). Nothing here is published by the site as it stands: the Pages workflow deploys only `site/`.
 
 ## Figures
 
-[`figures/manifest.json`](figures/manifest.json) lists each figure with its file, section, book and PDF page, printed caption (Hungarian) and English caption, and the crop box. Each figure is cut from the single embedded 300 dpi JPEG of its PDF page. To re-create one (for example Fig. 1, on PDF p. 14):
+[`figures/manifest.json`](figures/manifest.json) lists each figure with its file, section, book and PDF page, printed caption (Hungarian) and English caption, and the crop box. Each figure is cut from the single embedded 300 dpi JPEG of its PDF page. To re-create one from a copy of the scan (the file is not in the repository; put it in the folder you run this in), for example Fig. 1, on PDF p. 14:
 
 ```bash
 pdfimages -j -f 14 -l 14 17152.pdf pdf14
