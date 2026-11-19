@@ -12,7 +12,10 @@
 //                 guard, and further as they sit back over the foot: 0 is flat
 //   lean          torso lean, forward positive
 //   turn          how far the shoulders are turned toward the camera, 0 side on
-//   arm, fore     sword arm: upper arm and forearm
+//   arm, fore     sword arm: upper arm and forearm, how high each points
+//   armYaw,       how far each is turned out of the plane of the sword shoulder, toward
+//   foreYaw       the camera, which is across the chest from the sword side: 0 keeps the
+//                 arm in that plane, as in the guard, and more brings the hand across
 //   blade         the sabre; yaw turns it toward the camera
 //   hand          how far the sword hand is turned about the blade, in the hand
 //                 positions of the old sabre books: 0 is the third, thumb up and the
@@ -48,7 +51,7 @@
 // protection; and right over, to the first, for parry 5, so the edge faces up at a
 // cut to the head.
 export const POSES = {
-  guard: { hipX: 41, hipY: 77, footF: 84, liftF: 0, liftB: 0, lean: 0, turn: 58, arm: -24, fore: -4, blade: 34, yaw: 0, hand: -45, rArm: -140, rFore: -28, toeBack: 14, kneeOut: 40 },
+  guard: { hipX: 41, hipY: 77, footF: 84, liftF: 0, liftB: 0, lean: 0, turn: 58, arm: -24, fore: -4, armYaw: 0, foreYaw: 0, blade: 34, yaw: 0, hand: -45, rArm: -140, rFore: -28, toeBack: 14, kneeOut: 40 },
   advLift: { hipX: 44, hipY: 79, footF: 103, liftF: 4 },
   advLand: { hipX: 52.5, hipY: 79, footF: 114 },
   prep: { hipX: 42, lean: 1, arm: 15, fore: 30, blade: 85, hand: 0 },
@@ -62,6 +65,26 @@ export const POSES = {
   parry5Back: { hipX: 24, hipY: 80, lean: -7, arm: 20, fore: 112, blade: 6, yaw: 70, hand: -180 },
   riposte: { hipX: 50, hipY: 77, footF: 100, lean: 8, arm: 0, fore: 0, blade: -6, hand: 0 },
   extend: { hipX: 42, lean: 1, arm: 4, fore: 4, blade: 14, hand: 0 },
+
+  // The postures of Leszák Károly's Kardvívás (1906), the base chapters, in the
+  // translation in sources/kardvivas-1906. The nine sabre positions are held in
+  // the guard's stance, as the book's photographs show them, so each sets only the
+  // arm, the blade and the hand. The book's hand positions are the ones the hand
+  // slider names: its 6th attitude is the 2/3, its 5th the 3/4. Where the book
+  // puts the hand across the body (prime, quarte, low quarte 1, sixte), the arm is
+  // turned out of the plane of its shoulder (armYaw, foreYaw).
+  basicStance: { hipX: 6, hipY: 97, footF: 12, toeBack: 0, turn: 45, arm: 0, fore: 0, blade: 0, yaw: 12, hand: -90 },
+  atEase: { hipX: 17, hipY: 94, footF: 34, turn: 45, arm: -90, fore: -90, blade: -58, hand: -90, rArm: -100, rFore: -95 },
+  tierce: { arm: -41, fore: 2, blade: 27, hand: -45 },
+  seconde: { arm: -46, fore: 27, blade: -30, yaw: -6, hand: -135 },
+  prime: { arm: -87, armYaw: 7, fore: 90, foreYaw: 50, blade: -57, yaw: 30, hand: 90 },
+  quinte: { arm: -24, fore: 89, blade: 18, yaw: 62, hand: -180 },
+  quarte: { arm: -95, fore: 0, foreYaw: 45, blade: 60, yaw: 42, hand: 45 },
+  lowTierce: { arm: -95, fore: -20, blade: 51, yaw: -10, hand: -90 },
+  lowQuarte1: { arm: -95, fore: -76, foreYaw: 65, blade: 61, yaw: 30, hand: 45 },
+  lowQuarte2: { arm: -95, fore: -35, blade: 0, yaw: 80, hand: 0 },
+  sixte: { arm: -6, armYaw: 79, fore: 77, foreYaw: -9, blade: 77, yaw: -64, hand: 90 },
+  septime: { arm: 105, fore: 20, blade: -85, yaw: -28, hand: -90 },
 };
 
 export const POSE_NAMES = {
@@ -79,6 +102,18 @@ export const POSE_NAMES = {
   parry5Back: "Parry 5, weight back",
   riposte: "Riposte, head",
   extend: "Arm extended",
+  basicStance: "Basic stance",
+  atEase: "At ease",
+  tierce: "Tierce",
+  seconde: "Seconde",
+  prime: "Prime",
+  quinte: "Quinte",
+  quarte: "Quarte",
+  lowTierce: "Low tierce",
+  lowQuarte1: "Low quarte (1)",
+  lowQuarte2: "Low quarte (2)",
+  sixte: "Sixte",
+  septime: "Septime",
 };
 
 // The older man's own guard, so the pair do not stand as mirror images in the
@@ -306,16 +341,18 @@ export const HAND_POSITIONS = { "-180": "1st", "-135": "1/2", "-90": "2nd", "-45
 // that has one.
 export const JOINTS = [
   { key: "x", label: "Position on the piste", min: -70, max: 300, unit: " cm" },
-  { key: "footF", label: "Front foot reach", min: 30, max: 135, unit: " cm" },
+  { key: "footF", label: "Front foot reach", min: 10, max: 135, unit: " cm" },
   { key: "liftF", label: "Front foot lift", min: 0, max: 30, unit: " cm" },
   { key: "hipX", label: "Hips forward", min: 5, max: 90, unit: " cm" },
-  { key: "hipY", label: "Hip height", min: 48, max: 96, unit: " cm" },
+  { key: "hipY", label: "Hip height", min: 48, max: 98, unit: " cm" },
   { key: "toeBack", label: "Back foot turned back", min: 0, max: 45, unit: "°" },
   { key: "kneeOut", label: "Back knee turned out", min: 0, max: 90, unit: "°" },
   { key: "lean", label: "Torso lean", min: -25, max: 35, unit: "°" },
   { key: "turn", label: "Shoulder turn toward camera", min: 0, max: 90, unit: "°" },
   { key: "arm", label: "Upper arm", min: -120, max: 120, unit: "°" },
   { key: "fore", label: "Forearm", min: -100, max: 130, unit: "°" },
+  { key: "armYaw", label: "Upper arm turn toward camera", min: -90, max: 90, unit: "°" },
+  { key: "foreYaw", label: "Forearm turn toward camera", min: -90, max: 90, unit: "°" },
   { key: "blade", label: "Blade angle", min: -180, max: 180, unit: "°" },
   { key: "yaw", label: "Blade turn toward camera", min: -85, max: 85, unit: "°" },
   { key: "hand", label: "Hand position", min: -180, max: 90, step: 15, unit: "°", names: HAND_POSITIONS },

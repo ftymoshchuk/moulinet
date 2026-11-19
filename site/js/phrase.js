@@ -7,7 +7,7 @@ const START = { A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 310 } };
 // Which way along the piste each fencer faces: A toward B, and B back toward A.
 const FACING = { A: 1, B: -1 };
 // Values that are angles, so a move between two of them takes the short way round.
-const ANGLES = new Set(["lean", "turn", "arm", "fore", "blade", "yaw", "rArm", "rFore", "toeBack", "kneeOut"]);
+const ANGLES = new Set(["lean", "turn", "arm", "fore", "armYaw", "foreYaw", "blade", "yaw", "rArm", "rFore", "toeBack", "kneeOut"]);
 // A foot that travels along the floor from one step to the next, while the other foot stays where it is, is lifted on
 // the way, as a step is taken: a tenth as high as it travels, and no higher than the advance lifts it. One that moves
 // less than STEP_MIN is only slid (cm).
