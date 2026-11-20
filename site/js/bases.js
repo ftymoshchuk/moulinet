@@ -25,12 +25,19 @@ export const BASE_SECTIONS = {
 // Every group, in the order of the postures.
 export const BASE_GROUPS = Object.values(BASE_SECTIONS).flatMap(({ groups }) => groups);
 
-// Where the one fencer stands for every posture (cm), the same for all, so
-// moving from one to the next changes the fencer and not the view.
-export const BASE_X = 60;
+// The postures show one fencer as the book's is: right-handed, facing left, with his
+// chest toward the camera, which is the stage's fencer A as his mirror image (see
+// `projector` in figure.js). It is how the book's photographs show him.
+//
+// Where his back foot stands for every posture (cm), the same for all, so moving from
+// one to the next changes the fencer and not the view. It is the mirror, about the
+// pivot the camera turns about, of 60, where he stood when he faced right, so he is as
+// near the pivot as he was and turning the camera does not sweep him across the stage.
+export const BASE_X = 170;
 // Turned a little from side on, so a blade held across the body, as in parry 5,
-// is not seen end on.
-export const BASE_CAMERA = 25;
+// is not seen end on: the mirror of the 25° he was seen from when he faced right, so
+// the camera is round behind him as it was then.
+export const BASE_CAMERA = -25;
 // How far along the blade from the hand (cm) the stage must keep in view. All of
 // it would let the blade held up in "Blade up" set the height of the view for
 // every posture and leave the fencer small. This much lets only the point of
@@ -47,8 +54,8 @@ export const BASE_BLADE = 60;
 export const FIGURE_DIR = "img/kardvivas-1906/";
 const figure = (n, file, caption, page, width, height) => ({ n, file, caption, page, width, height });
 // Said under the photographs: they are as printed, and the fencer in them is
-// right-handed, where the one on the stage is drawn the other way round.
-export const FIGURE_NOTE = "As printed in the book: its fencer is right-handed, so the fencer on the stage is the mirror image.";
+// right-handed, as the one on the stage is.
+export const FIGURE_NOTE = "As printed in the book. Its fencer is right-handed, and so is the one on the stage.";
 
 // `text` says what the posture is and what it is for. `points` are the parts
 // worth looking at, as [what, how]. A posture the book pictures has its `figures`.
@@ -89,7 +96,7 @@ export const BASES = [
   {
     pose: "extend",
     group: "Attack",
-    text: "The sword arm straight out in front. An attack starts with the arm: it extends first and the legs follow. The moulinet on this page starts from here too.",
+    text: "The sword arm straight out in front. An attack starts with the arm: it extends first and the legs follow.",
     points: [
       ["Sword arm", "Straight, at about shoulder height, with no tension in the shoulder."],
       ["Blade", "In line with the arm, pointing forward and a little up."],
@@ -100,7 +107,7 @@ export const BASES = [
   {
     pose: "prep",
     group: "Attack",
-    text: "The arm lifts and the blade stands almost upright, ready to fall forward onto the head. The built-in head-cut scenes use it just before the lunge.",
+    text: "The arm lifts and the blade stands almost upright, ready to fall forward onto the head. A cut to the head starts from here, before the lunge.",
     points: [
       ["Sword arm", "The elbow bent and the hand lifted above shoulder height."],
       ["Blade", "Nearly vertical, the point to the ceiling."],

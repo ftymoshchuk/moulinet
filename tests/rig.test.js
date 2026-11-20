@@ -12,6 +12,7 @@ import { gripFrame, projector, skeleton } from "../site/js/figure.js";
 import { POSES, PRESETS } from "../site/js/library.js";
 import { buildTimeline, poseAt, resolvePose } from "../site/js/phrase.js";
 import { bladeSection, createFigure, poseRig } from "../site/js/rig.js";
+import { RETIRED } from "./retired-scenes.js";
 
 const bufferOf = (bytes) => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
 const bodies = readBodies(bufferOf(gunzipSync(readFileSync(new URL("../site/models/fencers.bin", import.meta.url)))));
@@ -19,9 +20,11 @@ const figures = { A: createFigure(bodies, "A"), B: createFigure(bodies, "B") };
 const DIR = { A: 1, B: -1 };
 const near = (a, b, tolerance, message) => assert.ok(a.distanceTo(b) <= tolerance, `${message}: ${a.distanceTo(b)} cm off`);
 
-// Every built-in scene at 30 moments, and every pose on its own, for both fencers.
+// Every scene at 30 moments, and every pose on its own, for both fencers: the scenes the library lists, and the ones it
+// no longer does, which stay as test data for the moulinet and the parries.
+const LIBRARY = [...PRESETS, ...RETIRED];
 const moments = [];
-for (const preset of PRESETS) {
+for (const preset of LIBRARY) {
   const timeline = buildTimeline(preset.phrase);
   for (let i = 0; i <= 30; i++) {
     const t = (timeline.duration * i) / 30;
@@ -145,6 +148,52 @@ test("the fencer facing left is the one facing right turned round, so the blade'
   }
 });
 
+test("a mirror image is the same body with its depth turned round: the point is where the stage's mirror puts it from any camera, and three.js draws it as a reflection", () => {
+  for (const { where, who, p } of moments.filter((_, i) => i % 3 === 0)) {
+    const figure = figures[who];
+    for (const dir of [1, -1]) {
+      figure.pose(p, dir, true);
+      assert.ok(figure.group.matrixWorld.determinant() < 0, `${where}, facing ${dir}: a reflection, which three.js draws with its faces the right way out`);
+      const { short } = poseRig(figure.rig, p);
+      const J = skeleton(p);
+      const tip = new Vector3(88, 0, 0).applyMatrix4(figure.sabre.matrixWorld);
+      // Along the way he faces, as the pair do; depth, toward the camera, the other way from the way he faces.
+      const expected = (q) => new Vector3(p.x + dir * (q[0] + short.x), q[1] + short.y, -dir * (q[2] + short.z));
+      near(tip, expected(J.tip), 1e-6, `${where}, facing ${dir}: the point`);
+      if (short.length() > 1e-9) continue;
+      for (const camera of [-40, 0, 35, 180]) {
+        const c = Math.cos((camera * Math.PI) / 180);
+        const s = Math.sin((camera * Math.PI) / 180);
+        const seen = [(tip.x - 115) * c + tip.z * s + 115, -tip.y];
+        const drawn = projector(p, dir, camera, true)(J.tip);
+        assert.ok(Math.hypot(seen[0] - drawn[0], seen[1] - drawn[1]) < 1e-6, `${where}, facing ${dir}, camera ${camera}°`);
+      }
+    }
+    // Posed as he was before, he is no longer a reflection.
+    figure.pose(p, DIR[who]);
+    assert.ok(figure.group.matrixWorld.determinant() > 0, `${where}: posed again unmirrored`);
+  }
+});
+
+test("the sabre is in the left hand of the pair, and in the right hand of the mirror image, whichever way he faces", () => {
+  const p = resolvePose({ pose: "guard" });
+  for (const who of ["A", "B"]) {
+    const figure = figures[who];
+    const handOf = (dir, mirror) => {
+      figure.pose(p, dir, mirror);
+      const world = (name) => figure.mesh.skeleton.bones[figure.rig.at[name]].getWorldPosition(new Vector3());
+      // With x to the right and z toward the camera, a fencer facing right has his right hand toward the camera, and one
+      // facing left has it away from it. The sword is the model's left hand, and the rear hand its right.
+      const toSword = world("upperarm01.L").sub(world("upperarm01.R"));
+      return toSword.dot(new Vector3(0, 0, dir)) > 0 ? "right" : "left";
+    };
+    assert.equal(handOf(1, false), "left", `${who}, facing right`);
+    assert.equal(handOf(-1, false), "left", `${who}, facing left`);
+    assert.equal(handOf(-1, true), "right", `${who}, a mirror image facing left`);
+    assert.equal(handOf(1, true), "right", `${who}, a mirror image facing right`);
+  }
+});
+
 test("three.js turns the bones as the rig worked them out, for either fencer", () => {
   for (const { where, who, p } of moments.filter((_, i) => i % 7 === 0)) {
     const figure = figures[who];
@@ -159,7 +208,7 @@ test("three.js turns the bones as the rig worked them out, for either fencer", (
 });
 
 test("the body moves smoothly: through every scene, no bone turns more than 25 degrees in 4 ms, even where a limb passes through straight", () => {
-  for (const preset of PRESETS) {
+  for (const preset of LIBRARY) {
     const timeline = buildTimeline(preset.phrase);
     for (const who of timeline.solo ? ["A"] : ["A", "B"]) {
       const { rig } = figures[who];

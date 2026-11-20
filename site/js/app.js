@@ -7,7 +7,7 @@
 // The page has three tabs. Live knowledge and Book knowledge are sections, each
 // with a practice library and base postures of its own; the Creator is the third.
 import { BASE_BLADE, BASE_SECTIONS, FIGURE_DIR, FIGURE_NOTE, basePhrase, basesOf } from "./bases.js";
-import { DEFAULT_FRAME, bladePaths, floorPath, frameOf, groundPath, handFrame, stickFigure } from "./figure.js";
+import { DEFAULT_FRAME, bladePaths, facing, floorPath, frameOf, groundPath, handFrame, stickFigure } from "./figure.js";
 import { JOINTS, POSE_NAMES, POSES, PRESETS, SECTIONS } from "./library.js";
 import {
   TEXT_KEYS,
@@ -43,8 +43,6 @@ const NO_GHOST = { body: "", blade: "" };
 const MAX_FRAME_MS = 64;
 // The camera slider's range, which a pasted phrase is held to as well.
 const CAMERA_LIMIT = 60;
-// Someone who asked for less motion starts each phrase paused.
-const AUTOPLAY = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const MODE_NAMES = { library: "Practice library", base: "Base postures", creator: "Creator" };
 const SECTION_NAMES = Object.fromEntries(SECTIONS.map(({ id, name }) => [id, name]));
 
@@ -278,7 +276,7 @@ function creatorView(phrase) {
   return { phrase, phraseText: phraseToText(phrase), phraseError: "", pin: 0, fencer: "A", camera: clampCamera(phrase.camera) };
 }
 
-// A scene from the library, playing from its start, as the page shows each one.
+// A scene from the library, at its start and paused: nothing on the page plays until Play is pressed.
 function showScene(key) {
   const scene = scenes.find((candidate) => candidate.key === key) ?? scenes[0];
   const phrase = clone(scene.phrase);
@@ -289,7 +287,7 @@ function showScene(key) {
     scene: scene.key,
     time: 0,
     pin: null,
-    playing: AUTOPLAY,
+    playing: false,
     camera: clampCamera(phrase.camera),
     fencer: "A",
     phraseText: phraseToText(phrase),
@@ -1000,6 +998,14 @@ function polyline(points, count) {
   return count < 2 ? "" : `M${points.slice(0, count).join("L")}`;
 }
 
+// Whether the stage draws the fencers as their mirror images. The scenes show the
+// stage's own pair, who hold the sabre in the left hand. The postures show one
+// fencer as the book's is: right-handed, facing left, his chest toward the camera
+// (see `projector` in figure.js).
+function mirrored() {
+  return state.mode === "base";
+}
+
 // The Creator keeps one view as a scene is reshaped; the library looks as close as
 // keeps everyone and their whole blades in; the postures, as close as keeps the
 // fencer and most of the blade in.
@@ -1007,21 +1013,23 @@ function polyline(points, count) {
 // A close-up looks at a sword hand instead, and follows it as it moves: the hand
 // of the fencer being reshaped in the Creator, and A's elsewhere.
 function frameFor(now) {
+  const mirror = mirrored();
   if (state.closeUp) {
     const who = state.mode === "creator" ? editingFencer() : "A";
-    return handFrame(now[who], who === "A" ? 1 : -1, viewCamera());
+    return handFrame(now[who], facing(who, mirror), viewCamera(), mirror);
   }
   if (state.mode === "creator") return DEFAULT_FRAME;
   const blade = state.mode === "base" ? BASE_BLADE : undefined;
-  if (framed.timeline !== timeline || framed.blade !== blade) framed = { timeline, blade, frame: frameOf(timeline, blade) };
+  if (framed.timeline !== timeline || framed.blade !== blade || framed.mirror !== mirror) framed = { timeline, blade, mirror, frame: frameOf(timeline, blade, mirror) };
   return framed.frame;
 }
 
 // Where the camera looks from. The close-up looks from outside the sword arm,
 // which is where the old books draw the grip and the hand positions from: for
-// the fencer facing right, from the other side of the piste; the fencer facing
-// left has his sword arm on the near side, so his stays on this side. The camera
-// turns it from there.
+// the fencer facing right, and for the posture's fencer, who is his mirror image
+// and faces left, from the other side of the piste, since the sword arm is on the
+// far side of the chest; the fencer of the pair facing left has his sword arm on
+// the near side, so his stays on this side. The camera turns it from there.
 function viewCamera() {
   if (!state.closeUp) return state.camera;
   const nearSide = state.mode === "creator" && editingFencer() === "B";
@@ -1031,6 +1039,7 @@ function viewCamera() {
 function drawStage(now) {
   const camera = viewCamera();
   const view = frameFor(now);
+  const mirror = mirrored();
   setAttr(stageEl, "viewBox", view.join(" "));
   // The postures stand still, so they have no motion to show.
   const moving = state.mode !== "base";
@@ -1039,15 +1048,18 @@ function drawStage(now) {
   const in3d = showing3d();
   canvas3dEl.classList.toggle("hidden", !in3d);
   if (in3d) {
-    stage3d.draw({ poses: now, solo: timeline.solo, frame: view, camera, ink: state.ink });
+    stage3d.draw({ poses: now, solo: timeline.solo, frame: view, camera, ink: state.ink, mirror });
     canvas3dEl.dataset.fencers = timeline.solo ? "A" : "A B";
+    // Which hand holds the sabre, for what looks at the page to read.
+    canvas3dEl.dataset.hand = mirror ? "right" : "left";
   }
   // Without them, stick figures; as the page opens, the stage waits a moment for them first.
   const sticks = !in3d && performance.now() >= waitFor3d;
-  for (const [who, dir] of [["A", 1], ["B", -1]]) {
-    const stick = sticks ? stickFigure(now[who], dir, camera) : NO_GHOST;
+  for (const who of ["A", "B"]) {
+    const dir = facing(who, mirror);
+    const stick = sticks ? stickFigure(now[who], dir, camera, mirror) : NO_GHOST;
     setAttr(fencers[who].stick, "d", stick.body + stick.blade);
-    setAttr(fencers[who].ground, "d", groundPath(now[who], dir, camera));
+    setAttr(fencers[who].ground, "d", groundPath(now[who], dir, camera, mirror));
   }
   if (state.ink) setAttr(inkEl, "filter", "url(#ink-texture)");
   else inkEl.removeAttribute("filter");

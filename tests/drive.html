@@ -84,27 +84,33 @@
         };
         button("Practice library").click();
         $$(".scene-button")[0].click();
-        // Picking the scene plays it. Pause it while the figures load: a browser with no graphics card draws them in
-        // software, and while a scene plays it draws them frame after frame, however little of the page's time passes,
-        // for as long as this waits. The figures are drawn when they are loaded, playing or not.
-        button("Pause")?.click();
+        // Nothing plays on its own, which matters here: a browser with no graphics card draws the figures in software,
+        // and while a scene plays it would draw them frame after frame, however little of the page's time passes, for as
+        // long as this waits. The figures are drawn when they are loaded, playing or not.
         seen.figures3d = { loaded: await settled(win, doc) };
-        // Every step, a turned camera and the close-up draw them too; one fencer alone is one figure.
+        // Every step, a turned camera and the close-up draw them too; a pair is two figures, the stage's own, who hold
+        // the sabre in the left hand.
         for (const step of $$(".step-button")) step.click();
         input($("#camera"), 30);
         button("Hand close-up").click();
         button("Hand close-up").click();
         input($("#camera"), 0);
-        $$(".scene-button").find((card) => card.textContent.includes("Solo")).click();
-        seen.figures3d.solo = $("#stage-3d").dataset.fencers ?? "";
-        $$(".scene-button")[0].click();
         seen.figures3d.pair = $("#stage-3d").dataset.fencers ?? "";
-        // And pause it again, or the browser goes on drawing it, as above, after the last thing checked.
-        button("Pause")?.click();
+        seen.figures3d.pairHand = $("#stage-3d").dataset.hand ?? "";
+        // The postures are one fencer alone, drawn as the mirror image of A, with the sabre in the right hand.
+        button("Base postures").click();
+        seen.figures3d.solo = $("#stage-3d").dataset.fencers ?? "";
+        seen.figures3d.soloHand = $("#stage-3d").dataset.hand ?? "";
+        button("Practice library").click();
       }
 
       async function driveFallback(win, doc, seen) {
         seen.fallback = await settled(win, doc);
+        // The postures' fencer is a stick figure too, and the mirror image there as well: the lines drawn for the first posture.
+        const $ = (selector) => doc.querySelector(selector);
+        const base = [...doc.querySelectorAll("button")].find((b) => b.textContent.trim() === "Base postures");
+        base.click();
+        seen.fallbackPosture = { stick: $("#stick-a").getAttribute("d"), ground: $("#ground-a").getAttribute("d"), camera: $("#camera").value };
       }
 
       function drive(win, doc, seen) {
@@ -159,6 +165,16 @@
 
         // ---------- The practice library ----------
 
+        // The page opens on its first scene, paused at the start: nothing plays until Play is pressed.
+        seen.opening = {
+          title: text("#scene-title"),
+          play: $("#play-button").getAttribute("aria-label"),
+          pauseHidden: $("#pause-icon").classList.contains("hidden"),
+          playShown: !$("#play-icon").classList.contains("hidden"),
+          count: text("#step-count"),
+          time: text("#timecode"),
+        };
+
         // Every scene, each of its steps, and its whole timeline. Where the stage looks is
         // noted as each scene opens, and again for the postures.
         seen.sceneViews = [];
@@ -172,6 +188,8 @@
             card: card.querySelector(".scene-button__meta").textContent,
             source: card.querySelector(".scene-button__source")?.textContent ?? "",
             sourceFact: text("#scene-source"),
+            // Choosing a scene does not play it.
+            play: $("#play-button").getAttribute("aria-label"),
             count: text("#step-count"),
             solo: $("#stage-panel").classList.contains("is-solo"),
             camera: $("#camera").value,
@@ -190,7 +208,7 @@
           return summary;
         });
 
-        // A built-in scene says what it shows, and has no event or link to give.
+        // A built-in scene says where it comes from, and has no link to give.
         $$(".scene-button")[1].click();
         seen.builtIn = {
           title: text("#scene-title"),
@@ -403,6 +421,7 @@
           showing: showing(),
           name: $("#meta-name").value,
           note: $("#meta-note").value.slice(0, 24),
+          source: $("#meta-source").value,
           event: $("#meta-event").value,
           save: text("#scene-save"),
           copyHidden: hidden("#scene-save-copy"),
@@ -850,7 +869,7 @@
         seen.deletedUnseen = { count: savedScenes().length, status: text("#save-status"), idChanged: savedScenes()[0].id !== stale.id };
         keepScenes([]);
 
-        // A scene on stage that another tab changed is loaded again; one it did not change plays on.
+        // A scene on stage that another tab changed is loaded again; one it did not change stays on its step.
         const two = [{ label: "One", hold: 300 }, { label: "Two", ms: 100, hold: 300 }];
         keepScenes([{ id: "live", phrase: { name: "Live", steps: two } }]);
         button("Practice library").click();

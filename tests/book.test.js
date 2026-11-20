@@ -1,7 +1,8 @@
 // The postures taken from Leszák Károly's Kardvívás (1906), in sources/kardvivas-1906, each checked against what the
 // book says of it. Lengths are centimetres on the skeleton the stage draws: the fencer's own height from the floor, x
 // toward the opponent and z toward the camera, which is across the chest from the sword side, so a point with z > 0
-// is to the fencer's left and one with z < 0 to the right. The tolerances are those of a model with a single height
+// is to the fencer's left and one with z < 0 to the right, as the postures show him: right-handed, as the book's fencer
+// is, facing left with his chest toward the camera. The tolerances are those of a model with a single height
 // for every fencer, a few centimetres, not of the book's own words.
 import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
