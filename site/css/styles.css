@@ -283,7 +283,8 @@ textarea:focus-visible {
   gap: 10px;
 }
 
-.panel--adjust {
+.panel--adjust,
+.panel--posture {
   gap: 16px;
 }
 
@@ -842,6 +843,22 @@ textarea:focus-visible {
   scrollbar-color: var(--line) var(--field);
 }
 
+/* The numbers of the postures the person has made versions of, to copy and send on. */
+.numbers__summary {
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-soft);
+}
+
+.numbers .panel__intro,
+.numbers__text {
+  margin-top: 10px;
+}
+
+.numbers__text {
+  height: 150px;
+}
+
 /* ---------- Adjust this moment ---------- */
 
 .adjust__head {
@@ -1054,6 +1071,28 @@ textarea:focus-visible {
   white-space: nowrap;
 }
 
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* A posture the person has made a version of says so, in the amber of what has been changed. */
+.tag--mine {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.base-button__mine {
+  padding: 1px 7px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
 .detail__text {
   max-width: 70ch;
   font-size: 16px;
@@ -1264,6 +1303,23 @@ textarea:focus-visible {
   /* The side column is under the stage, so the book's photographs come before the list. */
   .panel--figures {
     order: -1;
+  }
+}
+
+/* While the numbers of a posture are being changed, the stage stays in view beside the sliders as the page scrolls, where the
+   two stand side by side and the window is tall enough to show most of it. What does not fit scrolls inside it. */
+@media (min-width: 1051px) and (min-height: 700px) {
+  .workspace.is-editing-posture .workspace__main {
+    align-self: stretch;
+  }
+
+  .workspace.is-editing-posture .panel--stage {
+    position: sticky;
+    top: 12px;
+    z-index: 1;
+    max-height: calc(100vh - 24px);
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 }
 

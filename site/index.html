@@ -86,6 +86,8 @@
               <canvas id="stage-3d" class="stage__3d hidden" aria-hidden="true"></canvas>
             </div>
             <p id="stage-note" class="stage__note hidden" role="status"></p>
+            <!-- Said in the library and the Creator when some posture is drawn as the person made it, not as built in. -->
+            <p id="versions-note" class="stage__note hidden"></p>
 
             <div class="transport">
               <div class="transport__buttons">
@@ -165,11 +167,17 @@
           <section class="panel panel--detail hidden" data-modes="base" aria-labelledby="base-name">
             <div class="panel__head">
               <h3 id="base-name" class="panel__title"></h3>
-              <span id="base-group" class="tag"></span>
+              <span class="tags">
+                <span id="base-group" class="tag"></span>
+                <span id="base-version" class="tag tag--mine hidden">Your version</span>
+              </span>
             </div>
             <p id="base-text" class="detail__text"></p>
             <dl id="base-points" class="facts"></dl>
             <p class="panel__intro">In a scene's data this posture is the pose <code id="base-key" class="mono"></code>.</p>
+            <div class="actions">
+              <button id="posture-edit" class="outline-button" type="button" aria-controls="posture-panel" aria-expanded="false">Edit this posture</button>
+            </div>
           </section>
 
           <!-- Creator: the scene as a whole, then its data. -->
@@ -230,6 +238,30 @@
             <button class="switch-button" type="button" data-mode="library" aria-pressed="true">Practice library</button>
             <button class="switch-button" type="button" data-mode="base" aria-pressed="false">Base postures</button>
           </div>
+
+          <!-- Base postures: the numbers of the posture on stage, to change for this device. Open only while a posture is being edited. -->
+          <section id="posture-panel" class="panel panel--posture hidden" data-modes="base" aria-labelledby="posture-title">
+            <div class="adjust__head">
+              <div class="adjust__heading">
+                <h3 id="posture-title" class="panel__title">Edit this posture</h3>
+                <span id="posture-target" class="adjust__target"></span>
+              </div>
+              <button id="posture-done" class="outline-button" type="button">Done</button>
+            </div>
+            <p class="panel__intro">Move a slider and the posture changes here, in the Creator and in every scene that uses it. Your version is kept on this device only, and the built-in one stays as it is in the code. A slider you have moved has a Reset of its own.</p>
+            <p id="posture-guard" class="panel__intro hidden">The guard is where the other postures take whatever they do not set themselves, so changing it changes them too.</p>
+            <div id="posture-joints" class="joints"></div>
+            <div class="actions">
+              <button id="posture-reset" class="outline-button" type="button">Reset to built-in</button>
+              <button id="posture-copy" class="outline-button" type="button">Copy numbers</button>
+            </div>
+            <p id="posture-status" class="phrase-status" role="status"></p>
+            <details id="posture-details" class="numbers">
+              <summary class="numbers__summary">The numbers of your versions</summary>
+              <p class="panel__intro">Send these on to have your versions made part of the page for everyone. Each line is a posture as it would read with your changes.</p>
+              <textarea id="posture-numbers" class="phrase-text numbers__text" readonly wrap="off" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="The numbers of your versions" placeholder="No versions yet: every posture is as built in."></textarea>
+            </details>
+          </section>
 
           <section class="panel panel--library" data-modes="library" aria-labelledby="library-title">
             <h3 id="library-title" class="panel__title">Practice library</h3>

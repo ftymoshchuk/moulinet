@@ -65,6 +65,28 @@ of it, as printed, with its figure number and page: twelve figures in all, for
 every posture but the stance at ease, which the book does not picture. No scenes
 are made from the book yet, so this section has no practice library.
 
+**Changing a posture.** Under a posture's description, **Edit this posture** opens
+its numbers as sliders: the ones the Creator has for a moment, all but where the
+fencer stands. Move one and the posture changes on the stage, and in the Creator
+and in every scene that uses it, since a scene names its postures. What you
+change is your own version of the posture. It is kept in your browser's storage,
+as the joints you moved and nothing else, so it is on this device only: the
+built-in posture stays as it is in the code, and nobody else sees yours. A
+posture with a version says so, beside its name and on its button, and the
+library and the Creator say that postures are being drawn as you made them. A
+slider you have moved shows its value in amber and has a **Reset** that puts back
+just that joint; a joint moved back to where the posture has it is no longer part
+of the version; and **Reset to built-in** puts back all of the posture's, after
+asking. A posture takes whatever it does not set itself from the guard, so
+changing the guard changes them too: the advance's sword arm, for one. **Copy
+numbers** copies the numbers of every posture you have made a version of, as
+lines for `POSES` in `site/js/library.js` with what each changed, to send on so
+that they can be made part of the page for everyone; where the browser will not
+copy, they are left selected in a box to copy by hand. The words that describe a
+posture are not changed with its numbers. On a screen wide and tall enough to
+show them side by side, the stage stays in view beside the sliders as the page
+scrolls.
+
 **Creator.** Make a scene of your own. Start from a blank one with **New
 scene**, or from a scene in the library: a built-in one opens as a copy, with
 **Edit a copy in the Creator**, and one of your own opens as it is, with **Edit
@@ -338,7 +360,9 @@ the side the chest turns to, as in **Which hand** above.
 | `rArm`, `rFore` | Rear arm, hand on the hip |
 
 The poses. Each fills in what it leaves out from the guard. The **Base
-postures** describe each one in words.
+postures** describe each one in words, and let you change its numbers for this
+device: a scene names its poses, so a posture you have changed is drawn as you
+changed it wherever a scene uses it, and your version is not part of the scene.
 
 | Name | Pose |
 |---|---|
@@ -384,7 +408,10 @@ the timeline and its maths, with how the body moves between steps (through a ste
 it passes, the feet that stay and the feet that step, and a wrist that never bends
 past what parry 5 asks), the edits the Creator makes to a scene, the saved
 scenes (what they keep and what they leave alone) and the check that a
-reference link is a web address, the base postures of each section, the skeleton and the camera
+reference link is a web address, the postures people make their own versions of
+(what a version changes and what it leaves, which joints and values it can hold,
+the lines of numbers it gives to send on, and how it is kept on the device and
+what is left alone there), the base postures of each section, the skeleton and the camera
 (the knees and the arms, the hand positions, where the stage looks, with every
 fencer in it at every camera angle all the way round, and every phrase and posture
 at every moment from eight camera angles, checked for broken path data), the
@@ -398,12 +425,13 @@ has them: the light cut on the inside of the defender's blade just above his gua
 and each riposte edge first on the attacker's glove, on top, on the outside or
 underneath, with no blade going into an arm at any moment), and the published files (only relative links to
 files that exist, no outside requests, every element the scripts need, and the
-licences of what is bundled). Twenty more run in a real browser: headless
+licences of what is bundled). Twenty-seven more run in a real browser: headless
 Chrome or Chromium loads the page, then a driver page works every control of
 every tab and mode, with hostile input among it, and checks the result, down to
 the page opening paused, the stage turned in its mirror, the camera on the side
 of the piste it should be and turning all the way round, two browser tabs saving
-the same scene and the 3D figures taking the stage; and once more with
+the same scene, a posture's numbers changed, kept, copied and put back, and the
+3D figures taking the stage; and once more with
 WebGL turned off, where the stick figures stand in and the note says why. They
 need Chrome or Chromium on your `PATH`, or `CHROME_BIN` pointing at one, and are
 skipped without it.
@@ -441,6 +469,7 @@ Project layout:
 - `site/js/library.js`: the poses, the sections of the page, the built-in scenes and the sliders
 - `site/js/bases.js`: the base postures, in words, and which section each belongs to
 - `site/js/scenes.js`: reference links, and the scenes saved on this device
+- `site/js/postures.js`: the postures people make their own versions of, laid over the library's numbers and kept on this device
 - `site/js/stage3d.js`: the figures drawn in ink on a canvas over the stage
 - `site/js/rig.js`: the bodies on their bones, posed from a pose's skeleton, and the sabre
 - `site/js/bodies.js`: reads the bodies from `site/models/fencers.bin`

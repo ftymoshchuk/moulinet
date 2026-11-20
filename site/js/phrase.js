@@ -1,6 +1,7 @@
 // Phrases as data: turning one into a timeline, finding the pose at any
 // moment, the text form the page edits, and the edits the controls make.
 import { POSES } from "./library.js";
+import { numbersOf } from "./postures.js";
 
 // Where each fencer stands until a phrase places them.
 const START = { A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 310 } };
@@ -57,15 +58,17 @@ function duration(value) {
 
 /**
  * The whole pose a fencer spec describes: its library pose laid over the
- * guard, then its adjustments, then where it stands. A pose name the library
- * lacks is drawn as the guard and added to `unknown`.
+ * guard, then its adjustments, then where it stands. The person's own versions
+ * of the poses, if they have made any (see postures.js), are laid over the
+ * library's numbers. A pose name the library lacks is drawn as the guard and
+ * added to `unknown`.
  */
 export function resolvePose(spec, unknown = []) {
   const own = isPlainObject(spec) ? spec : {};
   const name = own.pose;
   const known = typeof name === "string" && Object.hasOwn(POSES, name);
   if (name && !known && !unknown.includes(String(name))) unknown.push(String(name));
-  const pose = { ...POSES.guard, ...(known ? POSES[name] : {}) };
+  const pose = numbersOf(known ? name : "guard");
   if (isPlainObject(own.adj)) {
     for (const [key, value] of Object.entries(own.adj)) {
       const number = Number(value);
