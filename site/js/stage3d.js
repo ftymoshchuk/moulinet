@@ -33,7 +33,7 @@ import {
   WebGLRenderTarget,
 } from "../vendor/three.module.min.js";
 import { loadBodies } from "./bodies.js";
-import { PIVOT, lightFor } from "./figure.js";
+import { PIVOT, lightsFor } from "./figure.js";
 import { createFigure } from "./rig.js";
 
 const RAD = Math.PI / 180;
@@ -53,6 +53,8 @@ const SABRE = { blade: "#bdb6a8", guard: "#eceae4", grip: "#3a352f", pommel: "#e
 const EDGE = { A: "#9a3a27", B: "#2f4f7f" };
 // The camera stands this far from the pivot of the piste (cm), which only has to be beyond everything it sees.
 const DISTANCE = 2000;
+// How strong the light is, all of it, shared between the two lights on either side of the piste.
+const SUN = 2.2;
 // How many pixels the figures are drawn with for each pixel of the page at most, and at least: drawn finer than the
 // screen, the lines come out smooth.
 const DETAIL = [1.5, 2];
@@ -188,12 +190,13 @@ export async function createStage3d(canvas) {
     stage.lost = true;
   });
 
-  // The light, from high in front and to the left of what is seen, whichever side of the piste the camera is on (see
-  // `lightFor`, which puts it there for each frame), and the bands of tone the white figures take under it.
+  // The light, from high in front and to the left of what is seen, whichever side of the piste the camera is on: a light on
+  // each side of the piste, which share the light between them as the camera goes round (see `lightsFor`, which sets them
+  // for each frame), and the bands of tone the white figures take under it.
   const scene = new Scene();
   scene.add(new AmbientLight(0xffffff, 1.2));
-  const sun = new DirectionalLight(0xffffff, 2.2);
-  scene.add(sun);
+  const suns = [new DirectionalLight(0xffffff, 0), new DirectionalLight(0xffffff, 0)];
+  scene.add(...suns);
   const tones = new DataTexture(new Uint8Array([105, 170, 255]), 3, 1, RedFormat);
   tones.minFilter = tones.magFilter = NearestFilter;
   tones.needsUpdate = true;
@@ -297,7 +300,10 @@ export async function createStage3d(canvas) {
     camera.bottom = -(fy + fh);
     camera.position.set(PIVOT - Math.sin(angle * RAD) * DISTANCE, 0, Math.cos(angle * RAD) * DISTANCE);
     camera.lookAt(PIVOT, 0, 0);
-    sun.position.set(...lightFor(angle));
+    lightsFor(angle).forEach(({ at, weight }, i) => {
+      suns[i].position.set(...at);
+      suns[i].intensity = SUN * weight;
+    });
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld();
     const { uniforms } = composite;

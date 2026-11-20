@@ -77,12 +77,15 @@ the camera angle counts, since a saved scene keeps it. If you save a scene that
 another tab changed or deleted after you opened it, yours is kept as a new scene
 beside theirs, and the Creator says so, so neither is lost.
 
-All three share the stage, and its **camera**, which turns the view up to 60°
-either way to see a blade come toward you or swing away. The library looks as
-close as keeps everyone and their whole blades in view; the base postures, as
-close as keeps the fencer and most of the blade in view, so the point of the
-blade held up in Blade up runs off the top. Turning the camera never zooms, and
-the Creator keeps one view while you reshape a scene.
+All three share the stage, and its **camera**, which turns the view all the way
+round the piste, up to a half turn either way: to see a blade come toward you or
+swing away, end on, or from the other side of the piste, where the fencers change
+places, so how you view them is up to you. The library looks as close as keeps
+everyone and their whole blades in view; the base postures, as close as keeps the
+fencer and most of the blade in view, so the point of the blade held up in Blade
+up runs off the top. Turning the camera never zooms, and the view slides to keep
+them in the frame as it goes round. The Creator keeps one view while you reshape
+a scene.
 
 **Hand close-up**, in every mode, looks closely at the sword hand instead, and
 follows it as it moves: A's, or in the Creator the fencer you are reshaping. It
@@ -208,11 +211,14 @@ back on the left, facing right, with his back and his sword arm toward you, and 
 faces left with his chest toward you and his sword arm on the far side. The base
 postures have one fencer and are seen from the first side, so that he faces left
 with his chest toward you and his sword arm on the far side, as the book's
-photographs show him. The light is on the camera's side, to the upper left of what
-is seen. The poses, the scenes and the camera angle mean what they always did: the
-piste still runs from A's end on the left to B's on the right. Where this page says
-a pose turns toward the camera or toward you, it means toward the side the chest
-turns to, which is toward you in the postures and away from you in the scenes.
+photographs show him. That is where the camera starts, and you can turn it all the
+way round to the other side: for a scene, round to where A is on the right facing
+left with his chest toward you and B has his back to you. The light is on the
+camera's side, to the upper left of what is seen. The poses, the scenes and the
+camera angle mean what they always did: the piste still runs from A's end on the
+left to B's on the right. Where this page says a pose turns toward the camera or
+toward you, it means toward the side the chest turns to, which is toward you in the
+postures and away from you in the scenes, until you turn the camera round.
 
 **The ink.** The figures are drawn with [three.js](https://threejs.org), r170,
 kept in `site/vendor/`, three times over, off the page: in the flat colours of
@@ -265,9 +271,10 @@ data** shows the one on stage, a step per line:
   `http` and `https` addresses become links; anything else is shown as not a
   link.
 - `note`: whatever else is worth saying, up to 1,000 characters.
-- `camera`: the view in degrees from side on, -60 to 60. A pasted phrase with
-  a new angle turns the view to it, and saving a scene keeps the angle it was
-  seen from.
+- `camera`: the view in degrees from side on, -180 to 180: 0 is the side the
+  page starts on, B's side for a scene, and 180 the other side of the piste. A
+  pasted phrase with a new angle turns the view to it, and saving a scene keeps
+  the angle it was seen from.
 - `solo`: `true` for one fencer. B leaves the stage, and every edit goes to A.
 - `steps`: the keyframes, in order, at least one.
 
@@ -374,9 +381,10 @@ it passes, the feet that stay and the feet that step, and a wrist that never ben
 past what parry 5 asks), the edits the Creator makes to a scene, the saved
 scenes (what they keep and what they leave alone) and the check that a
 reference link is a web address, the base postures of each section, the skeleton and the camera
-(the knees and the arms, the hand positions, where the stage looks, and every
-phrase and posture at every moment from eight camera angles, checked for broken
-path data), the postures of the 1906 book, each checked against what the book
+(the knees and the arms, the hand positions, where the stage looks, with every
+fencer in it at every camera angle all the way round, and every phrase and posture
+at every moment from eight camera angles, checked for broken path data), the
+postures of the 1906 book, each checked against what the book
 says of it, the figures (the bodies read back as they were baked, and posed in
 every scene with the ankles, the rear hand and the blade's point where the
 skeleton has them, from any camera, the sabre in the left hand of both fencers,
@@ -386,12 +394,12 @@ has them: the light cut on the inside of the defender's blade just above his gua
 and each riposte edge first on the attacker's glove, on top, on the outside or
 underneath, with no blade going into an arm at any moment), and the published files (only relative links to
 files that exist, no outside requests, every element the scripts need, and the
-licences of what is bundled). Nineteen more run in a real browser: headless
+licences of what is bundled). Twenty more run in a real browser: headless
 Chrome or Chromium loads the page, then a driver page works every control of
 every tab and mode, with hostile input among it, and checks the result, down to
-the page opening paused, the stage turned in its mirror and the camera on the side
-of the piste it should be, two browser tabs saving the same scene and the 3D
-figures taking the stage; and once more with
+the page opening paused, the stage turned in its mirror, the camera on the side
+of the piste it should be and turning all the way round, two browser tabs saving
+the same scene and the 3D figures taking the stage; and once more with
 WebGL turned off, where the stick figures stand in and the note says why. They
 need Chrome or Chromium on your `PATH`, or `CHROME_BIN` pointing at one, and are
 skipped without it.

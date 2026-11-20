@@ -7,7 +7,7 @@
 // The page has three tabs. Live knowledge and Book knowledge are sections, each
 // with a practice library and base postures of its own; the Creator is the third.
 import { BASE_BLADE, BASE_SECTIONS, FIGURE_DIR, FIGURE_NOTE, basePhrase, basesOf } from "./bases.js";
-import { DEFAULT_FRAME, bladePaths, floorPath, frameFrom, frameOf, groundPath, handFrame, stickFigure } from "./figure.js";
+import { CAMERA_LIMIT, DEFAULT_FRAME, bladePaths, floorPath, frameFrom, frameOf, groundPath, handFrame, stickFigure } from "./figure.js";
 import { JOINTS, POSE_NAMES, POSES, PRESETS, SECTIONS } from "./library.js";
 import {
   TEXT_KEYS,
@@ -41,8 +41,6 @@ const GHOST_GAP_MS = 45;
 const NO_GHOST = { body: "", blade: "" };
 // The most one frame may advance, so a tab coming back does not leap ahead.
 const MAX_FRAME_MS = 64;
-// The camera slider's range, which a pasted phrase is held to as well.
-const CAMERA_LIMIT = 60;
 const MODE_NAMES = { library: "Practice library", base: "Base postures", creator: "Creator" };
 const SECTION_NAMES = Object.fromEntries(SECTIONS.map(({ id, name }) => [id, name]));
 
@@ -246,6 +244,7 @@ function editingFencer() {
   return state.fencer === "B" && !timeline.solo ? "B" : "A";
 }
 
+// A camera angle held to the camera slider's range, which a pasted phrase is held to as well.
 function clampCamera(value) {
   return typeof value === "number" && Number.isFinite(value) ? Math.max(-CAMERA_LIMIT, Math.min(CAMERA_LIMIT, value)) : 0;
 }
@@ -1004,27 +1003,28 @@ function polyline(points, count) {
 //
 // A close-up looks at a sword hand instead, and follows it as it moves: the hand
 // of the fencer being reshaped in the Creator, and A's elsewhere.
+//
+// The box is worked out once for the camera at 0, and goes round with the camera.
 function frameFor(now) {
   if (state.closeUp) {
     const who = state.mode === "creator" ? editingFencer() : "A";
     return handFrame(now[who], who === "A" ? 1 : -1, viewCamera());
   }
-  const side = sideOf();
-  if (state.mode === "creator") return frameFrom(DEFAULT_FRAME, side);
+  if (state.mode === "creator") return frameFrom(DEFAULT_FRAME, viewCamera());
   const blade = state.mode === "base" ? BASE_BLADE : undefined;
-  if (framed.timeline !== timeline || framed.blade !== blade || framed.side !== side) framed = { timeline, blade, side, frame: frameOf(timeline, blade, side) };
-  return framed.frame;
+  if (framed.timeline !== timeline || framed.blade !== blade) framed = { timeline, blade, frame: frameOf(timeline, blade) };
+  return frameFrom(framed.frame, viewCamera());
 }
 
-// Which side of the piste the camera stands on, as how far round it is before the
-// person turns it. Everything is worked out in the frame the skeleton has, where
-// the camera at 0 sees A's chest and B's back, and the fencers are left-handed.
-// The stage is shown in a mirror (`.stage__frame` in styles.css), which makes them
-// right-handed and, seen from 0, puts A on the right. The scenes and the Creator are
-// seen from the other side, 180: the camera faces B, A is back on the left with his
-// back and his sword arm toward you, and B's chest is toward you. The postures have
-// the one fencer, and are seen from 0, so that he faces left with his chest toward
-// you, as the book's fencer does in its photographs.
+// Which side of the piste the camera starts on, as how far round it is before the
+// person turns it, which they can do all the way round. Everything is worked out in
+// the frame the skeleton has, where the camera at 0 sees A's chest and B's back, and
+// the fencers are left-handed. The stage is shown in a mirror (`.stage__frame` in
+// styles.css), which makes them right-handed and, seen from 0, puts A on the right.
+// The scenes and the Creator start on the other side, 180: the camera faces B, A is
+// back on the left with his back and his sword arm toward you, and B's chest is
+// toward you. The postures have the one fencer, and start from 0, so that he faces
+// left with his chest toward you, as the book's fencer does in its photographs.
 const SCENE_SIDE = 180;
 const POSTURE_SIDE = 0;
 function sideOf() {

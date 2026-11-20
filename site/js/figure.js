@@ -17,6 +17,9 @@ import { poseAt } from "./phrase.js";
 
 // The camera turns around this point on the piste (cm).
 export const PIVOT = 115;
+// How far the person can turn the camera either way from the side the page looks from (degrees): all the way round, so
+// that the ends of the slider are the same view, from the other side of the piste.
+export const CAMERA_LIMIT = 180;
 
 const RAD = Math.PI / 180;
 // Thigh and shin, hip to ankle (cm).
@@ -268,25 +271,28 @@ export const DEFAULT_FRAME = [-80, -236, 420, 254];
 const FRAME_SHAPE = DEFAULT_FRAME[2] / DEFAULT_FRAME[3];
 
 /**
- * A frame worked out for the camera at 0, as it is for the camera round on the other
- * side of the piste, at 180: the same box, across the page about the pivot. For any
- * other camera, which is on the side it started on, it is as it was.
+ * A frame worked out for the camera at 0, as it is for the camera `camera` degrees
+ * round the piste: the same box, its middle where the middle of what it holds goes
+ * as the camera swings round the pivot. A fencer's distance from the pivot along the
+ * piste shrinks with the cosine of the angle, so the box slides toward the pivot
+ * going round to end on, and across it to the other side, where it is the box across
+ * the page about the pivot. Its size never changes, so turning the camera never zooms.
  */
 export function frameFrom([x, y, w, h], camera = 0) {
-  return Math.cos(camera * RAD) < 0 ? [Math.round((2 * PIVOT - x - w) * 10) / 10, y, w, h] : [x, y, w, h];
+  const middle = PIVOT + (x + w / 2 - PIVOT) * Math.cos(camera * RAD);
+  return [Math.round((middle - w / 2) * 10) / 10, y, w, h];
 }
 
 /**
  * Where the stage should look so that the fencers fill it: the box round everyone
  * at every moment of the phrase, seen side on, with room round it, in the shape of
  * the default view and no closer than a third of the way in. The camera does not
- * change it, so turning the camera never zooms: `camera` says which side of the
- * piste it stands on, 0 or 180, and the box is across the page for the second. The
- * box holds the blade as far along as `blade` cm from the hand, all of it unless
- * told less: a blade held up or reaching far then no longer sets the view for the
- * body, and its point may run off the edge.
+ * change its size, so turning the camera never zooms; see `frameFrom` for where it
+ * is as the camera goes round. The box holds the blade as far along as `blade` cm
+ * from the hand, all of it unless told less: a blade held up or reaching far then no
+ * longer sets the view for the body, and its point may run off the edge.
  */
-export function frameOf(timeline, blade = BLADE, camera = 0) {
+export function frameOf(timeline, blade = BLADE) {
   let minX = Infinity;
   let maxX = -Infinity;
   let minY = Infinity;
@@ -305,7 +311,7 @@ export function frameOf(timeline, blade = BLADE, camera = 0) {
     for (const [who, dir] of timeline.solo ? [["A", 1]] : [["A", 1], ["B", -1]]) {
       const p = at[who];
       const J = skeleton(p);
-      const W = projector(p, dir, camera);
+      const W = projector(p, dir, 0);
       const feet = [-8, 24].flatMap((reach) => [[J.ankB[0] + reach, 0], [J.ankF[0] + reach, 0]]);
       const body = [[J.hd[0], J.hd[1] + 14], J.hn, J.at(blade), J.kF, J.kB, J.re, J.rs, [J.hipB[0] - 14, J.hip[1]], [J.hipF[0] + 14, J.hip[1]]];
       for (const q of [...feet, ...body]) take(W(q));
@@ -353,15 +359,22 @@ export function floorPath(camera) {
 }
 
 /**
- * Where the light is for the camera `camera` degrees round the piste, as [x, y, z] in
- * centimetres in the frame the figures are drawn in (x along the piste, y up, z toward
- * the camera at 0): high, on the camera's side of the piste, and to the left of what is
- * seen, which is the right of the figures, the stage being shown in a mirror. The side
- * of the piste the camera is on is the side the light is on.
+ * The light for the camera `camera` degrees round the piste: two, one on each side of
+ * it, as `at` places in centimetres in the frame the figures are drawn in (x along the
+ * piste, y up, z toward the camera at 0) and how much of the light each gives, their
+ * `weight`s making one. Each is high, in front of the camera when it is on that side,
+ * and to the left of what is seen, which is the right of the figures, the stage being
+ * shown in a mirror. The camera's own side gives all the light while the camera is
+ * within 60° of side on, as the one light did when the camera went no further, and the
+ * other side takes over as it goes round, so the light never jumps as it passes end on.
  */
-export function lightFor(camera) {
-  const side = Math.cos(camera * RAD) < 0 ? -1 : 1;
-  return [150 * side, 300, 260 * side];
+export function lightsFor(camera) {
+  const t = Math.min(1, Math.max(0, Math.cos(camera * RAD) + 0.5));
+  const near = t * t * (3 - 2 * t);
+  return [
+    { at: [150, 300, 260], weight: near },
+    { at: [-150, 300, -260], weight: 1 - near },
+  ];
 }
 
 /**

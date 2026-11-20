@@ -167,6 +167,28 @@ test("in a browser, the scenes and the Creator are seen from the other side of t
   assert.deepEqual(seen.floors, { library: floorPath(180), creator: floorPath(180), base: floorPath(25) });
 });
 
+test("in a browser, the camera can be turned all the way round, to the other side of the piste, and the stage goes round with it", { skip, timeout: 120_000 }, async () => {
+  const { seen } = await drive();
+  // The slider goes a half turn either way, and its ends are the same view. A scene starts on B's side, at 180, so a half
+  // turn takes it round to the original side, at 360: A on the right with his chest toward you, as before, with the floor
+  // and the box the stage looks at as they are for the camera at 0, and a quarter turn takes it end on, with the box
+  // centred on the pivot.
+  assert.deepEqual(seen.round.range, ["-180", "180"]);
+  const box = frameOf(buildTimeline(PRESETS[0].phrase));
+  const at = (angle, total) => ({ shown: `${angle}°`, floor: floorPath(total), view: frameFrom(box, total) });
+  const looked = (got, want, what) => {
+    assert.equal(got.shown, want.shown, `${what}: the slider`);
+    assert.equal(got.floor, want.floor, `${what}: the floor`);
+    const view = got.view.split(" ").map(Number);
+    view.forEach((value, i) => assert.ok(Math.abs(value - want.view[i]) <= 0.1 + 1e-9, `${what}: the stage looks at ${got.view}, not ${want.view.join(" ")}`));
+  };
+  looked(seen.round[90], at(90, 270), "a quarter turn from B's side");
+  looked(seen.round[180], at(180, 360), "a half turn: the original side");
+  looked(seen.round[-180], at(-180, 0), "a half turn the other way: the same view");
+  assert.equal(seen.round[180].floor, seen.round[-180].floor, "the ends of the slider are one view");
+  assert.equal(seen.round[180].view, seen.round[-180].view);
+});
+
 test("in a browser, the practice library holds the drills from the class, shows each one paused, and says what it is", { skip, timeout: 120_000 }, async () => {
   const { seen } = await drive();
   // The drills from the class say what kind of learning they come from, on the card and beside the scene. Choosing one
@@ -218,11 +240,11 @@ test("in a browser, a scene is looked at with its whole blades in view, and the 
     assert.equal(got.length, 4, `${what}: ${actual}`);
     got.forEach((value, i) => assert.ok(Math.abs(value - expected[i]) <= 0.1 + 1e-9, `${what}: the stage looks at ${actual}, not ${expected.join(" ")}`));
   };
-  // The scenes are seen from the other side of the piste, facing B, so the box they are looked at in is across the page; the
-  // postures are seen from the side the skeleton's chest turns to, as they always were.
+  // The box is worked out for the camera at 0 and goes round with it. The scenes start on the other side of the piste, facing
+  // B, at 180, so their box is across the page; the postures start at 0 and are turned a little, as they always were.
   assert.equal(seen.sceneViews.length, PRESETS.length);
-  PRESETS.forEach(({ phrase }, i) => lookedAt(seen.sceneViews[i], frameOf(buildTimeline(phrase), undefined, 180), phrase.name));
-  lookedAt(seen.baseView, frameOf(buildTimeline(basePhrase("live")), BASE_BLADE), "the postures");
+  PRESETS.forEach(({ phrase }, i) => lookedAt(seen.sceneViews[i], frameFrom(frameOf(buildTimeline(phrase)), 180), phrase.name));
+  lookedAt(seen.baseView, frameFrom(frameOf(buildTimeline(basePhrase("live")), BASE_BLADE), BASE_CAMERA), "the postures");
   lookedAt(seen.creatorView, frameFrom(DEFAULT_FRAME, 180), "the Creator");
 
   // The close-up looks at A's sword hand from outside the arm, round on the other side of the piste, wherever the hand
@@ -236,7 +258,7 @@ test("in a browser, a scene is looked at with its whole blades in view, and the 
   // A scene opens with the camera it was seen from, side on for this one.
   lookedAt(seen.closeUp.library.view, handFrame(resolvePose(PRESETS[0].phrase.steps[0].A), 1, PRESETS[0].phrase.camera + 180), "the hand in a scene");
   assert.equal(seen.closeUp.library.pressed, "true", "it stays on from mode to mode");
-  lookedAt(seen.closeUp.off.view, frameOf(buildTimeline(PRESETS[0].phrase), undefined, 180), "the scene again");
+  lookedAt(seen.closeUp.off.view, frameFrom(frameOf(buildTimeline(PRESETS[0].phrase)), 180), "the scene again");
   assert.equal(seen.closeUp.off.pressed, "false");
 });
 
@@ -379,7 +401,7 @@ test("in a browser, the Creator edits a copy of a scene the way the page always 
     status: "Applied. Unknown pose flunge shown as guard",
     isWarning: true,
     count: "02 / 02",
-    camera: "60",
+    camera: "180",
     labels: ["01Feint", "02<b>Cut</b>"],
     markup: 0,
   });

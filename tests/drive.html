@@ -259,6 +259,15 @@
         input($("#camera"), -40);
         seen.camera = { shown: text("#camera-value"), floorTurned: $("#floor").getAttribute("d") !== floor };
         checkPaths();
+        // All the way round: the slider goes as far as a half turn either way, which is the other side of the piste. The
+        // floor is drawn for the camera's angle and the stage looks where it does for it, so each says where the camera is.
+        seen.round = { range: [$("#camera").min, $("#camera").max] };
+        for (const angle of [90, 180, -180]) {
+          input($("#camera"), angle);
+          checkPaths();
+          seen.round[angle] = { shown: text("#camera-value"), floor: $("#floor").getAttribute("d"), view: $("#stage").getAttribute("viewBox") };
+        }
+        input($("#camera"), -40);
         button("¼×").click();
         seen.speed = $$("[data-speed]").map((b) => b.getAttribute("aria-pressed"));
         button("Play").click();
@@ -464,7 +473,7 @@
           kept: phraseText.value,
           count: text("#step-count"),
         };
-        input(phraseText, '{"camera": 90, "steps": [{"label": "Feint", "hold": 200, "A": {"pose": "flunge", "x": 20}}, {"label": "<b>Cut</b>", "ms": 300, "A": {"pose": "riposte"}}]}');
+        input(phraseText, '{"camera": 400, "steps": [{"label": "Feint", "hold": 200, "A": {"pose": "flunge", "x": 20}}, {"label": "<b>Cut</b>", "ms": 300, "A": {"pose": "riposte"}}]}');
         seen.unknown = {
           status: text("#phrase-status"),
           isWarning: $("#phrase-status").classList.contains("phrase-status--warn"),
