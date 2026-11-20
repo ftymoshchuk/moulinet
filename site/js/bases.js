@@ -17,7 +17,7 @@ export const BASE_SECTIONS = {
   },
   book: {
     groups: ["Leszák, 1906"],
-    intro: "One fencer, one posture at a time, from the base chapters of Leszák Károly's Kardvívás (1906). Each says where in the book it is, and what the book leaves open. Pick one here, or use the arrows under the stage.",
+    intro: "From the base chapters of Leszák Károly's Kardvívás (1906). Each posture says where in the book it is, and what the book leaves open. Pick one here, or use the arrows under the stage.",
     note: "No scenes are made from the book yet: its drills are still to come.",
   },
 };
@@ -38,8 +38,20 @@ export const BASE_CAMERA = 25;
 // blade whole. The library keeps whole blades in view.
 export const BASE_BLADE = 60;
 
+// The page shows the book's photographs of its postures beside them. They are copies
+// of the figures in sources/kardvivas-1906/figures, kept under site/ so that the site
+// can be published without the rest of sources/, and the tests hold each to be the
+// same file as the original and to say what the manifest says of it. A figure is its
+// number in the book, its file, its printed caption (in English), the book's page and
+// the file's width and height, so that the page keeps room for it before it loads.
+export const FIGURE_DIR = "img/kardvivas-1906/";
+const figure = (n, file, caption, page, width, height) => ({ n, file, caption, page, width, height });
+// Said under the photographs: they are as printed, and the fencer in them is
+// right-handed, where the one on the stage is drawn the other way round.
+export const FIGURE_NOTE = "As printed in the book: its fencer is right-handed, so the fencer on the stage is the mirror image.";
+
 // `text` says what the posture is and what it is for. `points` are the parts
-// worth looking at, as [what, how].
+// worth looking at, as [what, how]. A posture the book pictures has its `figures`.
 export const BASES = [
   {
     pose: "guard",
@@ -215,6 +227,7 @@ export const BASES = [
       ["Left hand", "On the left hip."],
       ["Book", "Leszák Károly, Kardvívás (1906), §5, Fig. 2."],
     ],
+    figures: [figure(2, "fig-02-basic-stance.jpg", "Basic stance.", 3, 592, 957)],
   },
   {
     pose: "atEase",
@@ -240,6 +253,10 @@ export const BASES = [
       ["Covers", "The outer upper openings, once a parry swing has brought the sabre here."],
       ["Book", "Leszák Károly, Kardvívás (1906), §11 I, Figs. 7 and 17. Close to the Guard, the first posture in the list."],
     ],
+    figures: [
+      figure(7, "fig-07-tierce-position.jpg", "Tierce position.", 8, 597, 956),
+      figure(17, "fig-17-tierce-in-fencing-stance-side-view.jpg", "Tierce position, from the side.", 14, 1273, 826),
+    ],
   },
   {
     pose: "seconde",
@@ -252,6 +269,7 @@ export const BASES = [
       ["Covers", "The outer lower openings."],
       ["Book", "Leszák Károly, Kardvívás (1906), §11 II, Fig. 8."],
     ],
+    figures: [figure(8, "fig-08-seconde-position.jpg", "Seconde position.", 8, 589, 939)],
   },
   {
     pose: "prime",
@@ -264,6 +282,7 @@ export const BASES = [
       ["Covers", "The inner lower openings."],
       ["Book", "Leszák Károly, Kardvívás (1906), §11 III, Fig. 9."],
     ],
+    figures: [figure(9, "fig-09-prime-position.jpg", "Prime position.", 9, 609, 942)],
   },
   {
     pose: "quinte",
@@ -276,6 +295,7 @@ export const BASES = [
       ["Covers", "The head."],
       ["Book", "Leszák Károly, Kardvívás (1906), §11 IV, Fig. 10. The printed words about the inner face are doubtful; the translation has a note."],
     ],
+    figures: [figure(10, "fig-10-quinte-position.jpg", "Quinte position.", 9, 583, 948)],
   },
   {
     pose: "quarte",
@@ -288,6 +308,7 @@ export const BASES = [
       ["Covers", "The inner upper openings."],
       ["Book", "Leszák Károly, Kardvívás (1906), §11 V, Fig. 11."],
     ],
+    figures: [figure(11, "fig-11-quarte-position.jpg", "Quarte position.", 10, 591, 953)],
   },
   {
     pose: "lowTierce",
@@ -300,6 +321,7 @@ export const BASES = [
       ["Covers", "The outer lower openings."],
       ["Book", "Leszák Károly, Kardvívás (1906), §11 VI, Fig. 12. An auxiliary parry."],
     ],
+    figures: [figure(12, "fig-12-low-tierce-position.jpg", "Low tierce position.", 10, 614, 966)],
   },
   {
     pose: "lowQuarte1",
@@ -312,6 +334,7 @@ export const BASES = [
       ["Covers", "The belly."],
       ["Book", "Leszák Károly, Kardvívás (1906), §11 VII.1, Fig. 13. An auxiliary parry."],
     ],
+    figures: [figure(13, "fig-13-low-quarte-1-position.jpg", "Low quarte (1) position.", 10, 560, 941)],
   },
   {
     pose: "lowQuarte2",
@@ -324,6 +347,7 @@ export const BASES = [
       ["Covers", "Against low thrusts."],
       ["Book", "Leszák Károly, Kardvívás (1906), §11 VII.2, Fig. 14. An auxiliary parry."],
     ],
+    figures: [figure(14, "fig-14-low-quarte-2-position.jpg", "Low quarte (2) position.", 10, 627, 957)],
   },
   {
     pose: "sixte",
@@ -336,6 +360,7 @@ export const BASES = [
       ["Covers", "The head."],
       ["Book", "Leszák Károly, Kardvívás (1906), §11 VIII, Fig. 15. An auxiliary parry."],
     ],
+    figures: [figure(15, "fig-15-sixte-position.jpg", "Sixte position.", 11, 645, 971)],
   },
   {
     pose: "septime",
@@ -348,6 +373,7 @@ export const BASES = [
       ["Covers", "The outer upper openings."],
       ["Book", "Leszák Károly, Kardvívás (1906), §11 after VIII, Fig. 16. A yielding parry, and an auxiliary one."],
     ],
+    figures: [figure(16, "fig-16-septime-position.jpg", "Septime position.", 11, 599, 959)],
   },
 ];
 

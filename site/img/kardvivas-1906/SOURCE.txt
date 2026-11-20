@@ -1,0 +1,11 @@
+Figures from Leszák Károly, Kardvívás ("Sabre Fencing"), 2nd edition, Budapest, 1906.
+
+These are copies of the files of the same names in sources/kardvivas-1906/figures/,
+which were cropped from a scan of the book: 146 pages, with the stamps of the Országos
+Széchényi Könyvtár (the Hungarian National Széchényi Library). The tests hold each
+copy to be the same file as the original, and to say what that folder's manifest.json
+says of it. The page shows them beside the postures they are photographs of.
+
+The reuse terms of the book, of the scan and of the figures are not yet checked: see
+the "Rights" section of sources/kardvivas-1906/README.md, and issue #33 of the
+repository.

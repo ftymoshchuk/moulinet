@@ -26,12 +26,30 @@
           else {
             drive(win, frame.contentDocument, results.seen);
             await drive3d(win, frame.contentDocument, results.seen);
+            await driveFigures(win, frame.contentDocument, results.seen);
           }
         } catch (error) {
           results.errors.push(`${error.name}: ${error.message}`);
         }
         document.getElementById("results").textContent = JSON.stringify(results);
       });
+
+      // The book's photographs of its postures load, at the size the page says. Each posture's are asked for as it is
+      // shown, and all are waited for together: the browser's virtual clock runs on while it waits, and the driver has
+      // only so much of it.
+      async function driveFigures(win, doc, seen) {
+        const $$ = (selector) => [...doc.querySelectorAll(selector)];
+        $$("button").find((b) => b.textContent.trim() === "Book knowledge").click();
+        const asked = $$(".base-button").map((posture) => {
+          posture.click();
+          return $$("#base-figures img");
+        });
+        seen.figuresLoaded = await Promise.all(
+          asked.map((images) =>
+            Promise.all(images.map((image) => image.decode().then(() => image.naturalWidth === Number(image.getAttribute("width")) && image.naturalHeight === Number(image.getAttribute("height")), () => false))),
+          ),
+        );
+      }
 
       // What the stage shows of the fencers: the 3D figures' canvas, the stick figures that stand in without them,
       // and the note that says why.
@@ -265,6 +283,17 @@
               count: text("#step-count"),
               pressed: $$(".base-button[aria-pressed=true]").length,
               pressedIs: $$(".base-button").indexOf($(".base-button[aria-pressed=true]")),
+              // The book's photographs, in their panel beside the stage, where the section has them.
+              figuresPanel: visible($("#figures-panel"))
+                ? {
+                    figures: $$("#base-figures .book-figure").map((card) => {
+                      const image = card.querySelector("img");
+                      return { src: image.getAttribute("src"), alt: image.alt, width: image.getAttribute("width"), height: image.getAttribute("height"), caption: card.querySelector("figcaption").textContent };
+                    }),
+                    note: $("#base-figures .book-figures__note")?.textContent ?? null,
+                    empty: $("#base-figures > p:not(.book-figures__note)")?.textContent ?? null,
+                  }
+                : null,
             };
           });
         seen.postures = lookAtPostures();

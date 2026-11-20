@@ -6,7 +6,7 @@
 //
 // The page has three tabs. Live knowledge and Book knowledge are sections, each
 // with a practice library and base postures of its own; the Creator is the third.
-import { BASE_BLADE, BASE_SECTIONS, basePhrase, basesOf } from "./bases.js";
+import { BASE_BLADE, BASE_SECTIONS, FIGURE_DIR, FIGURE_NOTE, basePhrase, basesOf } from "./bases.js";
 import { DEFAULT_FRAME, bladePaths, floorPath, frameOf, groundPath, handFrame, stickFigure } from "./figure.js";
 import { JOINTS, POSE_NAMES, POSES, PRESETS, SECTIONS } from "./library.js";
 import {
@@ -109,6 +109,8 @@ const baseGroupEl = document.getElementById("base-group");
 const baseTextEl = document.getElementById("base-text");
 const basePointsEl = document.getElementById("base-points");
 const baseKeyEl = document.getElementById("base-key");
+const figuresPanelEl = document.getElementById("figures-panel");
+const baseFiguresEl = document.getElementById("base-figures");
 
 // The Creator.
 const metaInputs = {
@@ -1114,6 +1116,8 @@ function renderMode() {
   for (const { el, modes } of modePanels) el.classList.toggle("hidden", !modes.includes(state.mode));
   // The library and the postures are a choice only in a section that has both.
   viewSwitchEl.classList.toggle("hidden", state.mode === "creator" || scenesOf(state.section).length === 0);
+  // The book's photographs have their panel only where the section's postures are the book's.
+  figuresPanelEl.classList.toggle("hidden", state.mode !== "base" || !sectionBases[state.section].some((base) => base.figures?.length));
   for (const button of tabButtons) setPressed(button, button.dataset.tab === openTab());
   for (const button of modeButtons) setPressed(button, button.dataset.mode === state.mode);
   const unit = state.mode === "base" ? "posture" : "step";
@@ -1153,6 +1157,24 @@ function renderLibrary() {
 
 let baseShown = "";
 
+// The book's photographs of a posture, beside the stage: each with the number and caption it was printed
+// with, and the page, and one line under them all about how they differ from the stage. A posture the book
+// has no photograph of says so.
+function renderFigures(figures) {
+  const cards = figures.map(({ n, file, caption, page, width, height }) => {
+    const card = element("figure", "book-figure");
+    const image = element("img", "book-figure__image");
+    image.src = `${FIGURE_DIR}${file}`;
+    image.alt = `Photograph from the book: ${caption}`;
+    image.width = width;
+    image.height = height;
+    image.decoding = "async";
+    card.append(image, element("figcaption", "book-figure__caption", `Fig. ${n}. ${caption} Book p. ${page}.`));
+    return card;
+  });
+  baseFiguresEl.replaceChildren(...(cards.length ? [...cards, element("p", "book-figures__note", FIGURE_NOTE)] : [element("p", "panel__intro", "The book has no photograph of this posture.")]));
+}
+
 function renderBase(index) {
   renderBaseList();
   baseButtons.forEach((button, i) => setPressed(button, i === index));
@@ -1165,6 +1187,7 @@ function renderBase(index) {
   setText(baseTextEl, base.text);
   setText(baseKeyEl, base.pose);
   basePointsEl.replaceChildren(...base.points.map(([what, how]) => fact(what, how)));
+  renderFigures(base.figures ?? []);
 }
 
 function renderCreator(index, step) {

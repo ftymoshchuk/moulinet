@@ -295,6 +295,7 @@ textarea:focus-visible {
 .panel--scene,
 .panel--library,
 .panel--bases,
+.panel--figures,
 .panel--step {
   gap: 14px;
 }
@@ -1049,6 +1050,44 @@ textarea:focus-visible {
   overflow-wrap: anywhere;
 }
 
+/* The book's photographs of the posture on stage, in the column beside the stage. Where
+   the column falls below the stage they come before the list of postures, so that they
+   follow the description of the posture. */
+.book-figures {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.book-figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.book-figure__image {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 440px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--selected);
+}
+
+.book-figure__caption,
+.book-figures__note {
+  font-size: 13px;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+.book-figures__note {
+  color: var(--text-quiet);
+}
+
 .fact dd.is-empty {
   color: var(--muted);
 }
@@ -1178,6 +1217,13 @@ textarea:focus-visible {
   height: 20px;
   margin: 0;
   accent-color: var(--accent);
+}
+
+@media (max-width: 1050px) {
+  /* The side column is under the stage, so the book's photographs come before the list. */
+  .panel--figures {
+    order: -1;
+  }
 }
 
 @media (max-width: 560px) {

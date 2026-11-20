@@ -60,8 +60,11 @@ Leszák Károly's *Kardvívás* (1906), whose translation is in
 [`sources/kardvivas-1906`](sources/kardvivas-1906/): the basic stance and the
 stance at ease, then the nine sabre positions the book teaches: tierce, seconde,
 prime, quinte, quarte, low tierce, low quarte in its two forms, sixte and
-septime. Each says where in the book it is, and what the book leaves open. No
-scenes are made from the book yet, so this section has no practice library.
+septime. Each says where in the book it is, and what the book leaves open, and
+beside the stage, under the list of postures, the page shows the book's photograph
+of it, as printed, with its figure number and page: twelve figures in all, for
+every posture but the stance at ease, which the book does not picture. No scenes
+are made from the book yet, so this section has no practice library.
 
 **Creator.** Make a scene of your own. Start from a blank one with **New
 scene**, or from a scene in the library: a built-in one opens as a copy, with
@@ -121,9 +124,10 @@ The fencers are not pictures. Each is worked out from a pose, a few numbers for
 the joints, and drawn in the browser: two people modelled in three dimensions,
 the young man and the older one, drawn in ink. The look follows the line
 illustrations of old sabre training books, as a model to draw from; none of them
-is scanned or traced into the figures. The one old book used here is kept as a
-translation under `sources/`: a source for the base postures, not a picture to
-draw from.
+is scanned or traced into the figures. The one old book used here is a source for
+the base postures, not a picture to draw from: its translation is kept under
+`sources/`, and its photographs of the postures are shown beside them in Book
+knowledge, as printed.
 
 **The skeleton.** A pose sets where the hips are, how far the body leans, where
 each foot stands and how far it is lifted, the angles of the arms and the blade,
@@ -401,7 +405,7 @@ Project layout:
 - `site/models/`: the bodies, with their licence; `site/vendor/`: three.js, with its licence
 - `site/fonts/`: Big Shoulders Display and IBM Plex, with their licences
 - `scripts/serve.js`: the local server; `scripts/bake-fencers.js`: the bodies from MakeHuman's files; `scripts/protect-repo.sh`: repository settings
-- `sources/kardvivas-1906/`: the translation of the base chapters of a Hungarian sabre book of 1906, with its glossary and figures, which the last twelve base postures are taken from (not part of the published site)
+- `sources/kardvivas-1906/`: the translation of the base chapters of a Hungarian sabre book of 1906, with its glossary and figures, which the last twelve base postures are taken from (not part of the published site, except for the twelve photographs the page shows, copied into `site/img/kardvivas-1906/`)
 - `tests/`
 
 ## Publishing

@@ -33,7 +33,7 @@ Foreword, Introduction and **Part One** (Chapters I–II): everything up to the 
 
 ## Postures made from it
 
-The twelve base postures of the app's Book knowledge tab (the group "Leszák, 1906" in `site/js/bases.js`, the poses in `site/js/library.js`) are taken from this translation. `tests/book.test.js` checks each against what the book says of it.
+The twelve base postures of the app's Book knowledge tab (the group "Leszák, 1906" in `site/js/bases.js`, the poses in `site/js/library.js`) are taken from this translation. `tests/book.test.js` checks each against what the book says of it. The tab also shows the book's photograph of each posture beside the stage, the figure named in the table below, as printed.
 
 | Pose | Book | Figure | Where the model only approximates the book |
 |---|---|---|---|
@@ -93,11 +93,13 @@ Points the page does not settle. Keep them open when turning the text into postu
 
 ## Rights
 
-The book dates from 1906, but I have not confirmed the author's dates or the reuse terms of the book, of the OSZK scan or of the figures cropped from it. The scan itself is not kept in the repository; the translation and the figures cropped from it are, so the question is open for them too. Check this before they are published anywhere (for example on the project's GitHub Pages site). Nothing here is published by the site as it stands: the Pages workflow deploys only `site/`.
+The book dates from 1906, but I have not confirmed the author's dates or the reuse terms of the book, of the OSZK scan or of the figures cropped from it. The scan itself is not kept in the repository; the translation and the figures cropped from it are, so the question is open for them too.
+
+The site publishes twelve of the figures, the photographs of the postures, beside those postures in Book knowledge. They are copies of the files here, kept in `site/img/kardvivas-1906/` (with a note of where they come from), because the Pages workflow deploys only `site/`; `tests/book.test.js` holds each copy to be the same file as the original. The translation, the glossary and the other five figures (1 and 3 to 6) are not published. Settle this before anything more is published: see issue 33 of the repository.
 
 ## Figures
 
-[`figures/manifest.json`](figures/manifest.json) lists each figure with its file, section, book and PDF page, printed caption (Hungarian) and English caption, and the crop box. Each figure is cut from the single embedded 300 dpi JPEG of its PDF page. To re-create one from a copy of the scan (the file is not in the repository; put it in the folder you run this in), for example Fig. 1, on PDF p. 14:
+[`figures/manifest.json`](figures/manifest.json) lists each figure with its file, section, book and PDF page, printed caption (Hungarian) and English caption, and the crop box. Twelve of them, the photographs of the postures (Fig. 2 and 7 to 17), are copied to `site/img/kardvivas-1906/` for the page to show. Each figure is cut from the single embedded 300 dpi JPEG of its PDF page. To re-create one from a copy of the scan (the file is not in the repository; put it in the folder you run this in), for example Fig. 1, on PDF p. 14:
 
 ```bash
 pdfimages -j -f 14 -l 14 17152.pdf pdf14

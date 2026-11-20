@@ -13,7 +13,7 @@ import { delimiter, join } from "node:path";
 import { test } from "node:test";
 import { promisify } from "node:util";
 
-import { BASE_BLADE, BASE_SECTIONS, basePhrase, basesOf } from "../site/js/bases.js";
+import { BASE_BLADE, BASE_SECTIONS, FIGURE_DIR, FIGURE_NOTE, basePhrase, basesOf } from "../site/js/bases.js";
 import { frameOf, handFrame } from "../site/js/figure.js";
 import { JOINTS, POSE_NAMES, PRESETS } from "../site/js/library.js";
 import { buildTimeline, resolvePose } from "../site/js/phrase.js";
@@ -218,8 +218,11 @@ test("in a browser, a scene is looked at with its whole blades in view, and the 
   assert.equal(seen.closeUp.off.pressed, "false");
 });
 
-/** What the page says of each posture of a section, as the driver saw it: the postures are numbered within their section. */
-const described = (bases) =>
+/**
+ * What the page says of each posture of a section, as the driver saw it: the postures are numbered within their
+ * section, and the book's section has a panel of the book's photographs beside the stage, which live knowledge does not.
+ */
+const described = (bases, inBook) =>
   bases.map((base, i) => ({
     name: POSE_NAMES[base.pose],
     group: base.group,
@@ -230,6 +233,19 @@ const described = (bases) =>
     count: `${two(i + 1)} / ${two(bases.length)}`,
     pressed: 1,
     pressedIs: i,
+    figuresPanel: inBook
+      ? {
+          figures: (base.figures ?? []).map(({ n, file, caption, page, width, height }) => ({
+            src: `${FIGURE_DIR}${file}`,
+            alt: `Photograph from the book: ${caption}`,
+            width: String(width),
+            height: String(height),
+            caption: `Fig. ${n}. ${caption} Book p. ${page}.`,
+          })),
+          note: base.figures?.length ? FIGURE_NOTE : null,
+          empty: base.figures?.length ? null : "The book has no photograph of this posture.",
+        }
+      : null,
   }));
 
 test("in a browser, the base postures of live knowledge show one fencer, not a pair, and describe each posture", { skip, timeout: 120_000 }, async () => {
@@ -272,7 +288,7 @@ test("in a browser, book knowledge opens on the book's postures with no switch t
   // The book's section has no scenes, so there is nothing to choose between, and the postures are what shows.
   assert.deepEqual(seen.bookShows, {
     chosen: ["base"],
-    panels: ["stage", "detail", "bases"],
+    panels: ["stage", "detail", "bases", "figures"],
     controls: ["[data-toggle=ink]", "[data-toggle=closeUp]", "#camera"],
     tabs: ["book"],
     switchShown: false,
@@ -284,7 +300,13 @@ test("in a browser, book knowledge opens on the book's postures with no switch t
     note: BASE_SECTIONS.book.note,
     noteShown: true,
   });
-  assert.deepEqual(seen.bookPostures, described(book));
+  assert.deepEqual(seen.bookPostures, described(book, true));
+  // Each posture's photographs load at the size the page says: the twelve of them are the book's figures, and At ease has none.
+  assert.deepEqual(
+    seen.figuresLoaded,
+    book.map((base) => (base.figures ?? []).map(() => true)),
+  );
+  assert.equal(seen.figuresLoaded.flat().length, 12);
   assert.deepEqual(seen.bookGroups, BASE_SECTIONS.book.groups);
   assert.deepEqual(seen.bookArrows, { atStart: `01 / ${two(book.length)}`, atEnd: `${two(book.length)} / ${two(book.length)}` });
   // The Creator is a tab of its own: no switch, and its tab takes the focus from the posture button it hid.
