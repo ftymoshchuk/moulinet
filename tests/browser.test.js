@@ -391,7 +391,30 @@ test("in a browser, the Creator edits a copy of a scene the way the page always 
     line: `${third}"B":{"pose":"parry3","x":200,"adj":{"blade":100}}},`,
     said: "100°",
   });
+  // One joint at a time. Parry 3 gives the blade 95° and the hips 78 cm. A joint that has been moved says so and offers to go
+  // back, and says to what; one that has not keeps the place of its button, but does not show it; the position has no pose to
+  // go back to, so no button.
+  const idle = (said, title, label) => ({ said, adjusted: false, reset: { shown: false, title, label } });
+  const moved = (said, title, label) => ({ said, adjusted: true, reset: { shown: true, title, label } });
+  const blade = (said, was) => (was ? moved : idle)(said, "Back to the pose: 95°", "Reset blade angle to the pose");
+  const hips = (said, was) => (was ? moved : idle)(said, "Back to the pose: 78 cm", "Reset hip height to the pose");
+  assert.deepEqual(seen.joints.moved, {
+    blade: blade("100°", true),
+    hipY: hips("70 cm", true),
+    lean: idle("-3°", "Back to the pose: -3°", "Reset torso lean to the pose"),
+    x: { said: "200 cm", adjusted: false, reset: null },
+  });
+  // Putting one back leaves the other where it was, and the focus on the slider it belonged to.
+  assert.deepEqual(seen.joints.putBack, {
+    line: `${third}"B":{"pose":"parry3","x":200,"adj":{"hipY":70}}},`,
+    blade: blade("95°", false),
+    hipY: hips("70 cm", true),
+    slider: "95",
+    focus: "joint-blade",
+  });
+  assert.deepEqual(seen.joints.allBack, { line: `${third}"B":{"pose":"parry3","x":200}},`, hipY: hips("78 cm", false) }, "the last one takes the adjustments with it");
   assert.equal(seen.reset, `${third}"B":{"pose":"parry3","x":200}},`);
+  assert.deepEqual(seen.joints.resetAll, { blade: blade("95°", false), hipY: hips("78 cm", false) }, "resetting the step puts back what is left");
 
   assert.match(seen.broken.status, /^Not applied: /);
   assert.equal(seen.broken.isError, true);
@@ -556,9 +579,9 @@ test("in a browser, scenes are saved on this device, listed in the library with 
 
 test("in a browser, text that is not a phrase yet keeps the fields still, and what was typed is not lost", { skip, timeout: 120_000 }, async () => {
   const { seen } = await drive();
-  // The controls that edit a scene: twelve fields and buttons for the scene and its step, a slider for each joint and a
-  // button for each pose.
-  const EDITORS = 13 + JOINTS.length + Object.keys(POSE_NAMES).length;
+  // The controls that edit a scene: twelve fields and buttons for the scene and its step, a slider for each joint, a Reset
+  // for each joint but the position, and a button for each pose.
+  const EDITORS = 13 + JOINTS.length + (JOINTS.length - 1) + Object.keys(POSE_NAMES).length;
   // A new scene: every control that edits it is on, but for the move time of its first step and removing its only one.
   assert.deepEqual(seen.fieldsOn, { total: EDITORS, off: 2 });
   assert.match(seen.onHold.status, /^Not applied: .+\. The fields are on hold until it is\.$/);

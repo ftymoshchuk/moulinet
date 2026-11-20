@@ -307,6 +307,19 @@ export function clearAdjustments(spec) {
   delete spec.adj;
 }
 
+/**
+ * Takes one adjustment off a spec, so that joint goes back to what the pose gives it
+ * and every other adjustment stays. The position is not an adjustment of the pose, and
+ * is left alone.
+ */
+export function clearJoint(spec, key) {
+  if (key === "x" || !isPlainObject(spec.adj)) return;
+  const adj = { ...spec.adj };
+  delete adj[key];
+  if (Object.keys(adj).length > 0) spec.adj = adj;
+  else delete spec.adj;
+}
+
 // Edits to the scene as a whole and to its steps, for the Creator. Each returns
 // a changed copy and leaves the phrase it was given alone, or null when it
 // cannot make the change.

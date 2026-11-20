@@ -14,6 +14,7 @@ import {
   TEXT_LIMITS,
   buildTimeline,
   clearAdjustments,
+  clearJoint,
   clip,
   clone,
   editSpec,
@@ -24,6 +25,7 @@ import {
   phraseToText,
   poseAt,
   removeStep,
+  resolvePose,
   samePose,
   setJoint,
   setMeta,
@@ -743,10 +745,31 @@ const jointControls = JOINTS.map((joint) => {
   input.addEventListener("input", () => {
     editCurrent((spec) => setJoint(spec, joint.key, Math.round(Number(input.value))));
   });
+  // A joint that has been moved from what its pose gives it can be put back on its own, without touching the others. The
+  // position is where the fencer stands, not a joint of the pose, so it has no pose to go back to.
+  let reset = null;
+  if (joint.key !== "x") {
+    reset = element("button", "joint__reset", "Reset");
+    reset.type = "button";
+    setAttr(reset, "aria-label", `Reset ${joint.label.toLowerCase()} to the pose`);
+    reset.addEventListener("click", () => {
+      editCurrent((spec) => clearJoint(spec, joint.key));
+      // The button goes away with the adjustment, so the slider it belonged to keeps the focus.
+      input.focus();
+    });
+  }
   row.append(label, value);
+  // The position has no Reset, but keeps its place, so that the values line up down the column.
+  if (reset) {
+    row.append(reset);
+  } else {
+    const spacer = element("span", "joint__spacer");
+    setAttr(spacer, "aria-hidden", "true");
+    row.append(spacer);
+  }
   wrapper.append(row, input);
   jointsEl.append(wrapper);
-  return { joint, input, value };
+  return { joint, input, value, reset };
 });
 
 // The poses, in groups as the sections of the page keep their base postures: each section's postures are its own poses.
@@ -786,6 +809,7 @@ const editors = [
   stepAddButton,
   resetStepButton,
   ...jointControls.map(({ input }) => input),
+  ...jointControls.map(({ reset }) => reset).filter(Boolean),
   ...poseButtons.map(({ button }) => button),
 ];
 
@@ -1247,19 +1271,33 @@ function renderCreator(index, step) {
   setPressed(fencerButtons.B, fencer === "B");
   fencerButtons.B.disabled = timeline.solo;
   const target = step[fencer];
-  for (const { joint, input, value } of jointControls) {
+  const spec = step[`spec${fencer}`];
+  const pose = isPlainObject(spec) ? spec.pose : undefined;
+  // What the slider says of a value: the number, its unit and the name of the position it is on, if it has one.
+  const say = (joint, v) => {
+    const name = joint.names?.[v];
+    return `${v}${joint.unit}${name ? ` (${name})` : ""}`;
+  };
+  // The joints this fencer has been moved on this step, and so can be put back to what the pose gives them.
+  const moved = isPlainObject(spec) && isPlainObject(spec.adj) ? spec.adj : {};
+  const given = resolvePose({ pose });
+  for (const { joint, input, value, reset } of jointControls) {
     let v = Number(target[joint.key]) || 0;
     // A blade turned past half a circle shows as the same angle within it.
     if (joint.key === "blade" && (v < -180 || v > 180)) v = ((((v + 180) % 360) + 360) % 360) - 180;
     v = Math.round(v);
-    const name = joint.names?.[v];
-    const text = `${v}${joint.unit}${name ? ` (${name})` : ""}`;
+    const text = say(joint, v);
     setValue(input, v);
     setText(value, text);
     setAttr(input, "aria-valuetext", text);
+    // A joint that has been moved says so, and offers to go back to what the pose gives it, which it says.
+    const adjusted = reset !== null && Object.hasOwn(moved, joint.key);
+    value.classList.toggle("is-adjusted", adjusted);
+    if (reset) {
+      reset.classList.toggle("is-idle", !adjusted);
+      setAttr(reset, "title", `Back to the pose: ${say(joint, Math.round(Number(given[joint.key]) || 0))}`);
+    }
   }
-  const spec = step[`spec${fencer}`];
-  const pose = isPlainObject(spec) ? spec.pose : undefined;
   for (const { key, button } of poseButtons) setPressed(button, pose === key);
 
   let status = `Applied: ${timeline.steps.length} ${timeline.steps.length === 1 ? "step" : "steps"}, ${seconds(timeline.duration)} s`;

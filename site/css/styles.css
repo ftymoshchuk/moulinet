@@ -895,9 +895,40 @@ textarea:focus-visible {
 }
 
 .joint__value {
+  margin-left: auto;
   font-family: var(--font-mono);
   font-size: 13px;
   color: var(--muted);
+}
+
+/* A joint that has been moved from what its pose gives it shows its value in the accent, and has a Reset of its own. The
+   Reset keeps its place when it is not needed, so the row does not shift when it comes. */
+.joint__value.is-adjusted {
+  color: var(--accent);
+}
+
+.joint__reset,
+.joint__spacer {
+  min-width: 52px;
+}
+
+.joint__reset {
+  min-height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.joint__reset:enabled:hover {
+  border-color: var(--line-hover);
+  color: var(--text);
+}
+
+.joint__reset.is-idle {
+  visibility: hidden;
 }
 
 .joint input {

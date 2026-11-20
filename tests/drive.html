@@ -460,8 +460,31 @@
         input($("#joint-blade"), 100);
         input($("#joint-x"), 200);
         seen.adjusted = { line: stepLine(2), said: $("#joint-blade").getAttribute("aria-valuetext") };
+
+        // One joint at a time: a slider that has been moved says so, offers to go back to what the pose gives it, and says
+        // what that is; putting it back leaves the others as they were. The position has no pose to go back to.
+        input($("#joint-hipY"), 70);
+        const row = (key) => $(`#joint-${key}`).closest(".joint");
+        const joint = (key) => {
+          const reset = row(key).querySelector(".joint__reset");
+          return {
+            said: $(`#joint-${key}`).getAttribute("aria-valuetext"),
+            adjusted: row(key).querySelector(".joint__value").classList.contains("is-adjusted"),
+            // Not shown is not drawn, but it keeps its place: "visibility" says which.
+            reset: reset ? { shown: win.getComputedStyle(reset).visibility !== "hidden", title: reset.getAttribute("title"), label: reset.getAttribute("aria-label") } : null,
+          };
+        };
+        seen.joints = { moved: { blade: joint("blade"), hipY: joint("hipY"), lean: joint("lean"), x: joint("x") } };
+        row("blade").querySelector(".joint__reset").click();
+        seen.joints.putBack = { line: stepLine(2), blade: joint("blade"), hipY: joint("hipY"), slider: $("#joint-blade").value, focus: doc.activeElement?.id };
+        row("hipY").querySelector(".joint__reset").click();
+        seen.joints.allBack = { line: stepLine(2), hipY: joint("hipY") };
+        // Moved again, and put back all at once.
+        input($("#joint-blade"), 100);
+        input($("#joint-hipY"), 70);
         button("Reset this step's adjustments").click();
         seen.reset = stepLine(2);
+        seen.joints.resetAll = { blade: joint("blade"), hipY: joint("hipY") };
         checkPaths();
 
         // Phrase text: broken, then with a pose the library lacks, then solo.
@@ -766,7 +789,7 @@
         button("Creator").click();
         answer = true;
         button("New scene").click();
-        const editorSelector = "#meta-name, #meta-source, #meta-event, #meta-reference, #meta-note, #meta-solo, #step-name, #step-ms, #step-hold, #step-ease, #step-add, #step-remove, #reset-step, #joints input, .pose-button";
+        const editorSelector = "#meta-name, #meta-source, #meta-event, #meta-reference, #meta-note, #meta-solo, #step-name, #step-ms, #step-hold, #step-ease, #step-add, #step-remove, #reset-step, #joints input, #joints button, .pose-button";
         const editors = () => ({ total: $$(editorSelector).length, off: $$(editorSelector).filter((el) => el.disabled).map((el) => el.id || el.textContent.slice(0, 12)).length });
         input($("#meta-name"), "Kept name");
         seen.fieldsOn = editors();

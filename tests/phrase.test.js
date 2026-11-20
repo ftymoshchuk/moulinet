@@ -8,6 +8,7 @@ import {
   TEXT_LIMITS,
   buildTimeline,
   clearAdjustments,
+  clearJoint,
   clip,
   clone,
   ease,
@@ -466,6 +467,41 @@ test("picking a pose or resetting drops the step's adjustments, and keeps its po
   const reset = { pose: "guard", x: 50, adj: { arm: 1 } };
   clearAdjustments(reset);
   assert.deepEqual(reset, { pose: "guard", x: 50 });
+});
+
+test("one adjustment can be taken off alone: that joint goes back to its pose, the others stay, and the position is not one", () => {
+  const spec = { pose: "guard", x: 50, adj: { arm: 1, blade: 20, lean: 4 } };
+  clearJoint(spec, "blade");
+  assert.deepEqual(spec, { pose: "guard", x: 50, adj: { arm: 1, lean: 4 } }, "only blade goes");
+  clearJoint(spec, "arm");
+  clearJoint(spec, "lean");
+  assert.deepEqual(spec, { pose: "guard", x: 50 }, "the last one takes the adjustments with it");
+  clearJoint(spec, "arm");
+  assert.deepEqual(spec, { pose: "guard", x: 50 }, "a joint that was not adjusted is left as it is");
+  const placed = { pose: "guard", x: 50, adj: { arm: 1 } };
+  clearJoint(placed, "x");
+  assert.deepEqual(placed, { pose: "guard", x: 50, adj: { arm: 1 } }, "the position stays");
+  const junk = { adj: "junk" };
+  clearJoint(junk, "arm");
+  assert.deepEqual(junk, { adj: "junk" }, "adjustments that are not a list are not touched");
+  // The joint takes the value its pose gives it, not the one that was set.
+  const phrase = { steps: [{ A: { pose: "parry3", x: 0, adj: { blade: 100 } } }] };
+  assert.equal(buildTimeline(phrase).steps[0].A.blade, 100);
+  const reset = editSpec(phrase, buildTimeline(phrase), 0, "A", (s) => clearJoint(s, "blade"));
+  assert.equal(buildTimeline(reset).steps[0].A.blade, POSES.parry3.blade, "back to the pose's own");
+  assert.deepEqual(phrase.steps[0].A.adj, { blade: 100 }, "the phrase it was given is left alone");
+});
+
+test("taking one adjustment off a step that only inherits its fencer copies the fencer onto that step first", () => {
+  const phrase = {
+    steps: [
+      { A: { pose: "guard", x: 0, adj: { blade: 20, lean: 4 } } },
+      { ms: 100 },
+    ],
+  };
+  const edited = editSpec(phrase, buildTimeline(phrase), 1, "A", (spec) => clearJoint(spec, "blade"));
+  assert.deepEqual(edited.steps[1].A, { pose: "guard", x: 0, adj: { lean: 4 } }, "the step has its own, without blade");
+  assert.deepEqual(edited.steps[0], phrase.steps[0], "and the step it came from keeps both");
 });
 
 test("the name, source, event, reference and note come first in the text, then the camera and solo", () => {

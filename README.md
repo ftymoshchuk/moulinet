@@ -114,7 +114,11 @@ In the Creator there is more:
   and knee, the shoulders and the rear arm, to the sword arm, which can be
   turned out of the plane of its shoulder across the chest, the angle and turn
   of the blade and the position of the hand that holds it, which moves in steps
-  of 15° and says when it is on one of the books' hand positions.
+  of 15° and says when it is on one of the books' hand positions. A slider
+  that has been moved shows its value in the accent colour and gets its own
+  **Reset**, which puts that one joint back to what the pose says (hover it to
+  see the value it goes back to) and leaves every other adjustment as it is. Where the fencer stands has no Reset of its own: that is a place on the
+  piste, not a change to the pose.
 - **Poses:** twenty-six named poses to put on any step, in the groups the
   sections of the page keep their base postures in.
 - **Phrase data:** the whole scene as text. Edit it in place or paste one in;
@@ -311,8 +315,8 @@ A fencer is `{"pose": …, "x": …, "adj": {…}}`:
 - `x`: where the fencer stands on the piste, in centimetres. Until a phrase
   places them, A stands at 0 and B at 310, facing each other.
 - `adj`: joint values that override the pose on this step. **Adjust this
-  moment** writes them; picking a pose or **Reset this step's adjustments**
-  clears them.
+  moment** writes them; a slider's own **Reset** takes back just that joint,
+  and picking a pose or **Reset this step's adjustments** clears them all.
 
 The joints `adj` can set. Lengths are centimetres; angles are degrees, where 0
 points at the opponent and 90 straight up. Where a row says the camera, it means
