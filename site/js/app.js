@@ -3,9 +3,12 @@
 // One stage serves three modes. The practice library plays a scene and says
 // where it was noted. The base postures show one fencer in one posture at a
 // time, in words as well as lines. The Creator makes new scenes.
-import { BASES, BASE_BLADE, BASE_GROUPS, basePhrase } from "./bases.js";
+//
+// The page has three tabs. Live knowledge and Book knowledge are sections, each
+// with a practice library and base postures of its own; the Creator is the third.
+import { BASE_BLADE, BASE_SECTIONS, FIGURE_DIR, FIGURE_NOTE, basePhrase, basesOf } from "./bases.js";
 import { DEFAULT_FRAME, bladePaths, floorPath, frameOf, groundPath, handFrame, stickFigure } from "./figure.js";
-import { JOINTS, POSE_NAMES, POSES, PRESETS } from "./library.js";
+import { JOINTS, POSE_NAMES, POSES, PRESETS, SECTIONS } from "./library.js";
 import {
   TEXT_KEYS,
   TEXT_LIMITS,
@@ -43,10 +46,17 @@ const CAMERA_LIMIT = 60;
 // Someone who asked for less motion starts each phrase paused.
 const AUTOPLAY = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const MODE_NAMES = { library: "Practice library", base: "Base postures", creator: "Creator" };
+const SECTION_NAMES = Object.fromEntries(SECTIONS.map(({ id, name }) => [id, name]));
 
+// The tabs, and the pair of buttons that choose between a section's practice library and its base postures.
+const tabButtons = document.querySelectorAll("[data-tab]");
 const modeButtons = document.querySelectorAll("[data-mode]");
+const viewSwitchEl = document.getElementById("view-switch");
 // Every panel that belongs to some modes only, with the modes it belongs to.
 const modePanels = [...document.querySelectorAll("[data-modes]")].map((el) => ({ el, modes: el.dataset.modes.split(" ") }));
+// The base postures of each section, in the order they are shown.
+const sectionBases = Object.fromEntries(SECTIONS.map(({ id }) => [id, basesOf(id)]));
+
 const stagePanelEl = document.getElementById("stage-panel");
 const stageEl = document.getElementById("stage");
 const canvas3dEl = document.getElementById("stage-3d");
@@ -92,11 +102,15 @@ const sceneDeleteButton = document.getElementById("scene-delete");
 
 // The base postures.
 const baseListEl = document.getElementById("base-list");
+const basesIntroEl = document.getElementById("bases-intro");
+const basesNoteEl = document.getElementById("bases-note");
 const baseNameEl = document.getElementById("base-name");
 const baseGroupEl = document.getElementById("base-group");
 const baseTextEl = document.getElementById("base-text");
 const basePointsEl = document.getElementById("base-points");
 const baseKeyEl = document.getElementById("base-key");
+const figuresPanelEl = document.getElementById("figures-panel");
+const baseFiguresEl = document.getElementById("base-figures");
 
 // The Creator.
 const metaInputs = {
@@ -133,8 +147,11 @@ const posesEl = document.getElementById("poses");
 
 const state = {
   mode: "library",
+  // The section whose tab is open, "live" or "book"; with the Creator on show, the
+  // one it was opened from.
+  section: "live",
   // The scene on stage in the practice library, by key, and the posture on
-  // stage in the base postures, by number.
+  // stage in the base postures, by number within its section.
   scene: PRESETS[0].id,
   base: 0,
   phrase: null,
@@ -170,6 +187,11 @@ let framed = { timeline: null, frame: DEFAULT_FRAME };
 // What the Creator had on stage while another mode has the stage.
 let parked = null;
 
+// What each section last had on stage, for when its tab is opened again: its
+// practice library or its base postures, and the posture it was on. A section with
+// no scenes of its own opens on its postures.
+const views = Object.fromEntries(SECTIONS.map(({ id }) => [id, { mode: "library", base: 0 }]));
+
 // The scenes saved on this device, and every scene the library shows: the
 // built-in ones, then the saved ones. `libraryVersion` says when to redraw its list.
 let saved = [];
@@ -188,10 +210,27 @@ function getStorage() {
 function setSaved(list) {
   saved = list;
   scenes = [
-    ...PRESETS.map(({ id, phrase }) => ({ key: id, builtin: true, phrase })),
-    ...saved.map(({ id, phrase }) => ({ key: `saved:${id}`, id, builtin: false, phrase })),
+    ...PRESETS.map(({ id, section, phrase }) => ({ key: id, builtin: true, section, phrase })),
+    // A saved scene has no section of its own yet, so it stays in the practice library of live knowledge, where it always was.
+    ...saved.map(({ id, phrase }) => ({ key: `saved:${id}`, id, builtin: false, section: "live", phrase })),
   ];
   libraryVersion++;
+}
+
+// The scenes in a section's practice library.
+function scenesOf(section) {
+  return scenes.filter((scene) => scene.section === section);
+}
+
+// The scene a section opens on: the one last on stage if it is the section's own, or its first. Null if it has none.
+function sceneFor(section) {
+  const own = scenesOf(section);
+  return own.find((scene) => scene.key === state.scene) ?? own[0] ?? null;
+}
+
+// The tab that is open: a section's, or the Creator's.
+function openTab() {
+  return state.mode === "creator" ? "creator" : state.section;
 }
 
 function usePhrase(phrase) {
@@ -246,6 +285,7 @@ function showScene(key) {
   usePhrase(phrase);
   Object.assign(state, {
     mode: "library",
+    section: scene.section,
     scene: scene.key,
     time: 0,
     pin: null,
@@ -258,9 +298,9 @@ function showScene(key) {
   update();
 }
 
-// The base postures, paused on posture `index`.
+// The base postures of the open section, paused on posture `index`.
 function showBase(index) {
-  const phrase = basePhrase();
+  const phrase = basePhrase(state.section);
   usePhrase(phrase);
   const at = Math.max(0, Math.min(timeline.steps.length - 1, index));
   Object.assign(state, {
@@ -298,6 +338,9 @@ function showCreator() {
 function leaveMode() {
   if (state.mode === "base") {
     state.base = currentIndex();
+    views[state.section] = { mode: "base", base: state.base };
+  } else if (state.mode === "library") {
+    views[state.section] = { ...views[state.section], mode: "library" };
   } else if (state.mode === "creator") {
     parked = {
       phrase: state.phrase,
@@ -310,13 +353,27 @@ function leaveMode() {
   }
 }
 
+// Chooses what the open section shows, its practice library or its base postures, or opens the Creator.
 function pickMode(mode) {
   if (mode === state.mode) return;
   leaveMode();
-  if (mode === "library") showScene(state.scene);
-  else if (mode === "base") showBase(state.base);
+  // A section with no scenes has no library to show, so the library is the first section's that has one.
+  if (mode === "library") showScene((sceneFor(state.section) ?? scenes[0]).key);
+  else if (mode === "base") showBase(views[state.section].base);
   else showCreator();
   announce(MODE_NAMES[mode]);
+}
+
+// Opens a tab: a section, as it was when it was last on show, or the Creator.
+function pickTab(tab) {
+  if (tab === "creator") return pickMode("creator");
+  if (tab === state.section && state.mode !== "creator") return;
+  leaveMode();
+  state.section = tab;
+  const scene = views[tab].mode === "library" ? sceneFor(tab) : null;
+  if (scene) showScene(scene.key);
+  else showBase(views[tab].base);
+  announce(SECTION_NAMES[tab]);
 }
 
 // The Creator's scene has changes that are not saved: in its text, or in the
@@ -695,20 +752,32 @@ const jointControls = JOINTS.map((joint) => {
   return { joint, input, value };
 });
 
-const poseButtons = Object.keys(POSES).map((key) => {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "pose-button";
-  const name = document.createElement("span");
-  name.textContent = POSE_NAMES[key] || key;
-  const code = document.createElement("span");
-  code.className = "pose-button__key";
-  code.textContent = key;
-  button.append(name, code);
-  button.addEventListener("click", () => editCurrent((spec) => setPose(spec, key)));
-  posesEl.append(button);
-  return { key, button };
-});
+// The poses, in groups as the sections of the page keep their base postures: each section's postures are its own poses.
+const poseGroups = SECTIONS.map(({ id, name }) => ({ name, keys: sectionBases[id].map(({ pose }) => pose) }));
+const grouped = new Set(poseGroups.flatMap(({ keys }) => keys));
+const loose = Object.keys(POSES).filter((key) => !grouped.has(key));
+if (loose.length) poseGroups.push({ name: "Other", keys: loose });
+const poseButtons = [];
+for (const { name: groupName, keys } of poseGroups) {
+  const row = element("div", "poses");
+  for (const key of keys) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "pose-button";
+    const name = document.createElement("span");
+    name.textContent = POSE_NAMES[key] || key;
+    const code = document.createElement("span");
+    code.className = "pose-button__key";
+    code.textContent = key;
+    button.append(name, code);
+    button.addEventListener("click", () => editCurrent((spec) => setPose(spec, key)));
+    row.append(button);
+    poseButtons.push({ key, button });
+  }
+  const group = element("div", "list-group");
+  group.append(element("h4", "list-group__title", groupName), row);
+  posesEl.append(group);
+}
 
 // Every control that edits the phrase, which wait while the data has an error.
 const editors = [
@@ -723,31 +792,45 @@ const editors = [
   ...poseButtons.map(({ button }) => button),
 ];
 
-// The base postures, grouped by what they are for. The buttons are numbered in
-// the order the postures are learned, which is the order of the steps.
-const baseButtons = [];
-for (const group of BASE_GROUPS) {
-  const row = element("div", "base-buttons");
-  BASES.forEach((base, i) => {
-    if (base.group !== group) return;
-    const button = element("button", "base-button");
-    button.type = "button";
-    button.append(element("span", "step-button__number", twoDigits(i + 1)), POSE_NAMES[base.pose] || base.pose);
-    button.addEventListener("click", () => jumpTo(i));
-    row.append(button);
-    baseButtons[i] = button;
-  });
-  const section = element("div", "list-group");
-  section.append(element("h4", "list-group__title", group), row);
-  baseListEl.append(section);
+// The base postures of the section on show, grouped as the section groups them. The
+// buttons are numbered in the order the postures are learned, which is the order of
+// the steps; the list is rebuilt when the section changes.
+let baseButtons = [];
+let baseListShown = "";
+
+function renderBaseList() {
+  if (baseListShown === state.section) return;
+  baseListShown = state.section;
+  const { groups, intro, note } = BASE_SECTIONS[state.section];
+  baseButtons = [];
+  baseListEl.replaceChildren(
+    ...groups.map((group) => {
+      const row = element("div", "base-buttons");
+      sectionBases[state.section].forEach((base, i) => {
+        if (base.group !== group) return;
+        const button = element("button", "base-button");
+        button.type = "button";
+        button.append(element("span", "step-button__number", twoDigits(i + 1)), POSE_NAMES[base.pose] || base.pose);
+        button.addEventListener("click", () => jumpTo(i));
+        row.append(button);
+        baseButtons[i] = button;
+      });
+      const list = element("div", "list-group");
+      list.append(element("h4", "list-group__title", group), row);
+      return list;
+    }),
+  );
+  setText(basesIntroEl, intro);
+  setText(basesNoteEl, note ?? "");
+  basesNoteEl.classList.toggle("hidden", !note);
 }
 
 // The library's list follows the scenes, so it is rebuilt when they change.
 let sceneButtons = [];
-let listShown = -1;
+let listShown = "";
 
 function renderSceneList() {
-  sceneButtons = scenes.map((scene) => {
+  sceneButtons = scenesOf(state.section).map((scene) => {
     const button = element("button", "scene-button");
     button.type = "button";
     button.append(element("span", "scene-button__title", sceneName(scene.phrase)));
@@ -761,7 +844,7 @@ function renderSceneList() {
   });
   scenesBuiltinEl.replaceChildren(...sceneButtons.filter((scene) => scene.builtin).map((scene) => scene.button));
   scenesSavedEl.replaceChildren(...sceneButtons.filter((scene) => !scene.builtin).map((scene) => scene.button));
-  scenesEmptyEl.classList.toggle("hidden", saved.length > 0);
+  scenesEmptyEl.classList.toggle("hidden", sceneButtons.some((scene) => !scene.builtin));
   const sources = [...new Set(scenes.map((scene) => sceneText(scene.phrase, "source")).filter(Boolean))].sort();
   sourceListEl.replaceChildren(...sources.map((source) => Object.assign(document.createElement("option"), { value: source })));
 }
@@ -790,6 +873,7 @@ function renderSteps(index) {
   stepButtons.forEach((button, i) => setPressed(button, i === index));
 }
 
+for (const button of tabButtons) button.addEventListener("click", () => pickTab(button.dataset.tab));
 for (const button of modeButtons) button.addEventListener("click", () => pickMode(button.dataset.mode));
 
 prevButton.addEventListener("click", () => stepBy(-1));
@@ -1010,22 +1094,31 @@ function setFact(el, text, none) {
 }
 
 // A control that has just been hidden, such as a button that changed the mode,
-// cannot keep the focus. The button of the mode on show takes it, so a person on
-// the keyboard is not sent back to the top of the page.
+// cannot keep the focus. The button of what is on show takes it, so a person on
+// the keyboard is not sent back to the top of the page: the one that chose the
+// practice library or the postures if the section has that choice, or else its tab.
 function keepFocus() {
   const focused = document.activeElement;
   if (focused && focused !== document.body && focused.closest(".hidden")) {
-    [...modeButtons].find((button) => button.dataset.mode === state.mode)?.focus();
+    const choice = viewSwitchEl.classList.contains("hidden") ? undefined : [...modeButtons].find((button) => button.dataset.mode === state.mode);
+    (choice ?? [...tabButtons].find((button) => button.dataset.tab === openTab()))?.focus();
   }
 }
 
-// Which panels and controls the mode shows. Only a change of mode needs it.
+// Which panels and controls the mode shows, and which tab is open. Only a change
+// of mode or section, or of the scenes there are, needs it.
 let modeShown = null;
 
 function renderMode() {
-  if (modeShown === state.mode) return;
-  modeShown = state.mode;
+  const shown = `${state.mode}:${state.section}:${libraryVersion}`;
+  if (modeShown === shown) return;
+  modeShown = shown;
   for (const { el, modes } of modePanels) el.classList.toggle("hidden", !modes.includes(state.mode));
+  // The library and the postures are a choice only in a section that has both.
+  viewSwitchEl.classList.toggle("hidden", state.mode === "creator" || scenesOf(state.section).length === 0);
+  // The book's photographs have their panel only where the section's postures are the book's.
+  figuresPanelEl.classList.toggle("hidden", state.mode !== "base" || !sectionBases[state.section].some((base) => base.figures?.length));
+  for (const button of tabButtons) setPressed(button, button.dataset.tab === openTab());
   for (const button of modeButtons) setPressed(button, button.dataset.mode === state.mode);
   const unit = state.mode === "base" ? "posture" : "step";
   setAttr(prevButton, "aria-label", `Previous ${unit}`);
@@ -1035,8 +1128,9 @@ function renderMode() {
 let detailShown = null;
 
 function renderLibrary() {
-  if (listShown !== libraryVersion) {
-    listShown = libraryVersion;
+  const list = `${libraryVersion}:${state.section}`;
+  if (listShown !== list) {
+    listShown = list;
     renderSceneList();
   }
   for (const { key, button } of sceneButtons) setPressed(button, key === state.scene);
@@ -1061,18 +1155,39 @@ function renderLibrary() {
   sceneDeleteButton.classList.toggle("hidden", scene.builtin);
 }
 
-let baseShown = -1;
+let baseShown = "";
+
+// The book's photographs of a posture, beside the stage: each with the number and caption it was printed
+// with, and the page, and one line under them all about how they differ from the stage. A posture the book
+// has no photograph of says so.
+function renderFigures(figures) {
+  const cards = figures.map(({ n, file, caption, page, width, height }) => {
+    const card = element("figure", "book-figure");
+    const image = element("img", "book-figure__image");
+    image.src = `${FIGURE_DIR}${file}`;
+    image.alt = `Photograph from the book: ${caption}`;
+    image.width = width;
+    image.height = height;
+    image.decoding = "async";
+    card.append(image, element("figcaption", "book-figure__caption", `Fig. ${n}. ${caption} Book p. ${page}.`));
+    return card;
+  });
+  baseFiguresEl.replaceChildren(...(cards.length ? [...cards, element("p", "book-figures__note", FIGURE_NOTE)] : [element("p", "panel__intro", "The book has no photograph of this posture.")]));
+}
 
 function renderBase(index) {
+  renderBaseList();
   baseButtons.forEach((button, i) => setPressed(button, i === index));
-  if (baseShown === index) return;
-  baseShown = index;
-  const base = BASES[index];
+  const shown = `${state.section}:${index}`;
+  if (baseShown === shown) return;
+  baseShown = shown;
+  const base = sectionBases[state.section][index];
   setText(baseNameEl, POSE_NAMES[base.pose] || base.pose);
   setText(baseGroupEl, base.group);
   setText(baseTextEl, base.text);
   setText(baseKeyEl, base.pose);
   basePointsEl.replaceChildren(...base.points.map(([what, how]) => fact(what, how)));
+  renderFigures(base.figures ?? []);
 }
 
 function renderCreator(index, step) {

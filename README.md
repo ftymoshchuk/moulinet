@@ -1,8 +1,8 @@
 # Moulinet
 
-Sabre Motion Lab: sabre fencing drawn in ink, in your browser. Study
-the base postures, practise from a library of scenes, or make a scene of your
-own: slow it down, step through it and reshape any moment. Every pose is a
+Sabre Motion Lab: sabre fencing drawn in ink, in your browser. Practise what a
+live class taught, study what a book teaches, or make a scene of your own: slow
+it down, step through it and reshape any moment. Every pose is a
 handful of numbers and every scene a short list of keyframes, so a whole
 animation is a few lines of text you can edit, keep and share.
 
@@ -14,10 +14,16 @@ The name comes from the *moulinet*, the sabre's circular cut: the blade drops
 forward past the arm, swings up behind and comes down over the top. It is one
 of the eight scenes built in.
 
-## Three modes
-One stage, three ways to use it. Choose the mode at the top of the page.
+## Three tabs
+One stage, three tabs. Choose the tab at the top of the page: **Live knowledge**,
+**Book knowledge** or the **Creator**. The first two are sections, and each has
+base postures of its own, since what a class teaches and what a book teaches are
+not the same postures. Where a section has both scenes and postures, as live
+knowledge does, a switch above its list chooses between its **practice library**
+and its **base postures**; the book has postures only, so it opens on them. Each
+tab remembers what it was showing, and comes back to it.
 
-**Practice library.** Scenes to practise from, each with the kind of learning
+**Live knowledge: the practice library.** Scenes to practise from, each with the kind of learning
 it comes from, such as a class taken in person, a video or a book, the event it
 was noted at and a link to a reference, such as a video of the bout. Pick a
 scene and it plays; the eight built in are an advance, lunge and head cut; a
@@ -42,17 +48,23 @@ page appears or goes here too.
 **Base postures.** One fencer, never a pair, in one posture at a time, with the
 posture described in words: what it is for, and the parts worth looking at,
 the hand that holds the sabre among them. Pick a posture from the list, or use the arrows under the stage. The
-postures are the poses of the library, twenty-six of them. The first fourteen
-are in the order they are learned: the guard; the two halves of an advance; the
-arm extended and the blade up; the lunge in flight, to the head and to the
+postures are the poses of the library, twenty-six of them, shared between the two
+sections and numbered from 1 within each. **Live knowledge** has the first
+fourteen, in the order they are learned: the guard; the two halves of an advance;
+the arm extended and the blade up; the lunge in flight, to the head and to the
 chest; parry 3, and parry 3 with the weight drawn back; face protection; parry
-5, and parry 5 with the weight drawn back; and the riposte. The last twelve are
-a group of their own, taken from the base chapters of Leszák Károly's
-*Kardvívás* (1906), whose translation is in
+5, and parry 5 with the weight drawn back; and the riposte.
+
+**Book knowledge.** The last twelve postures, taken from the base chapters of
+Leszák Károly's *Kardvívás* (1906), whose translation is in
 [`sources/kardvivas-1906`](sources/kardvivas-1906/): the basic stance and the
 stance at ease, then the nine sabre positions the book teaches: tierce, seconde,
 prime, quinte, quarte, low tierce, low quarte in its two forms, sixte and
-septime. Each says where in the book it is, and what the book leaves open.
+septime. Each says where in the book it is, and what the book leaves open, and
+beside the stage, under the list of postures, the page shows the book's photograph
+of it, as printed, with its figure number and page: twelve figures in all, for
+every posture but the stance at ease, which the book does not picture. No scenes
+are made from the book yet, so this section has no practice library.
 
 **Creator.** Make a scene of your own. Start from a blank one with **New
 scene**, or from a scene in the library: a built-in one opens as a copy, with
@@ -99,7 +111,8 @@ In the Creator there is more:
   turned out of the plane of its shoulder across the chest, the angle and turn
   of the blade and the position of the hand that holds it, which moves in steps
   of 15° and says when it is on one of the books' hand positions.
-- **Poses:** twenty-six named poses to put on any step.
+- **Poses:** twenty-six named poses to put on any step, in the groups the
+  sections of the page keep their base postures in.
 - **Phrase data:** the whole scene as text. Edit it in place or paste one in;
   it applies as you type, and says why when it can't. The fields above it and
   the text are the same thing, and follow each other. While the text can't be
@@ -111,9 +124,10 @@ The fencers are not pictures. Each is worked out from a pose, a few numbers for
 the joints, and drawn in the browser: two people modelled in three dimensions,
 the young man and the older one, drawn in ink. The look follows the line
 illustrations of old sabre training books, as a model to draw from; none of them
-is scanned or traced into the figures. The one old book used here is kept as a
-translation under `sources/`: a source for the base postures, not a picture to
-draw from.
+is scanned or traced into the figures. The one old book used here is a source for
+the base postures, not a picture to draw from: its translation is kept under
+`sources/`, and its photographs of the postures are shown beside them in Book
+knowledge, as printed.
 
 **The skeleton.** A pose sets where the hips are, how far the body leans, where
 each foot stands and how far it is lifted, the angles of the arms and the blade,
@@ -338,7 +352,7 @@ the timeline and its maths, with how the body moves between steps (through a ste
 it passes, the feet that stay and the feet that step, and a wrist that never bends
 past what parry 5 asks), the edits the Creator makes to a scene, the saved
 scenes (what they keep and what they leave alone) and the check that a
-reference link is a web address, the base postures, the skeleton and the camera
+reference link is a web address, the base postures of each section, the skeleton and the camera
 (the knees and the arms, the hand positions, where the stage looks, and every
 phrase and posture at every moment from eight camera angles, checked for broken
 path data), the postures of the 1906 book, each checked against what the book
@@ -350,10 +364,10 @@ has them: the light cut on the inside of the defender's blade just above his gua
 and each riposte edge first on the attacker's glove, on top, on the outside or
 underneath, with no blade going into an arm at any moment), and the published files (only relative links to
 files that exist, no outside requests, every element the scripts need, and the
-licences of what is bundled). Fifteen more run in a real browser: headless
+licences of what is bundled). Sixteen more run in a real browser: headless
 Chrome or Chromium loads the page, then a driver page works every control of
-every mode, with hostile input among it, and checks the result, down to two tabs
-saving the same scene and the 3D figures taking the stage; and once more with
+every tab and mode, with hostile input among it, and checks the result, down to
+two browser tabs saving the same scene and the 3D figures taking the stage; and once more with
 WebGL turned off, where the stick figures stand in and the note says why. They
 need Chrome or Chromium on your `PATH`, or `CHROME_BIN` pointing at one, and are
 skipped without it.
@@ -379,11 +393,11 @@ the site stays as it was.
 
 Project layout:
 - `site/index.html` and `site/css/styles.css`: the page
-- `site/js/app.js`: the modes, the controls, and drawing each frame
+- `site/js/app.js`: the tabs and modes, the controls, and drawing each frame
 - `site/js/phrase.js`: phrases as data: timeline, in-betweens, text, edits
 - `site/js/figure.js`: a pose's skeleton, the hand on the blade, the camera, where the stage looks, the motion ghosts, the blade paths and the marks on the floor
-- `site/js/library.js`: the poses, the built-in scenes and the sliders
-- `site/js/bases.js`: the base postures, in words
+- `site/js/library.js`: the poses, the sections of the page, the built-in scenes and the sliders
+- `site/js/bases.js`: the base postures, in words, and which section each belongs to
 - `site/js/scenes.js`: reference links, and the scenes saved on this device
 - `site/js/stage3d.js`: the figures drawn in ink on a canvas over the stage
 - `site/js/rig.js`: the bodies on their bones, posed from a pose's skeleton, and the sabre
@@ -391,7 +405,7 @@ Project layout:
 - `site/models/`: the bodies, with their licence; `site/vendor/`: three.js, with its licence
 - `site/fonts/`: Big Shoulders Display and IBM Plex, with their licences
 - `scripts/serve.js`: the local server; `scripts/bake-fencers.js`: the bodies from MakeHuman's files; `scripts/protect-repo.sh`: repository settings
-- `sources/kardvivas-1906/`: the translation of the base chapters of a Hungarian sabre book of 1906, with its glossary and figures, which the last twelve base postures are taken from (not part of the published site)
+- `sources/kardvivas-1906/`: the translation of the base chapters of a Hungarian sabre book of 1906, with its glossary and figures, which the last twelve base postures are taken from (not part of the published site, except for the twelve photographs the page shows, copied into `site/img/kardvivas-1906/`)
 - `tests/`
 
 ## Publishing

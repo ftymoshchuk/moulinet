@@ -184,14 +184,25 @@ const bothRecover = () => ({ label: "Both recover", ms: 420, hold: 500, A: { pos
 // it, and the blade passes behind the shoulder and the head, not through them. The
 // hand stays in the third, so the edge leads all the way round.
 //
-// These are the scenes the practice library starts with. A scene may also say
-// what kind of learning it comes from, with a `source`, and where it was noted,
-// with an `event` and a `reference` link. The drills from the class say which
-// class, as live learning; the others do not, because there is no real bout
-// behind them to point to.
+// The page keeps what it teaches in two sections, one tab each, and each section
+// has its own base postures (see bases.js) and its own scenes. Live knowledge is
+// what was learned in person and practised; Book knowledge is what a book teaches,
+// taken from its text. The Creator, the third tab, belongs to neither.
+export const SECTIONS = [
+  { id: "live", name: "Live knowledge" },
+  { id: "book", name: "Book knowledge" },
+];
+
+// These are the scenes the practice library starts with, each in a `section` of
+// the page. A scene may also say what kind of learning it comes from, with a
+// `source`, and where it was noted, with an `event` and a `reference` link. The
+// drills from the class say which class, as live learning; the others do not,
+// because there is no real bout behind them to point to. No scene is made from the
+// book yet, so the book's section has only its postures.
 export const PRESETS = [
   {
     id: "advance-lunge-head-cut",
+    section: "live",
     phrase: {
       name: "Advance, lunge, head cut",
       note: "A advances, raises the blade, then lunges and cuts to the head while B holds the guard. Watch the order: the arm moves before the legs.",
@@ -210,6 +221,7 @@ export const PRESETS = [
   },
   {
     id: "chest-cut-parry-3",
+    section: "live",
     phrase: {
       name: "Lunge to the chest, parry 3, riposte",
       note: "A lunges to the chest and B takes parry 3, then ripostes to the head before both recover.",
@@ -224,6 +236,7 @@ export const PRESETS = [
   },
   {
     id: "head-attack-parry-5",
+    section: "live",
     phrase: {
       name: "Head attack, parry 5, riposte to head",
       note: "A raises the blade and lunges at the head; B takes parry 5 and ripostes to the head, then both recover.",
@@ -239,6 +252,7 @@ export const PRESETS = [
   },
   {
     id: "outside-face-cut-face-protection",
+    section: "live",
     phrase: {
       name: "Outside face cut, face protection",
       note: "A extends the arm and lunges with a cut at the outside of B's face. B takes face protection: the hand low in front, the front foot drawn back, and the blade slanting forward, so the cut lands on the forte, well in front of the face. Then both recover.",
@@ -253,6 +267,7 @@ export const PRESETS = [
   },
   {
     id: "moulinet-to-head",
+    section: "live",
     phrase: {
       name: "Moulinet to the head",
       note: "One fencer alone. The blade drops forward past the arm, swings up behind and comes down over the top: the circular cut this page is named after.",
@@ -271,6 +286,7 @@ export const PRESETS = [
   },
   {
     id: "class-light-cut-top-of-glove",
+    section: "live",
     phrase: {
       name: "Light cut on the blade, riposte to the top of the glove",
       source: LIVE,
@@ -289,6 +305,7 @@ export const PRESETS = [
   },
   {
     id: "class-light-cut-side-of-glove",
+    section: "live",
     phrase: {
       name: "Light cut on the blade, riposte to the side of the glove",
       source: LIVE,
@@ -310,6 +327,7 @@ export const PRESETS = [
   },
   {
     id: "class-light-cut-tierce-hungarian-cut",
+    section: "live",
     phrase: {
       name: "Light cut on the blade, tierce, Hungarian cut under the glove",
       source: LIVE,

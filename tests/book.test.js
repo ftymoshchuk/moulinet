@@ -4,9 +4,10 @@
 // is to the fencer's left and one with z < 0 to the right. The tolerances are those of a model with a single height
 // for every fencer, a few centimetres, not of the book's own words.
 import assert from "node:assert/strict";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { BASES, BASE_GROUPS } from "../site/js/bases.js";
+import { BASES, BASE_GROUPS, BASE_SECTIONS, FIGURE_DIR, basesOf } from "../site/js/bases.js";
 import { gripFrame, skeleton } from "../site/js/figure.js";
 import { HAND_POSITIONS, POSES } from "../site/js/library.js";
 import { resolvePose } from "../site/js/phrase.js";
@@ -31,11 +32,60 @@ test("the book's postures are the last group of the base postures, in the book's
   const ours = BASES.filter((base) => base.group === GROUP);
   assert.deepEqual(ours.map(({ pose }) => pose), BOOK);
   assert.deepEqual(BASES.slice(-BOOK.length).map(({ pose }) => pose), BOOK, "they come after every other posture, so the others keep their numbers");
+  // The page keeps them in the section of its own, Book knowledge, and no other posture is in it.
+  assert.deepEqual(BASE_SECTIONS.book.groups, [GROUP]);
+  assert.deepEqual(basesOf("book").map(({ pose }) => pose), BOOK);
   for (const { pose, points } of ours) {
     const book = points.find(([what]) => what === "Book");
     assert.ok(book, `${pose}: a Book point`);
     assert.match(book[1], /Kardvívás \(1906\), §\d+/, `${pose}: names the book and the section`);
   }
+});
+
+const SOURCE_FIGURES = new URL("../sources/kardvivas-1906/figures/", import.meta.url);
+const SITE_FIGURES = new URL(`../site/${FIGURE_DIR}`, import.meta.url);
+
+/** The width and height a JPEG says it has, from the first frame header in it. */
+function jpegSize(bytes) {
+  let at = 2;
+  while (at + 9 < bytes.length) {
+    if (bytes[at] !== 0xff) {
+      at++;
+      continue;
+    }
+    const marker = bytes[at + 1];
+    // A start-of-frame marker, not one of the table markers that sit among them.
+    if (marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)) return [bytes.readUInt16BE(at + 7), bytes.readUInt16BE(at + 5)];
+    at += 2 + bytes.readUInt16BE(at + 2);
+  }
+  throw new Error("no frame header");
+}
+
+test("the photographs shown beside the book's postures are the figures of the book, as in sources, and each posture shows the figures its Book point cites", () => {
+  const manifest = JSON.parse(readFileSync(new URL("manifest.json", SOURCE_FIGURES), "utf8"));
+  const shown = [];
+  for (const base of BASES) {
+    const figures = base.figures ?? [];
+    const book = base.points.find(([what]) => what === "Book")?.[1] ?? "";
+    const cited = [...book.matchAll(/Figs?\. (\d+)(?: and (\d+))?/g)].flatMap((m) => [m[1], m[2]]).filter(Boolean).map(Number);
+    assert.deepEqual(figures.map(({ n }) => n), cited, `${base.pose}: shows the figures it cites`);
+    if (figures.length) assert.equal(base.group, GROUP, `${base.pose}: only the book's postures have the book's photographs`);
+    for (const figure of figures) {
+      const entry = manifest.figures.find((candidate) => candidate.figure === figure.n);
+      assert.ok(entry, `Fig. ${figure.n} is in the manifest`);
+      assert.equal(figure.file, entry.file);
+      assert.equal(entry.caption_en, `Fig. ${figure.n}. ${figure.caption}`, "the printed caption, in English");
+      assert.equal(figure.page, entry.book_page);
+      // The site carries its own copy, so it can be published without sources/; it must be the same file.
+      const copy = readFileSync(new URL(figure.file, SITE_FIGURES));
+      assert.ok(copy.equals(readFileSync(new URL(figure.file, SOURCE_FIGURES))), `${figure.file} is the same file as the one in sources`);
+      assert.deepEqual([figure.width, figure.height], jpegSize(copy), `${figure.file}: the size the page keeps room for`);
+      shown.push(figure.file);
+    }
+  }
+  assert.equal(new Set(shown).size, shown.length, "no figure is shown twice");
+  assert.deepEqual(readdirSync(SITE_FIGURES).filter((name) => name.endsWith(".jpg")).toSorted(), shown.toSorted(), "every photograph in the site is shown by a posture");
+  assert.ok(existsSync(new URL("SOURCE.txt", SITE_FIGURES)), "the folder says where its files come from");
 });
 
 test("the hand positions are the book's attitudes: the 6th is the 2/3, the 5th the 3/4, the 2nd, 3rd and 1st the positions of those names", () => {

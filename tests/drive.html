@@ -26,12 +26,30 @@
           else {
             drive(win, frame.contentDocument, results.seen);
             await drive3d(win, frame.contentDocument, results.seen);
+            await driveFigures(win, frame.contentDocument, results.seen);
           }
         } catch (error) {
           results.errors.push(`${error.name}: ${error.message}`);
         }
         document.getElementById("results").textContent = JSON.stringify(results);
       });
+
+      // The book's photographs of its postures load, at the size the page says. Each posture's are asked for as it is
+      // shown, and all are waited for together: the browser's virtual clock runs on while it waits, and the driver has
+      // only so much of it.
+      async function driveFigures(win, doc, seen) {
+        const $$ = (selector) => [...doc.querySelectorAll(selector)];
+        $$("button").find((b) => b.textContent.trim() === "Book knowledge").click();
+        const asked = $$(".base-button").map((posture) => {
+          posture.click();
+          return $$("#base-figures img");
+        });
+        seen.figuresLoaded = await Promise.all(
+          asked.map((images) =>
+            Promise.all(images.map((image) => image.decode().then(() => image.naturalWidth === Number(image.getAttribute("width")) && image.naturalHeight === Number(image.getAttribute("height")), () => false))),
+          ),
+        );
+      }
 
       // What the stage shows of the fencers: the 3D figures' canvas, the stick figures that stand in without them,
       // and the note that says why.
@@ -128,10 +146,13 @@
           return answer;
         };
 
-        // Which mode is chosen, and which panels and controls it shows.
+        // Which tab is open; and which mode is chosen, and which panels and controls it shows. The Creator is chosen by
+        // its tab, the library and the postures by the switch inside a section.
+        const pressed = (b) => b.getAttribute("aria-pressed") === "true";
+        const openTabs = () => $$("[data-tab]").filter(pressed).map((b) => b.dataset.tab);
         const panelName = (el) => [...el.classList].find((name) => name.startsWith("panel--")).slice(7);
         const showing = () => ({
-          chosen: $$("[data-mode]").filter((b) => b.getAttribute("aria-pressed") === "true").map((b) => b.dataset.mode),
+          chosen: $$("[data-mode], [data-tab=creator]").filter(pressed).map((b) => b.dataset.mode ?? b.dataset.tab),
           panels: $$("main section.panel").filter(visible).map(panelName),
           controls: ["#play-button", ".speed", "#timeline", "#steps", "#timecode", "[data-toggle=ghosts]", "[data-toggle=trail]", "[data-toggle=ink]", "[data-toggle=loop]", "[data-toggle=closeUp]", "#camera"].filter((selector) => visible($(selector))),
         });
@@ -247,23 +268,37 @@
         };
         seen.baseView = $("#stage").getAttribute("viewBox");
 
-        // Every posture, by its button: what is said, and that it draws.
-        seen.postures = $$(".base-button").map((posture) => {
-          posture.click();
-          checkPaths();
-          return {
-            name: text("#base-name"),
-            group: text("#base-group"),
-            key: text("#base-key"),
-            text: text("#base-text"),
-            points: $$("#base-points .fact").map((fact) => [fact.querySelector("dt").textContent, fact.querySelector("dd").textContent]),
-            label: text("#step-label"),
-            count: text("#step-count"),
-            pressed: $$(".base-button[aria-pressed=true]").length,
-            pressedIs: $$(".base-button").indexOf($(".base-button[aria-pressed=true]")),
-          };
-        });
+        // Every posture of the section on show, by its button: what is said, and that it draws.
+        const lookAtPostures = () =>
+          $$(".base-button").map((posture) => {
+            posture.click();
+            checkPaths();
+            return {
+              name: text("#base-name"),
+              group: text("#base-group"),
+              key: text("#base-key"),
+              text: text("#base-text"),
+              points: $$("#base-points .fact").map((fact) => [fact.querySelector("dt").textContent, fact.querySelector("dd").textContent]),
+              label: text("#step-label"),
+              count: text("#step-count"),
+              pressed: $$(".base-button[aria-pressed=true]").length,
+              pressedIs: $$(".base-button").indexOf($(".base-button[aria-pressed=true]")),
+              // The book's photographs, in their panel beside the stage, where the section has them.
+              figuresPanel: visible($("#figures-panel"))
+                ? {
+                    figures: $$("#base-figures .book-figure").map((card) => {
+                      const image = card.querySelector("img");
+                      return { src: image.getAttribute("src"), alt: image.alt, width: image.getAttribute("width"), height: image.getAttribute("height"), caption: card.querySelector("figcaption").textContent };
+                    }),
+                    note: $("#base-figures .book-figures__note")?.textContent ?? null,
+                    empty: $("#base-figures > p:not(.book-figures__note)")?.textContent ?? null,
+                  }
+                : null,
+            };
+          });
+        seen.postures = lookAtPostures();
         seen.groups = $$("#base-list .list-group__title").map((title) => title.textContent);
+        seen.liveBase = { tabs: openTabs(), switchShown: visible($("#view-switch")), intro: text("#bases-intro"), noteShown: !hidden("#bases-note"), listed: $$(".base-button").length };
 
         // The arrows go from posture to posture, and stop at the ends.
         $$(".base-button")[0].click();
@@ -289,6 +324,39 @@
         button("Creator").click();
         button("Base postures").click();
         seen.baseKept = { count: text("#step-count"), label: text("#base-name") };
+
+        // ---------- The book's section ----------
+
+        // Book knowledge has postures of its own and no scenes, so it opens on them, with no switch between a library and postures.
+        button("Book knowledge").click();
+        seen.bookShows = { ...showing(), tabs: openTabs(), switchShown: visible($("#view-switch")) };
+        seen.bookStage = { label: text("#step-label"), count: text("#step-count"), intro: text("#bases-intro"), note: text("#bases-note"), noteShown: !hidden("#bases-note") };
+        seen.bookPostures = lookAtPostures();
+        seen.bookGroups = $$("#base-list .list-group__title").map((title) => title.textContent);
+        // The arrows stop at the ends of its postures, not of the live ones.
+        $$(".base-button")[0].click();
+        button("Previous posture").click();
+        const bookAtStart = text("#step-count");
+        $$(".base-button").at(-1).click();
+        button("Next posture").click();
+        seen.bookArrows = { atStart: bookAtStart, atEnd: text("#step-count") };
+        // A tab keeps its place while another has the stage. The Creator's tab takes the focus from the posture button it hid.
+        $$(".base-button")[3].click();
+        $$(".base-button")[2].focus();
+        button("Creator").click();
+        seen.bookToCreator = { tabs: openTabs(), switchShown: visible($("#view-switch")), chosen: showing().chosen, focus: doc.activeElement?.dataset.tab };
+        button("Book knowledge").click();
+        seen.bookKept = { count: text("#step-count"), label: text("#base-name"), tabs: openTabs() };
+        button("Live knowledge").click();
+        seen.liveKept = { count: text("#step-count"), label: text("#base-name"), tabs: openTabs(), switchShown: visible($("#view-switch")), chosen: showing().chosen };
+        // Live knowledge still has its scenes, and the switch brings them back.
+        button("Practice library").click();
+        seen.liveLibrary = { tabs: openTabs(), cards: $$(".scene-button").length, chosen: showing().chosen };
+        button("Book knowledge").click();
+        button("Live knowledge").click();
+        seen.liveLibraryKept = { tabs: openTabs(), chosen: showing().chosen, title: text("#scene-title") };
+        button("Base postures").click();
+        $$(".base-button")[4].click();
 
         // ---------- The close-up of the hand ----------
 
@@ -341,7 +409,7 @@
           status: text("#phrase-status"),
           count: text("#step-count"),
           asked: asked.length,
-          focus: doc.activeElement?.dataset.mode,
+          focus: doc.activeElement?.dataset.mode ?? doc.activeElement?.dataset.tab,
         };
 
         // Fencer B on step 3: a pose from the library, two sliders, a reset.
@@ -637,7 +705,7 @@
           cards: $$("#scenes-saved .scene-button").length,
           stored: savedScenes().length,
           title: text("#scene-title"),
-          focus: doc.activeElement?.dataset.mode,
+          focus: doc.activeElement?.dataset.mode ?? doc.activeElement?.dataset.tab,
         };
         for (const card of [...$$("#scenes-saved .scene-button")]) {
           card.click();
