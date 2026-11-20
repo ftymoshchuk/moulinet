@@ -33,7 +33,7 @@ import {
   WebGLRenderTarget,
 } from "../vendor/three.module.min.js";
 import { loadBodies } from "./bodies.js";
-import { PIVOT, facing } from "./figure.js";
+import { PIVOT } from "./figure.js";
 import { createFigure } from "./rig.js";
 
 const RAD = Math.PI / 180;
@@ -171,10 +171,9 @@ function hairOf(bodies, garment) {
 
 /**
  * Sets up the 3D figures on `canvas` and loads their bodies. Resolves to `draw(view)`, which draws the fencers for
- * `view`: { poses: { A, B }, solo, frame: [x, y, w, h] as the stage's viewBox, camera in degrees, ink, whether the
- * pen wavers a little along its lines, and mirror, whether they are drawn as their mirror images, with the sabre in the
- * right hand, A facing left (see `projector` in figure.js) }; `lost`, true once the browser has taken the drawing away;
- * and `fencers`, the figures as rig.js makes them.
+ * `view`: { poses: { A, B }, solo, frame: [x, y, w, h] as the stage's viewBox, camera in degrees, and ink, whether the
+ * pen wavers a little along its lines }; `lost`, true once the browser has taken the drawing away; and
+ * `fencers`, the figures as rig.js makes them.
  */
 export async function createStage3d(canvas) {
   const gl = canvas.getContext("webgl2", { alpha: true, premultipliedAlpha: true, antialias: false, depth: true, stencil: false, preserveDrawingBuffer: false });
@@ -189,11 +188,13 @@ export async function createStage3d(canvas) {
     stage.lost = true;
   });
 
-  // The light, from high in front and to the left, and the bands of tone the white figures take under it.
+  // The light, from high in front and to the left of what is seen, and the bands of tone the white figures take under
+  // it. The stage is shown in a mirror (`.stage__frame` in styles.css), so to the left of what is seen is to the right
+  // here, in the frame the figures are drawn in.
   const scene = new Scene();
   scene.add(new AmbientLight(0xffffff, 1.2));
   const sun = new DirectionalLight(0xffffff, 2.2);
-  sun.position.set(-150, 300, 260);
+  sun.position.set(150, 300, 260);
   scene.add(sun);
   const tones = new DataTexture(new Uint8Array([105, 170, 255]), 3, 1, RedFormat);
   tones.minFilter = tones.magFilter = NearestFilter;
@@ -271,7 +272,7 @@ export async function createStage3d(canvas) {
     return out.set(((ndc.x + 1) / 2) * size[0], ((ndc.y + 1) / 2) * size[1]);
   };
 
-  stage.draw = ({ poses, solo, frame, camera: angle, ink = true, mirror = false }) => {
+  stage.draw = ({ poses, solo, frame, camera: angle, ink = true }) => {
     if (stage.lost) return;
     // As many pixels as the canvas has on the page, times the detail.
     const detail = Math.min(DETAIL[1], Math.max(DETAIL[0], window.devicePixelRatio || 1));
@@ -286,10 +287,9 @@ export async function createStage3d(canvas) {
     }
     composite.uniforms.detail.value = detail;
 
-    const [dirA, dirB] = [facing("A", mirror), facing("B", mirror)];
-    fencers.A.pose(poses.A, dirA, mirror);
+    fencers.A.pose(poses.A, 1);
     fencers.B.group.visible = !solo;
-    if (!solo) fencers.B.pose(poses.B, dirB, mirror);
+    if (!solo) fencers.B.pose(poses.B, -1);
 
     // The camera looks at the pivot of the piste from `angle` round, and sees just what the stage's view box holds.
     const [fx, fy, fw, fh] = frame;
@@ -302,8 +302,8 @@ export async function createStage3d(canvas) {
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld();
     const { uniforms } = composite;
-    onCanvas([poses.A.x + dirA * poses.A.hipX, poses.A.hipY, 0], uniforms.anchorA.value);
-    if (!solo) onCanvas([poses.B.x + dirB * poses.B.hipX, poses.B.hipY, 0], uniforms.anchorB.value);
+    onCanvas([poses.A.x + poses.A.hipX, poses.A.hipY, 0], uniforms.anchorA.value);
+    if (!solo) onCanvas([poses.B.x - poses.B.hipX, poses.B.hipY, 0], uniforms.anchorB.value);
     uniforms.wobble.value = ink ? 1 : 0;
 
     renderer.setClearColor(0xffffff, 0);

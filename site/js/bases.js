@@ -25,19 +25,12 @@ export const BASE_SECTIONS = {
 // Every group, in the order of the postures.
 export const BASE_GROUPS = Object.values(BASE_SECTIONS).flatMap(({ groups }) => groups);
 
-// The postures show one fencer as the book's is: right-handed, facing left, with his
-// chest toward the camera, which is the stage's fencer A as his mirror image (see
-// `projector` in figure.js). It is how the book's photographs show him.
-//
-// Where his back foot stands for every posture (cm), the same for all, so moving from
-// one to the next changes the fencer and not the view. It is the mirror, about the
-// pivot the camera turns about, of 60, where he stood when he faced right, so he is as
-// near the pivot as he was and turning the camera does not sweep him across the stage.
-export const BASE_X = 170;
+// Where the one fencer stands for every posture (cm), the same for all, so
+// moving from one to the next changes the fencer and not the view.
+export const BASE_X = 60;
 // Turned a little from side on, so a blade held across the body, as in parry 5,
-// is not seen end on: the mirror of the 25° he was seen from when he faced right, so
-// the camera is round behind him as it was then.
-export const BASE_CAMERA = -25;
+// is not seen end on.
+export const BASE_CAMERA = 25;
 // How far along the blade from the hand (cm) the stage must keep in view. All of
 // it would let the blade held up in "Blade up" set the height of the view for
 // every posture and leave the fencer small. This much lets only the point of

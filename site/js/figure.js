@@ -6,6 +6,10 @@
 // The body is worked out in centimetres, y up, facing +x with the back foot at
 // 0; a projector then places it on the piste and turns it for the camera,
 // which swings around a point on the piste. Out come SVG units, y down.
+//
+// All of it is in the frame the skeleton has: the sword on the side of the chest
+// away from the camera, A on the left facing right. The page shows the stage in a
+// mirror (`.stage__frame` in styles.css), which makes the fencers right-handed.
 import { poseAt } from "./phrase.js";
 
 // The camera turns around this point on the piste (cm).
@@ -153,48 +157,31 @@ export function skeleton(p) {
 }
 
 /**
- * Which way fencer `who` faces on the stage: A to the right and B to the left, or
- * the other way round for the mirror image of them (see `projector`).
- */
-export const facing = (who, mirror = false) => ((who === "A") !== mirror ? 1 : -1);
-
-/**
  * Places body points on the piste and turns them for the camera. `dir` is 1
  * for a fencer facing right and -1 for one facing left.
- *
- * The skeleton has the sword on the side of the chest away from the camera, and a
- * fencer who faces left is the one facing right turned round, so on the stage both
- * hold the sabre in the left hand, and one shows his back. With `mirror` the
- * fencer is the mirror image of that: the sabre in his right hand, as the book's
- * fencer holds it, and his depth the other way round from the way he faces, so one
- * who faces left (`facing("A", true)`) has his chest toward the camera and the
- * sword arm on the far side, as the book's photographs show him.
  */
-export function projector(p, dir, camera, mirror = false) {
+export function projector(p, dir, camera) {
   const c = Math.cos(camera * RAD);
   const s = Math.sin(camera * RAD);
-  // Which way depth goes: with the way he faces, or against it for his mirror image.
-  const z = mirror ? -dir : dir;
-  const W = (q) => [(p.x + dir * q[0] - PIVOT) * c + z * (q[2] || 0) * s + PIVOT, -q[1]];
+  const W = (q) => [(p.x + dir * q[0] - PIVOT) * c + dir * (q[2] || 0) * s + PIVOT, -q[1]];
   // For a shape worked out as the camera sees it, across the page and up: `u` is
   // forward along the camera's way of looking, that is c * forward + s * toward the camera.
   W.flat = ([u, y]) => [(p.x - PIVOT) * c + PIVOT + dir * u, -y];
   // How far a step `v` in the body's frame goes toward the camera.
-  W.depth = (v) => z * (v[2] || 0) * c - dir * v[0] * s;
+  W.depth = (v) => dir * ((v[2] || 0) * c - v[0] * s);
   W.camera = camera;
   W.dir = dir;
-  W.mirror = mirror;
   return W;
 }
 
-export function bladeTip(p, dir, camera, mirror = false) {
-  return fmt(projector(p, dir, camera, mirror)(skeleton(p).tip));
+export function bladeTip(p, dir, camera) {
+  return fmt(projector(p, dir, camera)(skeleton(p).tip));
 }
 
 /** A quick line drawing of a pose: the motion ghosts. */
-export function stickFigure(p, dir, camera, mirror = false) {
+export function stickFigure(p, dir, camera) {
   const J = skeleton(p);
-  const W = projector(p, dir, camera, mirror);
+  const W = projector(p, dir, camera);
   const S = (q) => fmt(W(q));
   const h = W(J.hd);
   return {
@@ -221,9 +208,9 @@ function floorStroke(x0, x1, y, width) {
  * shoe, as long as the camera sees the shoe reach across the piste and shorter each, which shrink as the foot lifts
  * and are gone once it is clear of the floor.
  */
-export function groundPath(p, dir, camera, mirror = false) {
+export function groundPath(p, dir, camera) {
   const J = skeleton(p);
-  const W = projector(p, dir, camera, mirror);
+  const W = projector(p, dir, camera);
   const tb = (p.toeBack ?? 0) * RAD;
   let d = "";
   for (const [ankle, along] of [[J.ankF, [1, 0]], [J.ankB, [-Math.sin(tb), Math.cos(tb)]]]) {
@@ -284,10 +271,9 @@ const FRAME_SHAPE = DEFAULT_FRAME[2] / DEFAULT_FRAME[3];
  * change it, so turning the camera never zooms. The box holds the blade as far
  * along as `blade` cm from the hand, all of it unless told less: a blade held up
  * or reaching far then no longer sets the view for the body, and its point may
- * run off the edge. With `mirror` the fencers are placed as their mirror images
- * are (see `projector`).
+ * run off the edge.
  */
-export function frameOf(timeline, blade = BLADE, mirror = false) {
+export function frameOf(timeline, blade = BLADE) {
   let minX = Infinity;
   let maxX = -Infinity;
   let minY = Infinity;
@@ -303,10 +289,10 @@ export function frameOf(timeline, blade = BLADE, mirror = false) {
   for (let i = 0; i <= 24; i++) times.push((timeline.duration * i) / 24);
   for (const t of times) {
     const at = poseAt(timeline, Math.min(t, timeline.duration));
-    for (const who of timeline.solo ? ["A"] : ["A", "B"]) {
+    for (const [who, dir] of timeline.solo ? [["A", 1]] : [["A", 1], ["B", -1]]) {
       const p = at[who];
       const J = skeleton(p);
-      const W = projector(p, facing(who, mirror), 0, mirror);
+      const W = projector(p, dir, 0);
       const feet = [-8, 24].flatMap((reach) => [[J.ankB[0] + reach, 0], [J.ankF[0] + reach, 0]]);
       const body = [[J.hd[0], J.hd[1] + 14], J.hn, J.at(blade), J.kF, J.kB, J.re, J.rs, [J.hipB[0] - 14, J.hip[1]], [J.hipF[0] + 14, J.hip[1]]];
       for (const q of [...feet, ...body]) take(W(q));
@@ -332,9 +318,9 @@ const HAND_VIEW = 54;
  * wrist and the forte of the blade, so the fist, the hilt and the start of the
  * blade are all in it.
  */
-export function handFrame(p, dir, camera, mirror = false) {
+export function handFrame(p, dir, camera) {
   const J = skeleton(p);
-  const W = projector(p, dir, camera, mirror);
+  const W = projector(p, dir, camera);
   const [fx, fy] = [J.hn[0] - J.el[0], J.hn[1] - J.el[1]];
   const l = Math.hypot(fx, fy) || 1;
   const wrist = W([J.hn[0] - (12 * fx) / l, J.hn[1] - (12 * fy) / l, J.hn[2]]);

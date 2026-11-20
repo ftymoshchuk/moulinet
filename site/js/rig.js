@@ -7,8 +7,7 @@
 // way each bone faces in the body's frame (cm, x toward the opponent, y up, z
 // toward the camera for the fencer facing right) and only then made into a turn
 // from its parent. Both fencers are posed in that frame, as figure.js has them;
-// the fencer facing left is then turned round to face the other way, and one drawn
-// as a mirror image has his depth turned round.
+// the fencer facing left is then turned round to face the other way.
 import { Bone, BufferAttribute, BufferGeometry, CatmullRomCurve3, CylinderGeometry, Group, Matrix4, Mesh, Quaternion, Skeleton, SkinnedMesh, SphereGeometry, TubeGeometry, Vector3 } from "../vendor/three.module.min.js";
 import { gripFrame, knee3, kneeBehind, skeleton } from "./figure.js";
 
@@ -508,8 +507,7 @@ export function poseRig(rig, p) {
 
 /**
  * A fencer as a 3D figure: `group`, to put in a scene, holds the body, a skinned mesh, and the sabre, whose parts are
- * meshes named for what they are. `pose(p, dir, mirror)` poses it, dir 1 facing right and -1 facing left; with
- * `mirror` it is the figure's mirror image, the sabre in the other hand (see `projector` in figure.js).
+ * meshes named for what they are. `pose(p, dir)` poses it, dir 1 facing right and -1 facing left.
  */
 export function createFigure(bodies, who) {
   const figure = bodies.figures[who];
@@ -541,7 +539,7 @@ export function createFigure(bodies, who) {
     mesh,
     sabre,
     rig,
-    pose(p, dir, mirror = false) {
+    pose(p, dir) {
       const { q, at, grip, short } = poseRig(rig, p);
       bones.forEach((bone, i) => {
         const pa = rig.parent[i];
@@ -556,8 +554,6 @@ export function createFigure(bodies, who) {
       sabre.matrix.makeBasis(a, e, new Vector3().crossVectors(a, e)).setPosition(V(skeleton(p).hn).add(short));
       group.position.set(p.x, 0, 0);
       group.rotation.set(0, dir < 0 ? Math.PI : 0, 0);
-      // The mirror image is the same body with its depth turned round, which three.js draws with its faces the right way out.
-      group.scale.set(1, 1, mirror ? -1 : 1);
       group.updateMatrixWorld(true);
     },
   };

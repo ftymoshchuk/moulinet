@@ -263,9 +263,12 @@ export const HAND_POSITIONS = { "-180": "1st", "-135": "1/2", "-90": "2nd", "-45
 // The sliders under "Adjust this moment", in order. `x` is where the fencer
 // stands on the piste; every other key overrides a value of the pose. A slider
 // moves in steps of `step`, or of one, and says the name in `names` of a value
-// that has one.
+// that has one. One that is `reversed` runs from its largest value at the left to
+// its smallest at the right: the stage is shown in a mirror, so the piste runs
+// from right to left, from A's end to B's, and the slider moves a fencer the way
+// it is dragged.
 export const JOINTS = [
-  { key: "x", label: "Position on the piste", min: -70, max: 300, unit: " cm" },
+  { key: "x", label: "Position on the piste", min: -70, max: 300, unit: " cm", reversed: true },
   { key: "footF", label: "Front foot reach", min: 10, max: 135, unit: " cm" },
   { key: "liftF", label: "Front foot lift", min: 0, max: 30, unit: " cm" },
   { key: "hipX", label: "Hips forward", min: 5, max: 90, unit: " cm" },

@@ -7,7 +7,7 @@
 // The page has three tabs. Live knowledge and Book knowledge are sections, each
 // with a practice library and base postures of its own; the Creator is the third.
 import { BASE_BLADE, BASE_SECTIONS, FIGURE_DIR, FIGURE_NOTE, basePhrase, basesOf } from "./bases.js";
-import { DEFAULT_FRAME, bladePaths, facing, floorPath, frameOf, groundPath, handFrame, stickFigure } from "./figure.js";
+import { DEFAULT_FRAME, bladePaths, floorPath, frameOf, groundPath, handFrame, stickFigure } from "./figure.js";
 import { JOINTS, POSE_NAMES, POSES, PRESETS, SECTIONS } from "./library.js";
 import {
   TEXT_KEYS,
@@ -724,6 +724,10 @@ function createFencer(id) {
 
 const fencers = { A: createFencer("a"), B: createFencer("b") };
 
+// Where a slider's thumb is for a value of its joint, and the value for where it is: the same either way, but for a slider
+// that runs the other way round (see JOINTS in library.js).
+const onSlider = (joint, v) => (joint.reversed ? joint.min + joint.max - v : v);
+
 const jointControls = JOINTS.map((joint) => {
   const id = `joint-${joint.key}`;
   const wrapper = document.createElement("div");
@@ -742,7 +746,7 @@ const jointControls = JOINTS.map((joint) => {
   input.max = String(joint.max);
   input.step = String(joint.step ?? 1);
   input.addEventListener("input", () => {
-    editCurrent((spec) => setJoint(spec, joint.key, Math.round(Number(input.value))));
+    editCurrent((spec) => setJoint(spec, joint.key, Math.round(onSlider(joint, Number(input.value)))));
   });
   row.append(label, value);
   wrapper.append(row, input);
@@ -998,38 +1002,32 @@ function polyline(points, count) {
   return count < 2 ? "" : `M${points.slice(0, count).join("L")}`;
 }
 
-// Whether the stage draws the fencers as their mirror images. The scenes show the
-// stage's own pair, who hold the sabre in the left hand. The postures show one
-// fencer as the book's is: right-handed, facing left, his chest toward the camera
-// (see `projector` in figure.js).
-function mirrored() {
-  return state.mode === "base";
-}
-
 // The Creator keeps one view as a scene is reshaped; the library looks as close as
 // keeps everyone and their whole blades in; the postures, as close as keeps the
 // fencer and most of the blade in.
 //
 // A close-up looks at a sword hand instead, and follows it as it moves: the hand
 // of the fencer being reshaped in the Creator, and A's elsewhere.
+//
+// Everything here is worked out in the frame the skeleton has, in which A stands
+// on the left facing right. The stage is shown in a mirror (`.stage__frame` in
+// styles.css), so what is seen is its mirror image, with A on the right.
 function frameFor(now) {
-  const mirror = mirrored();
   if (state.closeUp) {
     const who = state.mode === "creator" ? editingFencer() : "A";
-    return handFrame(now[who], facing(who, mirror), viewCamera(), mirror);
+    return handFrame(now[who], who === "A" ? 1 : -1, viewCamera());
   }
   if (state.mode === "creator") return DEFAULT_FRAME;
   const blade = state.mode === "base" ? BASE_BLADE : undefined;
-  if (framed.timeline !== timeline || framed.blade !== blade || framed.mirror !== mirror) framed = { timeline, blade, mirror, frame: frameOf(timeline, blade, mirror) };
+  if (framed.timeline !== timeline || framed.blade !== blade) framed = { timeline, blade, frame: frameOf(timeline, blade) };
   return framed.frame;
 }
 
 // Where the camera looks from. The close-up looks from outside the sword arm,
 // which is where the old books draw the grip and the hand positions from: for
-// the fencer facing right, and for the posture's fencer, who is his mirror image
-// and faces left, from the other side of the piste, since the sword arm is on the
-// far side of the chest; the fencer of the pair facing left has his sword arm on
-// the near side, so his stays on this side. The camera turns it from there.
+// the fencer facing right, from the other side of the piste; the fencer facing
+// left has his sword arm on the near side, so his stays on this side. The camera
+// turns it from there.
 function viewCamera() {
   if (!state.closeUp) return state.camera;
   const nearSide = state.mode === "creator" && editingFencer() === "B";
@@ -1039,7 +1037,6 @@ function viewCamera() {
 function drawStage(now) {
   const camera = viewCamera();
   const view = frameFor(now);
-  const mirror = mirrored();
   setAttr(stageEl, "viewBox", view.join(" "));
   // The postures stand still, so they have no motion to show.
   const moving = state.mode !== "base";
@@ -1048,18 +1045,15 @@ function drawStage(now) {
   const in3d = showing3d();
   canvas3dEl.classList.toggle("hidden", !in3d);
   if (in3d) {
-    stage3d.draw({ poses: now, solo: timeline.solo, frame: view, camera, ink: state.ink, mirror });
+    stage3d.draw({ poses: now, solo: timeline.solo, frame: view, camera, ink: state.ink });
     canvas3dEl.dataset.fencers = timeline.solo ? "A" : "A B";
-    // Which hand holds the sabre, for what looks at the page to read.
-    canvas3dEl.dataset.hand = mirror ? "right" : "left";
   }
   // Without them, stick figures; as the page opens, the stage waits a moment for them first.
   const sticks = !in3d && performance.now() >= waitFor3d;
-  for (const who of ["A", "B"]) {
-    const dir = facing(who, mirror);
-    const stick = sticks ? stickFigure(now[who], dir, camera, mirror) : NO_GHOST;
+  for (const [who, dir] of [["A", 1], ["B", -1]]) {
+    const stick = sticks ? stickFigure(now[who], dir, camera) : NO_GHOST;
     setAttr(fencers[who].stick, "d", stick.body + stick.blade);
-    setAttr(fencers[who].ground, "d", groundPath(now[who], dir, camera, mirror));
+    setAttr(fencers[who].ground, "d", groundPath(now[who], dir, camera));
   }
   if (state.ink) setAttr(inkEl, "filter", "url(#ink-texture)");
   else inkEl.removeAttribute("filter");
@@ -1252,7 +1246,7 @@ function renderCreator(index, step) {
     v = Math.round(v);
     const name = joint.names?.[v];
     const text = `${v}${joint.unit}${name ? ` (${name})` : ""}`;
-    setValue(input, v);
+    setValue(input, onSlider(joint, v));
     setText(value, text);
     setAttr(input, "aria-valuetext", text);
   }

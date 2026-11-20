@@ -88,29 +88,23 @@
         // and while a scene plays it would draw them frame after frame, however little of the page's time passes, for as
         // long as this waits. The figures are drawn when they are loaded, playing or not.
         seen.figures3d = { loaded: await settled(win, doc) };
-        // Every step, a turned camera and the close-up draw them too; a pair is two figures, the stage's own, who hold
-        // the sabre in the left hand.
+        // Every step, a turned camera and the close-up draw them too; a pair is two figures.
         for (const step of $$(".step-button")) step.click();
         input($("#camera"), 30);
         button("Hand close-up").click();
         button("Hand close-up").click();
         input($("#camera"), 0);
         seen.figures3d.pair = $("#stage-3d").dataset.fencers ?? "";
-        seen.figures3d.pairHand = $("#stage-3d").dataset.hand ?? "";
-        // The postures are one fencer alone, drawn as the mirror image of A, with the sabre in the right hand.
+        // The postures are one fencer alone, which is one figure.
         button("Base postures").click();
         seen.figures3d.solo = $("#stage-3d").dataset.fencers ?? "";
-        seen.figures3d.soloHand = $("#stage-3d").dataset.hand ?? "";
         button("Practice library").click();
       }
 
       async function driveFallback(win, doc, seen) {
         seen.fallback = await settled(win, doc);
-        // The postures' fencer is a stick figure too, and the mirror image there as well: the lines drawn for the first posture.
-        const $ = (selector) => doc.querySelector(selector);
-        const base = [...doc.querySelectorAll("button")].find((b) => b.textContent.trim() === "Base postures");
-        base.click();
-        seen.fallbackPosture = { stick: $("#stick-a").getAttribute("d"), ground: $("#ground-a").getAttribute("d"), camera: $("#camera").value };
+        // The stick figures stand in the same frame as the 3D ones, so the stage is shown in a mirror here as well.
+        seen.fallbackMirror = win.getComputedStyle(doc.querySelector(".stage__frame")).transform;
       }
 
       function drive(win, doc, seen) {
@@ -163,6 +157,10 @@
           controls: ["#play-button", ".speed", "#timeline", "#steps", "#timecode", "[data-toggle=ghosts]", "[data-toggle=trail]", "[data-toggle=ink]", "[data-toggle=loop]", "[data-toggle=closeUp]", "#camera"].filter((selector) => visible($(selector))),
         });
 
+        // The stage is shown in a mirror, in every mode, so that the fencers are right-handed: how the page turns it.
+        const mirror = () => win.getComputedStyle($(".stage__frame")).transform;
+        seen.mirror = {};
+
         // ---------- The practice library ----------
 
         // The page opens on its first scene, paused at the start: nothing plays until Play is pressed.
@@ -174,6 +172,7 @@
           count: text("#step-count"),
           time: text("#timecode"),
         };
+        seen.mirror.library = mirror();
 
         // Every scene, each of its steps, and its whole timeline. Where the stage looks is
         // noted as each scene opens, and again for the postures.
@@ -267,6 +266,7 @@
 
         button("Base postures").click();
         seen.baseShows = showing();
+        seen.mirror.base = mirror();
         seen.baseStage = {
           label: text("#step-label"),
           count: text("#step-count"),
@@ -430,10 +430,17 @@
           asked: asked.length,
           focus: doc.activeElement?.dataset.mode ?? doc.activeElement?.dataset.tab,
         };
+        seen.mirror.creator = mirror();
 
         // Fencer B on step 3: a pose from the library, two sliders, a reset.
         $$(".step-button")[2].click();
+        // The piste runs from right to left on the mirrored stage, from A's end to B's, so the Position slider runs the
+        // other way round, as the fencer moves when it is dragged: A, at 0 cm, has the thumb to the right, and B, at
+        // 310 cm, past the left end of it.
+        const position = () => ({ thumb: $("#joint-x").value, said: $("#joint-x").getAttribute("aria-valuetext") });
+        seen.position = { A: position() };
         button("Edit fencer B").click();
+        seen.position.B = position();
         $$(".pose-button").find((b) => b.textContent.endsWith("parry3")).click();
         seen.posed = {
           line: stepLine(2),
@@ -441,7 +448,9 @@
           editing: text("#edit-title"),
         };
         input($("#joint-blade"), 100);
-        input($("#joint-x"), 200);
+        // The thumb at 30 is 200 cm, as far from the left end of the slider as the 200 is from the right end of the piste.
+        input($("#joint-x"), 30);
+        seen.position.moved = position();
         seen.adjusted = { line: stepLine(2), said: $("#joint-blade").getAttribute("aria-valuetext") };
         button("Reset this step's adjustments").click();
         seen.reset = stepLine(2);

@@ -14,7 +14,7 @@ import { test } from "node:test";
 import { promisify } from "node:util";
 
 import { BASE_BLADE, BASE_CAMERA, BASE_SECTIONS, FIGURE_DIR, FIGURE_NOTE, basePhrase, basesOf } from "../site/js/bases.js";
-import { facing, frameOf, groundPath, handFrame, stickFigure } from "../site/js/figure.js";
+import { frameOf, handFrame } from "../site/js/figure.js";
 import { JOINTS, POSE_NAMES, PRESETS } from "../site/js/library.js";
 import { buildTimeline, resolvePose } from "../site/js/phrase.js";
 import { siteHandler } from "../scripts/serve.js";
@@ -144,10 +144,19 @@ test("in a browser, working every control logs nothing and draws no broken path"
 
 // What a library card and the scene beside it say of where a scene comes from: the drills are live learning.
 const LIVE = { source: "Live learning", sourceFact: "Live learning" };
+// How the browser says the stage is turned: flipped across the page and not otherwise.
+const MIRRORED = "matrix(-1, 0, 0, 1, 0, 0)";
 
 test("in a browser, the page opens paused on the first scene, and nothing plays until Play is pressed", { skip, timeout: 120_000 }, async () => {
   const { seen } = await drive();
   assert.deepEqual(seen.opening, { title: PRESETS[0].phrase.name, play: "Play", pauseHidden: true, playShown: true, count: "01 / 06", time: "0.00 / 3.22 s" });
+});
+
+test("in a browser, the stage is shown in a mirror in every mode, so the fencers are right-handed", { skip, timeout: 120_000 }, async () => {
+  const { seen } = await drive();
+  // The skeleton has the sabre in the left hand of both fencers; flipped across the page they hold it in the right, A on
+  // the right facing left, in the library, the postures and the Creator alike.
+  assert.deepEqual(seen.mirror, { library: MIRRORED, base: MIRRORED, creator: MIRRORED });
 });
 
 test("in a browser, the practice library holds the drills from the class, shows each one paused, and says what it is", { skip, timeout: 120_000 }, async () => {
@@ -203,19 +212,16 @@ test("in a browser, a scene is looked at with its whole blades in view, and the 
   };
   assert.equal(seen.sceneViews.length, PRESETS.length);
   PRESETS.forEach(({ phrase }, i) => lookedAt(seen.sceneViews[i], frameOf(buildTimeline(phrase)), phrase.name));
-  // The postures show their fencer as his mirror image, facing left, with the sabre in the right hand.
-  lookedAt(seen.baseView, frameOf(buildTimeline(basePhrase("live")), BASE_BLADE, true), "the postures");
+  lookedAt(seen.baseView, frameOf(buildTimeline(basePhrase("live")), BASE_BLADE), "the postures");
 
   // The close-up looks at A's sword hand from outside the arm, round on the other side of the piste, wherever the hand
-  // is and however the camera is turned; turned off, the stage looks at the scene again. For the postures' fencer, who
-  // faces left, the sword arm is still on the far side of his chest, so it is the same side of the piste.
+  // is and however the camera is turned; turned off, the stage looks at the scene again.
   const posture = (i) => buildTimeline(basePhrase("live")).steps[i].A;
-  const closeUp = (i, camera) => handFrame(posture(i), facing("A", true), camera + 180, true);
   assert.equal(seen.closeUp.pressed, "true");
   assert.equal(seen.closeUp.floorTurned, true, "the piste turns round with the camera");
-  lookedAt(seen.closeUp.guard, closeUp(0, 25), "the hand in guard");
-  lookedAt(seen.closeUp.parry5, closeUp(11, 25), "the hand in parry 5");
-  lookedAt(seen.closeUp.turned, closeUp(11, -20), "the hand with the camera turned");
+  lookedAt(seen.closeUp.guard, handFrame(posture(0), 1, 25 + 180), "the hand in guard");
+  lookedAt(seen.closeUp.parry5, handFrame(posture(11), 1, 25 + 180), "the hand in parry 5");
+  lookedAt(seen.closeUp.turned, handFrame(posture(11), 1, -20 + 180), "the hand with the camera turned");
   // A scene opens with the camera it was seen from, side on for this one.
   lookedAt(seen.closeUp.library.view, handFrame(resolvePose(PRESETS[0].phrase.steps[0].A), 1, PRESETS[0].phrase.camera + 180), "the hand in a scene");
   assert.equal(seen.closeUp.library.pressed, "true", "it stays on from mode to mode");
@@ -353,6 +359,14 @@ test("in a browser, the Creator edits a copy of a scene the way the page always 
     said: "100°",
   });
   assert.equal(seen.reset, `${third}"B":{"pose":"parry3","x":200}},`);
+  // The piste runs from right to left on the mirrored stage, from A's end to B's, so the Position slider runs the other
+  // way round and moves a fencer the way it is dragged: A, at 0 cm, has the thumb toward the right, where he stands; B, at
+  // 310 cm, is past the left end of it, which stops at 300; and dragged to 30 it puts the fencer at 200 cm.
+  assert.deepEqual(seen.position, {
+    A: { thumb: "230", said: "0 cm" },
+    B: { thumb: "-70", said: "310 cm" },
+    moved: { thumb: "30", said: "200 cm" },
+  });
 
   assert.match(seen.broken.status, /^Not applied: /);
   assert.equal(seen.broken.isError, true);
@@ -600,10 +614,8 @@ test("in a browser, the fencers are 3D figures, one alone and two in a pair, or 
   const { figures3d } = seen;
   if (figures3d.loaded.canvas) {
     assert.deepEqual(figures3d.loaded, { canvas: true, sticks: [false, false], note: "" });
-    // The pair are the stage's own, who hold the sabre in the left hand; the postures' fencer is alone, and is their
-    // mirror image, who holds it in the right.
-    assert.deepEqual([figures3d.pair, figures3d.pairHand], ["A B", "left"]);
-    assert.deepEqual([figures3d.solo, figures3d.soloHand], ["A", "right"]);
+    assert.equal(figures3d.pair, "A B");
+    assert.equal(figures3d.solo, "A");
   } else {
     // A browser that cannot draw them in 3D, such as one with no graphics at all.
     assert.match(figures3d.loaded.note, /^The fencers are drawn as stick figures, as .+\.$/);
@@ -620,19 +632,6 @@ test("in a browser without WebGL, stick figures stand in for the 3D figures, and
     sticks: [true, true],
     note: "The fencers are drawn as stick figures, as this browser cannot draw them in 3D, having no WebGL 2.",
   });
-  // The postures' fencer is the mirror image, as in 3D: facing left, with the sabre in the right hand, the lines worked
-  // out here as the browser drew them, to the tenth they are rounded to.
-  const pose = buildTimeline(basePhrase("live")).steps[0].A;
-  const mirrored = stickFigure(pose, facing("A", true), BASE_CAMERA, true);
-  const numbers = (d) => d.match(/-?\d+(?:\.\d+)?/g).map(Number);
-  const same = (actual, expected, what) => {
-    const [got, want] = [numbers(actual), numbers(expected)];
-    assert.equal(got.length, want.length, `${what}: ${actual}`);
-    got.forEach((value, i) => assert.ok(Math.abs(value - want[i]) <= 0.1 + 1e-9, `${what}: ${actual}, not ${expected}`));
-  };
-  assert.equal(seen.fallbackPosture.camera, String(BASE_CAMERA));
-  same(seen.fallbackPosture.stick, mirrored.body + mirrored.blade, "the stick figure of the first posture");
-  same(seen.fallbackPosture.ground, groundPath(pose, facing("A", true), BASE_CAMERA, true), "the marks under his feet");
-  // ...and not the stage's own A, as it stands in a scene.
-  assert.notEqual(numbers(seen.fallbackPosture.stick).join(" "), numbers(stickFigure(pose, 1, BASE_CAMERA).body + stickFigure(pose, 1, BASE_CAMERA).blade).join(" "));
+  // The stick figures stand in the same frame as the 3D ones, which is shown in a mirror.
+  assert.equal(seen.fallbackMirror, MIRRORED);
 });

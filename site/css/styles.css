@@ -576,9 +576,17 @@ textarea:focus-visible {
 
 /* The fencers are drawn in 3D on a canvas laid exactly over the stage, which
    keeps its floor, motion ghosts and blade paths under them. Without it, they
-   are stick figures, and a note under the stage says why. */
+   are stick figures, and a note under the stage says why.
+
+   The stage is shown in a mirror. As the skeleton is worked out, the sword is on
+   the side of the chest away from the camera, so the fencers are left-handed, A
+   standing on the left and facing right. Turned round like this they are
+   right-handed, as in life and in the book, A on the right facing left, and the
+   3D figures, the floor, the motion ghosts and the blade paths all turn together,
+   being drawn in this frame. The light is moved to match (stage3d.js). */
 .stage__frame {
   position: relative;
+  transform: scaleX(-1);
 }
 
 .stage__3d {

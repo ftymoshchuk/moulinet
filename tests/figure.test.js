@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { BASE_BLADE, basePhrase } from "../site/js/bases.js";
-import { DEFAULT_FRAME, PIVOT, bladePaths, bladeTip, facing, floorPath, frameOf, gripFrame, groundPath, handFrame, knee, knee3, kneeBehind, projector, skeleton, stickFigure } from "../site/js/figure.js";
+import { DEFAULT_FRAME, PIVOT, bladePaths, bladeTip, floorPath, frameOf, gripFrame, groundPath, handFrame, knee, knee3, kneeBehind, projector, skeleton, stickFigure } from "../site/js/figure.js";
 import { POSES, PRESETS } from "../site/js/library.js";
 import { buildTimeline, poseAt, resolvePose } from "../site/js/phrase.js";
 import { boxOf, readPath } from "./path-data.js";
@@ -17,19 +17,16 @@ function near(actual, expected, tolerance, message = "") {
   assert.ok(Math.abs(actual - expected) <= tolerance, `${message} ${actual} is not within ${tolerance} of ${expected}`);
 }
 
-test("every phrase and every base posture draws clean ghosts, floor marks and blade points at every moment, from every camera angle, as it stands and as its mirror image", () => {
+test("every phrase and every base posture draws clean ghosts, floor marks and blade points at every moment, from every camera angle", () => {
   for (const phrase of [...SCENES.map((scene) => scene.phrase), basePhrase()]) {
     const timeline = buildTimeline(phrase);
     // From side on, turned either way, and from the other side of the piste, as the close-up looks.
     for (const camera of [-60, -25, 0, 28, 60, 155, 180, 205]) {
       for (let t = 0; t <= timeline.duration; t += 37) {
         const { A, B } = poseAt(timeline, t);
-        for (const mirror of [false, true]) {
-          const [a, b] = [facing("A", mirror), facing("B", mirror)];
-          const drawn = [stickFigure(A, a, camera, mirror), stickFigure(B, b, camera, mirror)].flatMap((figure) => [figure.body, figure.blade]);
-          drawn.push(groundPath(A, a, camera, mirror), groundPath(B, b, camera, mirror), bladeTip(A, a, camera, mirror), bladeTip(B, b, camera, mirror));
-          for (const d of drawn) assert.doesNotMatch(d, BAD_NUMBER, `${phrase.name} at ${t} ms, camera ${camera}${mirror ? ", mirrored" : ""}`);
-        }
+        const drawn = [stickFigure(A, 1, camera), stickFigure(B, -1, camera)].flatMap((figure) => [figure.body, figure.blade]);
+        drawn.push(groundPath(A, 1, camera), groundPath(B, -1, camera), bladeTip(A, 1, camera), bladeTip(B, -1, camera));
+        for (const d of drawn) assert.doesNotMatch(d, BAD_NUMBER, `${phrase.name} at ${t} ms, camera ${camera}`);
       }
     }
   }
@@ -449,65 +446,6 @@ test("seen square on, a fencer facing left mirrors one facing right", () => {
   assert.deepEqual(projector(pose, -1, 0)([10, 20, 5]), [90, -20]);
 });
 
-test("a mirror image faces the other way round from the pair: A to the left, B to the right", () => {
-  assert.deepEqual([facing("A"), facing("B")], [1, -1]);
-  assert.deepEqual([facing("A", true), facing("B", true)], [-1, 1]);
-});
-
-test("the stage's own pair hold the sabre in the left hand; the mirror image holds it in the right, with the sword arm on the far side of a chest turned to the camera", () => {
-  const pose = resolvePose({ pose: "guard" });
-  const J = skeleton(pose);
-  // With x to the right, y up and z toward the camera, a fencer facing right (+x) has his right hand toward the camera and
-  // one facing left (-x) has it away from it. The skeleton's sword shoulder is on the side where z < 0, which `depth` turns
-  // into how far toward the camera it is on the stage.
-  const handOf = (dir, mirror) => {
-    const W = projector(pose, dir, 0, mirror);
-    return W.depth(J.sh) * dir > 0 ? "right" : "left";
-  };
-  assert.equal(handOf(1, false), "left", "A, as the stage has him");
-  assert.equal(handOf(-1, false), "left", "B, who is A turned round");
-  for (const dir of [1, -1]) assert.equal(handOf(dir, true), "right", `a mirror image facing ${dir}`);
-  // As the postures show him: facing left, the sword shoulder on the far side and the rear one on the near side.
-  const W = projector(pose, facing("A", true), 0, true);
-  assert.ok(W.depth(J.sh) < 0 && W.depth(J.rs) > 0, "the sword arm away from the camera, the rear hand toward it");
-  assert.ok(W(J.at(88))[0] < W(J.hip)[0] - 50, "and the point of the sabre to the left of him");
-});
-
-test("seen square on, a mirror image is placed as its fencer is, and turning the camera swings his depth the other way", () => {
-  const pose = { x: 100 };
-  assert.deepEqual(projector(pose, 1, 0, true)([10, 20, 5]), [110, -20]);
-  assert.deepEqual(projector(pose, -1, 0, true)([10, 20, 5]), [90, -20]);
-  // A point toward the camera is carried to the right when the camera is turned, for the pair, and to the left for his mirror image.
-  const toward = (mirror) => projector({ x: PIVOT }, 1, 90, mirror)([0, 0, 10])[0] - PIVOT;
-  near(toward(false), 10, 1e-9, "the pair");
-  near(toward(true), -10, 1e-9, "the mirror image");
-  // Depth is toward the camera, either way round.
-  for (const dir of [1, -1]) {
-    for (const mirror of [false, true]) {
-      const W = projector({ x: 140 }, dir, 0, mirror);
-      near(W.depth([0, 0, 1]), mirror ? -dir : dir, 1e-9, `facing ${dir}, mirrored ${mirror}`);
-      assert.equal(W.mirror, mirror);
-    }
-  }
-});
-
-test("a mirror image on the other side of the pivot, seen from the camera turned the other way, is the picture of the original flipped across it", () => {
-  for (const name of ["guard", "parry5", "lungeChest", "prime"]) {
-    const pose = resolvePose({ pose: name, x: 40 });
-    const mirrored = { ...pose, x: 2 * PIVOT - pose.x };
-    const J = skeleton(pose);
-    for (const camera of [-50, -25, 0, 25, 50]) {
-      const [W, M] = [projector(pose, 1, camera), projector(mirrored, -1, -camera, true)];
-      for (const q of [J.hd, J.hn, J.tip, J.ankF, J.kB, J.rs]) {
-        const [x, y] = W(q);
-        const [mx, my] = M(q);
-        near(mx, 2 * PIVOT - x, 1e-9, `${name}, camera ${camera}°: the mirror of where it was, across`);
-        near(my, y, 1e-9, `${name}, camera ${camera}°: and as high`);
-      }
-    }
-  }
-});
-
 test("turning the camera swings the piste around the pivot and brings depth into view", () => {
   const atPivot = projector({ x: PIVOT }, 1, 90)([0, 0, 10]);
   assert.ok(Math.abs(atPivot[0] - (PIVOT + 10)) < 1e-9);
@@ -541,16 +479,16 @@ test("the shoulders turn toward the camera by the pose's turn: the two arms lie 
 test("the stage looks where the fencers are: everyone, at every step, is in a frame the shape of the page", () => {
   const shape = DEFAULT_FRAME[2] / DEFAULT_FRAME[3];
   // The library's frames hold the whole blade, the postures' as much of it as BASE_BLADE says.
-  for (const [phrase, blade, mirror] of [...SCENES.map((scene) => [scene.phrase, undefined, false]), [basePhrase(), BASE_BLADE, true]]) {
+  for (const [phrase, blade] of [...SCENES.map((scene) => [scene.phrase, undefined]), [basePhrase(), BASE_BLADE]]) {
     const timeline = buildTimeline(phrase);
-    const [x, y, w, h] = frameOf(timeline, blade, mirror);
+    const [x, y, w, h] = frameOf(timeline, blade);
     assert.ok(Math.abs(w / h - shape) < 0.01, `${phrase.name} is in the shape of the page`);
     assert.ok(w >= DEFAULT_FRAME[2] * 0.72 - 0.1 && w <= DEFAULT_FRAME[2] * 1.3 + 0.1, `${phrase.name} is no closer than a third of the way in, nor further than a third out (${w})`);
     assert.ok(y < 0 && y + h > 8, "the floor is in it, with room under it for the strokes at the feet");
     for (const step of timeline.steps) {
-      for (const who of timeline.solo ? ["A"] : ["A", "B"]) {
+      for (const [who, dir] of timeline.solo ? [["A", 1]] : [["A", 1], ["B", -1]]) {
         const J = skeleton(step[who]);
-        const W = projector(step[who], facing(who, mirror), 0, mirror);
+        const W = projector(step[who], dir, 0);
         const counted = blade === undefined ? J.tip : J.at(blade);
         for (const [name, q] of Object.entries({ head: J.hd, hand: J.hn, blade: counted, back: J.ankB, front: J.ankF })) {
           const [px, py] = W(q);
@@ -562,19 +500,18 @@ test("the stage looks where the fencers are: everyone, at every step, is in a fr
 });
 
 test("the postures are looked at closer than their whole blades allow, with the fencer in view from every camera angle", () => {
-  // The postures show the fencer as his mirror image, facing left, as the page does.
   const timeline = buildTimeline(basePhrase());
-  const whole = frameOf(timeline, undefined, true);
-  const [x, y, w, h] = frameOf(timeline, BASE_BLADE, true);
+  const whole = frameOf(timeline);
+  const [x, y, w, h] = frameOf(timeline, BASE_BLADE);
   assert.ok(h < whole[3] * 0.95, `the view is closer: ${h} high, against ${whole[3]} for the whole blade`);
   for (const step of timeline.steps) {
     const J = skeleton(step.A);
     // Heel and toe of each foot, on the floor.
     const feet = [-8, 24].flatMap((reach) => [[J.ankB[0] + reach, 0], [J.ankF[0] + reach, 0]]);
     const parts = [["head", [J.hd[0], J.hd[1] + 14]], ["hand", J.hn], ["rear hand", J.rh], ["blade", J.at(BASE_BLADE)], ...feet.map((q) => ["foot", q])];
-    const middle = projector(step.A, facing("A", true), 0, true)(J.hip)[0];
+    const middle = projector(step.A, 1, 0)(J.hip)[0];
     for (let camera = -60; camera <= 60; camera += 15) {
-      const W = projector(step.A, facing("A", true), camera, true);
+      const W = projector(step.A, 1, camera);
       for (const [name, q] of parts) {
         const [px, py] = W(q);
         assert.ok(px >= x && px <= x + w && py >= y && py <= y + h, `${step.label}, camera ${camera}°: the ${name} is on the stage`);

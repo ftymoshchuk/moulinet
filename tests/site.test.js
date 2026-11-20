@@ -141,6 +141,17 @@ test("the fields hold typing to the same limits the scene is saved and shown wit
   assert.equal(limitOf("step-name"), TEXT_LIMITS.label, "#step-name");
 });
 
+test("the stage is shown in a mirror, so the fencers are right-handed, and the light is moved to fall from the upper left of what is seen", () => {
+  // The skeleton has the sabre in the left hand of both fencers (rig.test.js holds it to that), which flipped across the page
+  // is the right, with A on the right facing left.
+  const frame = css.match(/\.stage__frame\s*\{([^}]*)\}/)?.[1] ?? "";
+  assert.match(frame, /transform:\s*scaleX\(-1\)/, "the frame the figures and the stage's own drawing share is flipped");
+  // So the light, which is from the left of what is seen, is to the right in the frame the figures are drawn in.
+  const sun = read("js/stage3d.js").match(/sun\.position\.set\((-?\d+), (-?\d+), (-?\d+)\)/);
+  assert.ok(sun, "the light is set in stage3d.js");
+  assert.ok(Number(sun[1]) > 0 && Number(sun[2]) > 0 && Number(sun[3]) > 0, "high, in front and to the right of the figures");
+});
+
 test("each fencer's sabre edge is drawn in the colour of his blade's path, as the page's styles have it", () => {
   const css = read("css/styles.css");
   const stage = read("js/stage3d.js");

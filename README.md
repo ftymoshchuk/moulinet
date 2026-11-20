@@ -88,9 +88,8 @@ the Creator keeps one view while you reshape a scene.
 follows it as it moves: A's, or in the Creator the fencer you are reshaping. It
 looks from outside the sword arm, which is where the old books draw the grip and
 the hand positions from, so the blade points the way it does in their plates:
-for A, and for the fencer of the base postures, from the other side of the piste,
-and for B, whose sword arm is on your side, from this one. The camera turns it
-from there.
+for A from the other side of the piste, and for B, whose sword arm is on your
+side, from this one. The camera turns it from there.
 
 The library and the Creator, which play scenes, add:
 - **Playback** at ¼, ½ or full speed, a step at a time, or scrubbed along the
@@ -106,8 +105,9 @@ In the Creator there is more:
   it, and whether it moves smoothly, snaps or keeps one speed. A step with no
   time to stay on it is passed through, and says so.
 - **Adjust this moment:** eighteen sliders reshape either fencer on the current
-  step, from where they stand on the piste, through the turn of the back foot
-  and knee, the shoulders and the rear arm, to the sword arm, which can be
+  step, from where they stand on the piste, which runs from right to left on the
+  stage, so that slider moves a fencer the way you drag it, through the turn of
+  the back foot and knee, the shoulders and the rear arm, to the sword arm, which can be
   turned out of the plane of its shoulder across the chest, the angle and turn
   of the blade and the position of the hand that holds it, which moves in steps
   of 15° and says when it is on one of the books' hand positions.
@@ -190,19 +190,23 @@ turns its elbow or knee the way the skeleton's would bend, or failing that the
 way the hand or the foot has it, so a limb passing through straight never turns
 over: no bone turns more than 25° in 4 ms.
 
-The fencer facing left stands as the skeleton has him, which is the one facing
-right turned round: his sword arm is on your side, and the blades meet in three
-dimensions where they touch, not only from the side, as the drills are worked out.
+In the skeleton's own frame, the fencer facing left stands as the skeleton has
+him, which is the one facing right turned round: his sword arm is on your side,
+and the blades meet in three dimensions where they touch, not only from the side,
+as the drills are worked out.
 
 **Which hand.** The skeleton has the sword on the side of the chest away from the
-camera, so in a scene the pair, A facing right and B turned round to face left, hold
-the sabre in the left hand, and the chest of A is turned toward you where B's is
-turned away. The base postures show one fencer as his mirror image: the same body in
-the same pose with its depth turned round, so the sabre is in his right hand, as the
-book's fencer holds it, and he faces left with his chest toward you, as its
-photographs show him. He stands over the pivot the camera turns about, as he did
-when he faced right, and the postures open on a camera angle of −25°, the mirror of
-the 25° they had then, so each looks as it did, flipped.
+camera, so as it is worked out both fencers hold the sabre in the left hand: A
+stands on the left facing right, his chest turned toward you, and B, who is A
+turned round, faces left with his back to you. The stage is shown in a mirror, so
+on the page they are right-handed, as in life and in the book. A stands on the
+right and faces left, his chest toward you and his sword arm on the far side of it,
+as the book's photographs show the fencer; B stands on the left and faces right,
+with his sword arm on your side. Everything on the stage turns with it, the
+figures, their marks on the floor, the motion ghosts and the blade paths; the
+light is moved to fall from the upper left as before; and the piste, which runs
+from A's end to B's, runs from right to left. The poses, the scenes and the camera
+angle mean what they always did: only the picture is turned.
 
 **The ink.** The figures are drawn with [three.js](https://threejs.org), r170,
 kept in `site/vendor/`, three times over, off the page: in the flat colours of
@@ -292,7 +296,8 @@ A fencer is `{"pose": …, "x": …, "adj": {…}}`:
 - `pose`: a name from the pose library below. A name it does not know is drawn
   as the guard, and **Phrase data** says which name that was.
 - `x`: where the fencer stands on the piste, in centimetres. Until a phrase
-  places them, A stands at 0 and B at 310, facing each other.
+  places them, A stands at 0 and B at 310, facing each other. The piste runs
+  from right to left on the stage, so A, at 0, is on the right.
 - `adj`: joint values that override the pose on this step. **Adjust this
   moment** writes them; picking a pose or **Reset this step's adjustments**
   clears them.
@@ -363,24 +368,23 @@ it passes, the feet that stay and the feet that step, and a wrist that never ben
 past what parry 5 asks), the edits the Creator makes to a scene, the saved
 scenes (what they keep and what they leave alone) and the check that a
 reference link is a web address, the base postures of each section, the skeleton and the camera
-(the knees and the arms, the hand positions, where the stage looks, the fencer
-of the postures as his mirror image, and every phrase and posture at every moment
-from eight camera angles, as it stands and mirrored, checked for broken path
-data), the postures of the 1906 book, each checked against what the book
+(the knees and the arms, the hand positions, where the stage looks, and every
+phrase and posture at every moment from eight camera angles, checked for broken
+path data), the postures of the 1906 book, each checked against what the book
 says of it, the figures (the bodies read back as they were baked, and posed in
 every scene with the ankles, the rear hand and the blade's point where the
-skeleton has them, from any camera, the sabre in the left hand of the pair and
-the right hand of the mirror image, the wrist bending no further than a wrist
+skeleton has them, from any camera, the sabre in the left hand of both fencers,
+which the stage's mirror makes the right, the wrist bending no further than a wrist
 can and no bone turning over, and the drills from the class landing where the class
 has them: the light cut on the inside of the defender's blade just above his guard,
 and each riposte edge first on the attacker's glove, on top, on the outside or
 underneath, with no blade going into an arm at any moment), and the published files (only relative links to
 files that exist, no outside requests, every element the scripts need, and the
-licences of what is bundled). Seventeen more run in a real browser: headless
+licences of what is bundled). Eighteen more run in a real browser: headless
 Chrome or Chromium loads the page, then a driver page works every control of
 every tab and mode, with hostile input among it, and checks the result, down to
-the page opening paused, two browser tabs saving the same scene and the 3D figures
-taking the stage; and once more with
+the page opening paused, the stage turned in its mirror, two browser tabs saving
+the same scene and the 3D figures taking the stage; and once more with
 WebGL turned off, where the stick figures stand in and the note says why. They
 need Chrome or Chromium on your `PATH`, or `CHROME_BIN` pointing at one, and are
 skipped without it.
