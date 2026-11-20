@@ -408,10 +408,6 @@ test("each slider moves a joint the poses have, and reaches the value every pose
   }
 });
 
-test("only the position slider runs the other way round: the stage is shown in a mirror, so the piste runs from right to left", () => {
-  assert.deepEqual(JOINTS.filter(({ reversed }) => reversed).map(({ key }) => key), ["x"]);
-});
-
 test("phrase text keeps one setting per line and one step per line, and reads back the same", () => {
   for (const { phrase } of LIBRARY) {
     const text = phraseToText(phrase);

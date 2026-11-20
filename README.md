@@ -87,9 +87,11 @@ the Creator keeps one view while you reshape a scene.
 **Hand close-up**, in every mode, looks closely at the sword hand instead, and
 follows it as it moves: A's, or in the Creator the fencer you are reshaping. It
 looks from outside the sword arm, which is where the old books draw the grip and
-the hand positions from, so the blade points the way it does in their plates:
-for A from the other side of the piste, and for B, whose sword arm is on your
-side, from this one. The camera turns it from there.
+the hand positions from, so the blade points the way it does in their plates. In
+a scene A's sword arm is on your side and B's on the far side, so for A it looks
+from where you are and for B from the other side of the piste; in the base
+postures the fencer's sword arm is on the far side, so it looks from there. The
+camera turns it from there.
 
 The library and the Creator, which play scenes, add:
 - **Playback** at ¼, ½ or full speed, a step at a time, or scrubbed along the
@@ -105,9 +107,8 @@ In the Creator there is more:
   it, and whether it moves smoothly, snaps or keeps one speed. A step with no
   time to stay on it is passed through, and says so.
 - **Adjust this moment:** eighteen sliders reshape either fencer on the current
-  step, from where they stand on the piste, which runs from right to left on the
-  stage, so that slider moves a fencer the way you drag it, through the turn of
-  the back foot and knee, the shoulders and the rear arm, to the sword arm, which can be
+  step, from where they stand on the piste, through the turn of the back foot
+  and knee, the shoulders and the rear arm, to the sword arm, which can be
   turned out of the plane of its shoulder across the chest, the angle and turn
   of the blade and the position of the hand that holds it, which moves in steps
   of 15° and says when it is on one of the books' hand positions.
@@ -199,14 +200,19 @@ as the drills are worked out.
 camera, so as it is worked out both fencers hold the sabre in the left hand: A
 stands on the left facing right, his chest turned toward you, and B, who is A
 turned round, faces left with his back to you. The stage is shown in a mirror, so
-on the page they are right-handed, as in life and in the book. A stands on the
-right and faces left, his chest toward you and his sword arm on the far side of it,
-as the book's photographs show the fencer; B stands on the left and faces right,
-with his sword arm on your side. Everything on the stage turns with it, the
-figures, their marks on the floor, the motion ghosts and the blade paths; the
-light is moved to fall from the upper left as before; and the piste, which runs
-from A's end to B's, runs from right to left. The poses, the scenes and the camera
-angle mean what they always did: only the picture is turned.
+on the page they are right-handed, as in life and in the book. Everything on the
+stage turns with it, the figures, their marks on the floor, the motion ghosts and
+the blade paths. A mirror alone would put A on the right, so the camera for the
+scenes and the Creator goes round to the other side of the piste, facing B: A is
+back on the left, facing right, with his back and his sword arm toward you, and B
+faces left with his chest toward you and his sword arm on the far side. The base
+postures have one fencer and are seen from the first side, so that he faces left
+with his chest toward you and his sword arm on the far side, as the book's
+photographs show him. The light is on the camera's side, to the upper left of what
+is seen. The poses, the scenes and the camera angle mean what they always did: the
+piste still runs from A's end on the left to B's on the right. Where this page says
+a pose turns toward the camera or toward you, it means toward the side the chest
+turns to, which is toward you in the postures and away from you in the scenes.
 
 **The ink.** The figures are drawn with [three.js](https://threejs.org), r170,
 kept in `site/vendor/`, three times over, off the page: in the flat colours of
@@ -296,14 +302,14 @@ A fencer is `{"pose": …, "x": …, "adj": {…}}`:
 - `pose`: a name from the pose library below. A name it does not know is drawn
   as the guard, and **Phrase data** says which name that was.
 - `x`: where the fencer stands on the piste, in centimetres. Until a phrase
-  places them, A stands at 0 and B at 310, facing each other. The piste runs
-  from right to left on the stage, so A, at 0, is on the right.
+  places them, A stands at 0 and B at 310, facing each other.
 - `adj`: joint values that override the pose on this step. **Adjust this
   moment** writes them; picking a pose or **Reset this step's adjustments**
   clears them.
 
 The joints `adj` can set. Lengths are centimetres; angles are degrees, where 0
-points at the opponent and 90 straight up.
+points at the opponent and 90 straight up. Where a row says the camera, it means
+the side the chest turns to, as in **Which hand** above.
 
 | Key | Joint |
 |---|---|
@@ -380,11 +386,12 @@ has them: the light cut on the inside of the defender's blade just above his gua
 and each riposte edge first on the attacker's glove, on top, on the outside or
 underneath, with no blade going into an arm at any moment), and the published files (only relative links to
 files that exist, no outside requests, every element the scripts need, and the
-licences of what is bundled). Eighteen more run in a real browser: headless
+licences of what is bundled). Nineteen more run in a real browser: headless
 Chrome or Chromium loads the page, then a driver page works every control of
 every tab and mode, with hostile input among it, and checks the result, down to
-the page opening paused, the stage turned in its mirror, two browser tabs saving
-the same scene and the 3D figures taking the stage; and once more with
+the page opening paused, the stage turned in its mirror and the camera on the side
+of the piste it should be, two browser tabs saving the same scene and the 3D
+figures taking the stage; and once more with
 WebGL turned off, where the stick figures stand in and the note says why. They
 need Chrome or Chromium on your `PATH`, or `CHROME_BIN` pointing at one, and are
 skipped without it.

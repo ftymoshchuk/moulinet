@@ -14,7 +14,7 @@ import { test } from "node:test";
 import { promisify } from "node:util";
 
 import { BASE_BLADE, BASE_CAMERA, BASE_SECTIONS, FIGURE_DIR, FIGURE_NOTE, basePhrase, basesOf } from "../site/js/bases.js";
-import { frameOf, handFrame } from "../site/js/figure.js";
+import { DEFAULT_FRAME, floorPath, frameFrom, frameOf, handFrame } from "../site/js/figure.js";
 import { JOINTS, POSE_NAMES, PRESETS } from "../site/js/library.js";
 import { buildTimeline, resolvePose } from "../site/js/phrase.js";
 import { siteHandler } from "../scripts/serve.js";
@@ -154,9 +154,17 @@ test("in a browser, the page opens paused on the first scene, and nothing plays 
 
 test("in a browser, the stage is shown in a mirror in every mode, so the fencers are right-handed", { skip, timeout: 120_000 }, async () => {
   const { seen } = await drive();
-  // The skeleton has the sabre in the left hand of both fencers; flipped across the page they hold it in the right, A on
-  // the right facing left, in the library, the postures and the Creator alike.
+  // The skeleton has the sabre in the left hand of both fencers; flipped across the page they hold it in the right, in the
+  // library, the postures and the Creator alike.
   assert.deepEqual(seen.mirror, { library: MIRRORED, base: MIRRORED, creator: MIRRORED });
+});
+
+test("in a browser, the scenes and the Creator are seen from the other side of the piste, facing B, and the postures from the side they always were", { skip, timeout: 120_000 }, async () => {
+  const { seen } = await drive();
+  // The mirror alone puts A on the right. The camera goes round to the side B faces, which puts him back on the left, with his
+  // back and his sword arm toward you and B's chest toward you. The floor is drawn for the camera it is seen from, so which
+  // way round its ticks run says which side that is.
+  assert.deepEqual(seen.floors, { library: floorPath(180), creator: floorPath(180), base: floorPath(25) });
 });
 
 test("in a browser, the practice library holds the drills from the class, shows each one paused, and says what it is", { skip, timeout: 120_000 }, async () => {
@@ -210,9 +218,12 @@ test("in a browser, a scene is looked at with its whole blades in view, and the 
     assert.equal(got.length, 4, `${what}: ${actual}`);
     got.forEach((value, i) => assert.ok(Math.abs(value - expected[i]) <= 0.1 + 1e-9, `${what}: the stage looks at ${actual}, not ${expected.join(" ")}`));
   };
+  // The scenes are seen from the other side of the piste, facing B, so the box they are looked at in is across the page; the
+  // postures are seen from the side the skeleton's chest turns to, as they always were.
   assert.equal(seen.sceneViews.length, PRESETS.length);
-  PRESETS.forEach(({ phrase }, i) => lookedAt(seen.sceneViews[i], frameOf(buildTimeline(phrase)), phrase.name));
+  PRESETS.forEach(({ phrase }, i) => lookedAt(seen.sceneViews[i], frameOf(buildTimeline(phrase), undefined, 180), phrase.name));
   lookedAt(seen.baseView, frameOf(buildTimeline(basePhrase("live")), BASE_BLADE), "the postures");
+  lookedAt(seen.creatorView, frameFrom(DEFAULT_FRAME, 180), "the Creator");
 
   // The close-up looks at A's sword hand from outside the arm, round on the other side of the piste, wherever the hand
   // is and however the camera is turned; turned off, the stage looks at the scene again.
@@ -225,7 +236,7 @@ test("in a browser, a scene is looked at with its whole blades in view, and the 
   // A scene opens with the camera it was seen from, side on for this one.
   lookedAt(seen.closeUp.library.view, handFrame(resolvePose(PRESETS[0].phrase.steps[0].A), 1, PRESETS[0].phrase.camera + 180), "the hand in a scene");
   assert.equal(seen.closeUp.library.pressed, "true", "it stays on from mode to mode");
-  lookedAt(seen.closeUp.off.view, frameOf(buildTimeline(PRESETS[0].phrase)), "the scene again");
+  lookedAt(seen.closeUp.off.view, frameOf(buildTimeline(PRESETS[0].phrase), undefined, 180), "the scene again");
   assert.equal(seen.closeUp.off.pressed, "false");
 });
 
@@ -359,14 +370,6 @@ test("in a browser, the Creator edits a copy of a scene the way the page always 
     said: "100°",
   });
   assert.equal(seen.reset, `${third}"B":{"pose":"parry3","x":200}},`);
-  // The piste runs from right to left on the mirrored stage, from A's end to B's, so the Position slider runs the other
-  // way round and moves a fencer the way it is dragged: A, at 0 cm, has the thumb toward the right, where he stands; B, at
-  // 310 cm, is past the left end of it, which stops at 300; and dragged to 30 it puts the fencer at 200 cm.
-  assert.deepEqual(seen.position, {
-    A: { thumb: "230", said: "0 cm" },
-    B: { thumb: "-70", said: "310 cm" },
-    moved: { thumb: "30", said: "200 cm" },
-  });
 
   assert.match(seen.broken.status, /^Not applied: /);
   assert.equal(seen.broken.isError, true);

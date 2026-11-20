@@ -160,6 +160,9 @@
         // The stage is shown in a mirror, in every mode, so that the fencers are right-handed: how the page turns it.
         const mirror = () => win.getComputedStyle($(".stage__frame")).transform;
         seen.mirror = {};
+        // The floor is drawn for the camera the stage is seen from, so its marks say which side of the piste that is.
+        const floorNow = () => $("#floor").getAttribute("d");
+        seen.floors = {};
 
         // ---------- The practice library ----------
 
@@ -173,6 +176,7 @@
           time: text("#timecode"),
         };
         seen.mirror.library = mirror();
+        seen.floors.library = floorNow();
 
         // Every scene, each of its steps, and its whole timeline. Where the stage looks is
         // noted as each scene opens, and again for the postures.
@@ -267,6 +271,7 @@
         button("Base postures").click();
         seen.baseShows = showing();
         seen.mirror.base = mirror();
+        seen.floors.base = floorNow();
         seen.baseStage = {
           label: text("#step-label"),
           count: text("#step-count"),
@@ -431,16 +436,12 @@
           focus: doc.activeElement?.dataset.mode ?? doc.activeElement?.dataset.tab,
         };
         seen.mirror.creator = mirror();
+        seen.floors.creator = floorNow();
+        seen.creatorView = $("#stage").getAttribute("viewBox");
 
         // Fencer B on step 3: a pose from the library, two sliders, a reset.
         $$(".step-button")[2].click();
-        // The piste runs from right to left on the mirrored stage, from A's end to B's, so the Position slider runs the
-        // other way round, as the fencer moves when it is dragged: A, at 0 cm, has the thumb to the right, and B, at
-        // 310 cm, past the left end of it.
-        const position = () => ({ thumb: $("#joint-x").value, said: $("#joint-x").getAttribute("aria-valuetext") });
-        seen.position = { A: position() };
         button("Edit fencer B").click();
-        seen.position.B = position();
         $$(".pose-button").find((b) => b.textContent.endsWith("parry3")).click();
         seen.posed = {
           line: stepLine(2),
@@ -448,9 +449,7 @@
           editing: text("#edit-title"),
         };
         input($("#joint-blade"), 100);
-        // The thumb at 30 is 200 cm, as far from the left end of the slider as the 200 is from the right end of the piste.
-        input($("#joint-x"), 30);
-        seen.position.moved = position();
+        input($("#joint-x"), 200);
         seen.adjusted = { line: stepLine(2), said: $("#joint-blade").getAttribute("aria-valuetext") };
         button("Reset this step's adjustments").click();
         seen.reset = stepLine(2);

@@ -581,9 +581,11 @@ textarea:focus-visible {
    The stage is shown in a mirror. As the skeleton is worked out, the sword is on
    the side of the chest away from the camera, so the fencers are left-handed, A
    standing on the left and facing right. Turned round like this they are
-   right-handed, as in life and in the book, A on the right facing left, and the
-   3D figures, the floor, the motion ghosts and the blade paths all turn together,
-   being drawn in this frame. The light is moved to match (stage3d.js). */
+   right-handed, as in life and in the book, and the 3D figures, the floor, the
+   motion ghosts and the blade paths all turn together, being drawn in this frame.
+   A mirror puts A on the right, so the camera for the scenes goes round to the
+   other side of the piste, facing B, which puts him back on the left (`viewCamera`
+   in app.js). */
 .stage__frame {
   position: relative;
   transform: scaleX(-1);

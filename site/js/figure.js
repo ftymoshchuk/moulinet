@@ -8,8 +8,11 @@
 // which swings around a point on the piste. Out come SVG units, y down.
 //
 // All of it is in the frame the skeleton has: the sword on the side of the chest
-// away from the camera, A on the left facing right. The page shows the stage in a
-// mirror (`.stage__frame` in styles.css), which makes the fencers right-handed.
+// away from the camera, A on the left facing right, which makes both fencers
+// left-handed. The page shows the stage in a mirror (`.stage__frame` in
+// styles.css), which makes them right-handed, and looks at the pair from the
+// other side of the piste, the camera at 180, so that A is back on the left (see
+// `viewCamera` in app.js).
 import { poseAt } from "./phrase.js";
 
 // The camera turns around this point on the piste (cm).
@@ -265,15 +268,25 @@ export const DEFAULT_FRAME = [-80, -236, 420, 254];
 const FRAME_SHAPE = DEFAULT_FRAME[2] / DEFAULT_FRAME[3];
 
 /**
+ * A frame worked out for the camera at 0, as it is for the camera round on the other
+ * side of the piste, at 180: the same box, across the page about the pivot. For any
+ * other camera, which is on the side it started on, it is as it was.
+ */
+export function frameFrom([x, y, w, h], camera = 0) {
+  return Math.cos(camera * RAD) < 0 ? [Math.round((2 * PIVOT - x - w) * 10) / 10, y, w, h] : [x, y, w, h];
+}
+
+/**
  * Where the stage should look so that the fencers fill it: the box round everyone
  * at every moment of the phrase, seen side on, with room round it, in the shape of
  * the default view and no closer than a third of the way in. The camera does not
- * change it, so turning the camera never zooms. The box holds the blade as far
- * along as `blade` cm from the hand, all of it unless told less: a blade held up
- * or reaching far then no longer sets the view for the body, and its point may
- * run off the edge.
+ * change it, so turning the camera never zooms: `camera` says which side of the
+ * piste it stands on, 0 or 180, and the box is across the page for the second. The
+ * box holds the blade as far along as `blade` cm from the hand, all of it unless
+ * told less: a blade held up or reaching far then no longer sets the view for the
+ * body, and its point may run off the edge.
  */
-export function frameOf(timeline, blade = BLADE) {
+export function frameOf(timeline, blade = BLADE, camera = 0) {
   let minX = Infinity;
   let maxX = -Infinity;
   let minY = Infinity;
@@ -292,7 +305,7 @@ export function frameOf(timeline, blade = BLADE) {
     for (const [who, dir] of timeline.solo ? [["A", 1]] : [["A", 1], ["B", -1]]) {
       const p = at[who];
       const J = skeleton(p);
-      const W = projector(p, dir, 0);
+      const W = projector(p, dir, camera);
       const feet = [-8, 24].flatMap((reach) => [[J.ankB[0] + reach, 0], [J.ankF[0] + reach, 0]]);
       const body = [[J.hd[0], J.hd[1] + 14], J.hn, J.at(blade), J.kF, J.kB, J.re, J.rs, [J.hipB[0] - 14, J.hip[1]], [J.hipF[0] + 14, J.hip[1]]];
       for (const q of [...feet, ...body]) take(W(q));
@@ -337,6 +350,18 @@ export function floorPath(camera) {
   let d = `M${X(-600)} 0 H${X(900)}`;
   for (let x = -550; x <= 850; x += 50) d += ` M${X(x)} 0 V${x === 100 ? 6 : 3}`;
   return d;
+}
+
+/**
+ * Where the light is for the camera `camera` degrees round the piste, as [x, y, z] in
+ * centimetres in the frame the figures are drawn in (x along the piste, y up, z toward
+ * the camera at 0): high, on the camera's side of the piste, and to the left of what is
+ * seen, which is the right of the figures, the stage being shown in a mirror. The side
+ * of the piste the camera is on is the side the light is on.
+ */
+export function lightFor(camera) {
+  const side = Math.cos(camera * RAD) < 0 ? -1 : 1;
+  return [150 * side, 300, 260 * side];
 }
 
 /**

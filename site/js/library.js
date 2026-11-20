@@ -25,6 +25,11 @@
 //   rArm, rFore   rear arm, hand on the hip
 // A pose fills in whatever it leaves out from the guard.
 //
+// "The camera" here, and in figure.js and rig.js, is the one the skeleton is worked
+// out for, on the side of the piste the chest turns to. The page's own camera is on
+// that side for the postures and on the other side for the scenes (see `viewCamera`
+// in app.js), so for a scene "toward the camera" is away from you.
+//
 // The guard is the plates' classic stance: wide, the feet 84 cm apart, and both
 // knees bent, each over its own foot, so both shins stand upright. Each leg starts
 // from a hip of its own, the front one 6 cm forward of the middle of the hips and
@@ -263,12 +268,11 @@ export const HAND_POSITIONS = { "-180": "1st", "-135": "1/2", "-90": "2nd", "-45
 // The sliders under "Adjust this moment", in order. `x` is where the fencer
 // stands on the piste; every other key overrides a value of the pose. A slider
 // moves in steps of `step`, or of one, and says the name in `names` of a value
-// that has one. One that is `reversed` runs from its largest value at the left to
-// its smallest at the right: the stage is shown in a mirror, so the piste runs
-// from right to left, from A's end to B's, and the slider moves a fencer the way
-// it is dragged.
+// that has one. The labels say where a joint turns in terms of the fencer, not of
+// the camera: the camera is on the side of the piste the chest turns to in the
+// postures, and on the other side in the scenes.
 export const JOINTS = [
-  { key: "x", label: "Position on the piste", min: -70, max: 300, unit: " cm", reversed: true },
+  { key: "x", label: "Position on the piste", min: -70, max: 300, unit: " cm" },
   { key: "footF", label: "Front foot reach", min: 10, max: 135, unit: " cm" },
   { key: "liftF", label: "Front foot lift", min: 0, max: 30, unit: " cm" },
   { key: "hipX", label: "Hips forward", min: 5, max: 90, unit: " cm" },
@@ -276,13 +280,13 @@ export const JOINTS = [
   { key: "toeBack", label: "Back foot turned back", min: 0, max: 45, unit: "°" },
   { key: "kneeOut", label: "Back knee turned out", min: 0, max: 90, unit: "°" },
   { key: "lean", label: "Torso lean", min: -25, max: 35, unit: "°" },
-  { key: "turn", label: "Shoulder turn toward camera", min: 0, max: 90, unit: "°" },
+  { key: "turn", label: "Shoulder turn from square", min: 0, max: 90, unit: "°" },
   { key: "arm", label: "Upper arm", min: -120, max: 120, unit: "°" },
   { key: "fore", label: "Forearm", min: -100, max: 130, unit: "°" },
-  { key: "armYaw", label: "Upper arm turn toward camera", min: -90, max: 90, unit: "°" },
-  { key: "foreYaw", label: "Forearm turn toward camera", min: -90, max: 90, unit: "°" },
+  { key: "armYaw", label: "Upper arm across the chest", min: -90, max: 90, unit: "°" },
+  { key: "foreYaw", label: "Forearm across the chest", min: -90, max: 90, unit: "°" },
   { key: "blade", label: "Blade angle", min: -180, max: 180, unit: "°" },
-  { key: "yaw", label: "Blade turn toward camera", min: -85, max: 85, unit: "°" },
+  { key: "yaw", label: "Blade across the body", min: -85, max: 85, unit: "°" },
   { key: "hand", label: "Hand position", min: -180, max: 90, step: 15, unit: "°", names: HAND_POSITIONS },
   { key: "rArm", label: "Rear upper arm", min: -180, max: 180, unit: "°" },
   { key: "rFore", label: "Rear forearm", min: -180, max: 180, unit: "°" },

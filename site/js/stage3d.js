@@ -33,7 +33,7 @@ import {
   WebGLRenderTarget,
 } from "../vendor/three.module.min.js";
 import { loadBodies } from "./bodies.js";
-import { PIVOT } from "./figure.js";
+import { PIVOT, lightFor } from "./figure.js";
 import { createFigure } from "./rig.js";
 
 const RAD = Math.PI / 180;
@@ -188,13 +188,11 @@ export async function createStage3d(canvas) {
     stage.lost = true;
   });
 
-  // The light, from high in front and to the left of what is seen, and the bands of tone the white figures take under
-  // it. The stage is shown in a mirror (`.stage__frame` in styles.css), so to the left of what is seen is to the right
-  // here, in the frame the figures are drawn in.
+  // The light, from high in front and to the left of what is seen, whichever side of the piste the camera is on (see
+  // `lightFor`, which puts it there for each frame), and the bands of tone the white figures take under it.
   const scene = new Scene();
   scene.add(new AmbientLight(0xffffff, 1.2));
   const sun = new DirectionalLight(0xffffff, 2.2);
-  sun.position.set(150, 300, 260);
   scene.add(sun);
   const tones = new DataTexture(new Uint8Array([105, 170, 255]), 3, 1, RedFormat);
   tones.minFilter = tones.magFilter = NearestFilter;
@@ -299,6 +297,7 @@ export async function createStage3d(canvas) {
     camera.bottom = -(fy + fh);
     camera.position.set(PIVOT - Math.sin(angle * RAD) * DISTANCE, 0, Math.cos(angle * RAD) * DISTANCE);
     camera.lookAt(PIVOT, 0, 0);
+    sun.position.set(...lightFor(angle));
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld();
     const { uniforms } = composite;

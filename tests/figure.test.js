@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { BASE_BLADE, basePhrase } from "../site/js/bases.js";
-import { DEFAULT_FRAME, PIVOT, bladePaths, bladeTip, floorPath, frameOf, gripFrame, groundPath, handFrame, knee, knee3, kneeBehind, projector, skeleton, stickFigure } from "../site/js/figure.js";
+import { DEFAULT_FRAME, PIVOT, bladePaths, bladeTip, floorPath, frameFrom, frameOf, gripFrame, groundPath, handFrame, knee, knee3, kneeBehind, lightFor, projector, skeleton, stickFigure } from "../site/js/figure.js";
 import { POSES, PRESETS } from "../site/js/library.js";
 import { buildTimeline, poseAt, resolvePose } from "../site/js/phrase.js";
 import { boxOf, readPath } from "./path-data.js";
@@ -476,27 +476,66 @@ test("the shoulders turn toward the camera by the pose's turn: the two arms lie 
   assert.ok(Math.abs(turned.rs[0] - turned.T(48, 0)[0]) > 5, "well behind the spine");
 });
 
-test("the stage looks where the fencers are: everyone, at every step, is in a frame the shape of the page", () => {
+test("the stage looks where the fencers are: everyone, at every step, is in a frame the shape of the page, from either side of the piste", () => {
   const shape = DEFAULT_FRAME[2] / DEFAULT_FRAME[3];
   // The library's frames hold the whole blade, the postures' as much of it as BASE_BLADE says.
   for (const [phrase, blade] of [...SCENES.map((scene) => [scene.phrase, undefined]), [basePhrase(), BASE_BLADE]]) {
     const timeline = buildTimeline(phrase);
-    const [x, y, w, h] = frameOf(timeline, blade);
-    assert.ok(Math.abs(w / h - shape) < 0.01, `${phrase.name} is in the shape of the page`);
-    assert.ok(w >= DEFAULT_FRAME[2] * 0.72 - 0.1 && w <= DEFAULT_FRAME[2] * 1.3 + 0.1, `${phrase.name} is no closer than a third of the way in, nor further than a third out (${w})`);
-    assert.ok(y < 0 && y + h > 8, "the floor is in it, with room under it for the strokes at the feet");
-    for (const step of timeline.steps) {
-      for (const [who, dir] of timeline.solo ? [["A", 1]] : [["A", 1], ["B", -1]]) {
-        const J = skeleton(step[who]);
-        const W = projector(step[who], dir, 0);
-        const counted = blade === undefined ? J.tip : J.at(blade);
-        for (const [name, q] of Object.entries({ head: J.hd, hand: J.hn, blade: counted, back: J.ankB, front: J.ankF })) {
-          const [px, py] = W(q);
-          assert.ok(px >= x && px <= x + w && py >= y && py <= y + h, `${phrase.name}: ${who}'s ${name} is on the stage`);
+    for (const camera of [0, 180]) {
+      const [x, y, w, h] = frameOf(timeline, blade, camera);
+      assert.ok(Math.abs(w / h - shape) < 0.01, `${phrase.name} is in the shape of the page`);
+      assert.ok(w >= DEFAULT_FRAME[2] * 0.72 - 0.1 && w <= DEFAULT_FRAME[2] * 1.3 + 0.1, `${phrase.name} is no closer than a third of the way in, nor further than a third out (${w})`);
+      assert.ok(y < 0 && y + h > 8, "the floor is in it, with room under it for the strokes at the feet");
+      for (const step of timeline.steps) {
+        for (const [who, dir] of timeline.solo ? [["A", 1]] : [["A", 1], ["B", -1]]) {
+          const J = skeleton(step[who]);
+          const W = projector(step[who], dir, camera);
+          const counted = blade === undefined ? J.tip : J.at(blade);
+          for (const [name, q] of Object.entries({ head: J.hd, hand: J.hn, blade: counted, back: J.ankB, front: J.ankF })) {
+            const [px, py] = W(q);
+            assert.ok(px >= x && px <= x + w && py >= y && py <= y + h, `${phrase.name}, camera ${camera}: ${who}'s ${name} is on the stage`);
+          }
         }
       }
     }
   }
+});
+
+test("from the other side of the piste the stage looks at the same box across the page, about the pivot", () => {
+  // A frame for the camera at 0, as it is for the one at 180.
+  assert.deepEqual(frameFrom([-80, -236, 420, 254]), [-80, -236, 420, 254], "from the side it started on, as it was");
+  assert.deepEqual(frameFrom([-80, -236, 420, 254], 25), [-80, -236, 420, 254], "and for any camera on that side");
+  assert.deepEqual(frameFrom([-80, -236, 420, 254], 180), [-110, -236, 420, 254], "from the other side, as far from the pivot on the other side");
+  assert.deepEqual(frameFrom(frameFrom([-80, -236, 420, 254], 180), 180), [-80, -236, 420, 254], "and back again");
+  // Worked out for the camera at 180, a phrase's frame is that box.
+  for (const { phrase } of SCENES) {
+    const timeline = buildTimeline(phrase);
+    const [there, here] = [frameOf(timeline, undefined, 180), frameFrom(frameOf(timeline), 180)];
+    there.forEach((value, i) => near(value, here[i], 0.15, `${phrase.name}: ${["x", "y", "width", "height"][i]}`));
+  }
+});
+
+test("the light is on the camera's side of the piste, high, and to the left of what is seen", () => {
+  // In the frame the figures are drawn in, where the stage is then shown in a mirror: to the right.
+  for (const camera of [-60, -25, 0, 25, 60]) {
+    const [x, y, z] = lightFor(camera);
+    assert.ok(x > 0 && y > 0 && z > 0, `camera ${camera}°: high, in front and to the right of the figures`);
+  }
+  for (const camera of [120, 155, 180, 205, 240]) {
+    const [x, y, z] = lightFor(camera);
+    assert.ok(x < 0 && y > 0 && z < 0, `camera ${camera}°: the camera has gone round to the other side, and the light with it`);
+  }
+  assert.deepEqual(lightFor(180), lightFor(-180), "the same from either way round");
+});
+
+test("from the other side of the piste the pair change places across the page, which the stage's mirror turns back", () => {
+  const [a, b] = [resolvePose({ pose: "guard", x: 0 }), resolvePose({ pose: "guard", x: 310 })];
+  const across = (camera) => [projector(a, 1, camera)(skeleton(a).hip)[0], projector(b, -1, camera)(skeleton(b).hip)[0]];
+  const [fromA, fromB] = [across(0), across(180)];
+  assert.ok(fromA[0] < fromA[1], "from the side the skeleton is worked out for, A is on the left");
+  assert.ok(fromB[0] > fromB[1], "from the other side A is on the right");
+  // The mirror, about the pivot, puts each exactly where it stood when seen from the first side.
+  fromB.forEach((x, i) => near(2 * PIVOT - x, fromA[i], 1e-9, `${["A", "B"][i]} turned back by the mirror`));
 });
 
 test("the postures are looked at closer than their whole blades allow, with the fencer in view from every camera angle", () => {
