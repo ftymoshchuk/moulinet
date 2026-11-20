@@ -6,7 +6,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { BASES, BASE_GROUPS } from "../site/js/bases.js";
+import { BASES, BASE_GROUPS, BASE_SECTIONS, basesOf } from "../site/js/bases.js";
 import { gripFrame, skeleton } from "../site/js/figure.js";
 import { HAND_POSITIONS, POSES } from "../site/js/library.js";
 import { resolvePose } from "../site/js/phrase.js";
@@ -31,6 +31,9 @@ test("the book's postures are the last group of the base postures, in the book's
   const ours = BASES.filter((base) => base.group === GROUP);
   assert.deepEqual(ours.map(({ pose }) => pose), BOOK);
   assert.deepEqual(BASES.slice(-BOOK.length).map(({ pose }) => pose), BOOK, "they come after every other posture, so the others keep their numbers");
+  // The page keeps them in the section of its own, Book knowledge, and no other posture is in it.
+  assert.deepEqual(BASE_SECTIONS.book.groups, [GROUP]);
+  assert.deepEqual(basesOf("book").map(({ pose }) => pose), BOOK);
   for (const { pose, points } of ours) {
     const book = points.find(([what]) => what === "Book");
     assert.ok(book, `${pose}: a Book point`);

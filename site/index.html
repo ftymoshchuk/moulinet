@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'" />
     <title>Sabre Motion Lab</title>
-    <meta name="description" content="Poses are numbers, phrases are keyframes. Study the base postures, practise from the library, or build a scene of your own." />
+    <meta name="description" content="Poses are numbers, phrases are keyframes. Practise what a live class taught, study what a book teaches, or build a scene of your own." />
     <meta property="og:title" content="Sabre Motion Lab" />
-    <meta property="og:description" content="Poses are numbers, phrases are keyframes. Study the base postures, practise from the library, or build a scene of your own." />
+    <meta property="og:description" content="Poses are numbers, phrases are keyframes. Practise what a live class taught, study what a book teaches, or build a scene of your own." />
     <meta name="theme-color" content="#101214" />
     <link rel="preload" href="fonts/big-shoulders-display-latin-variable.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="fonts/ibm-plex-sans-condensed-latin-400.woff2" as="font" type="font/woff2" crossorigin />
@@ -22,12 +22,12 @@
       <header class="masthead">
         <div class="masthead__title">
           <h1>Sabre Motion Lab</h1>
-          <p class="masthead__tagline">Poses are numbers, phrases are keyframes. Study the base postures, practise from the library, or build a scene of your own.</p>
+          <p class="masthead__tagline">Poses are numbers, phrases are keyframes. Practise what a live class taught, study what a book teaches, or build a scene of your own.</p>
         </div>
-        <div class="modes" role="group" aria-label="Modes">
-          <button class="mode-button" type="button" data-mode="library" aria-pressed="true">Practice library</button>
-          <button class="mode-button" type="button" data-mode="base" aria-pressed="false">Base postures</button>
-          <button class="mode-button" type="button" data-mode="creator" aria-pressed="false">Creator</button>
+        <div class="modes" role="group" aria-label="Sections">
+          <button class="mode-button" type="button" data-tab="live" aria-pressed="true">Live knowledge</button>
+          <button class="mode-button" type="button" data-tab="book" aria-pressed="false">Book knowledge</button>
+          <button class="mode-button" type="button" data-tab="creator" aria-pressed="false">Creator</button>
         </div>
       </header>
 
@@ -36,7 +36,9 @@
       </noscript>
 
       <!--
-        One stage, three modes. A panel with data-modes is shown only in the
+        One stage, three modes, in three tabs. Live knowledge and Book knowledge
+        each have a practice library and base postures of their own, and the
+        Creator is the third tab. A panel with data-modes is shown only in the
         modes it lists; one without is shown in every mode.
       -->
       <main id="main" class="workspace">
@@ -222,7 +224,13 @@
           </section>
         </div>
 
-        <aside class="workspace__side" aria-label="Panels for this mode">
+        <aside class="workspace__side" aria-label="Panels for this tab">
+          <!-- Where a section has both scenes and base postures, which of the two to show. -->
+          <div id="view-switch" class="view-switch" role="group" aria-label="What this section shows" data-modes="library base">
+            <button class="switch-button" type="button" data-mode="library" aria-pressed="true">Practice library</button>
+            <button class="switch-button" type="button" data-mode="base" aria-pressed="false">Base postures</button>
+          </div>
+
           <section class="panel panel--library" data-modes="library" aria-labelledby="library-title">
             <h3 id="library-title" class="panel__title">Practice library</h3>
             <p class="panel__intro">Scenes to practise from. Each can say where it was noted and link to a reference.</p>
@@ -239,8 +247,9 @@
 
           <section class="panel panel--bases hidden" data-modes="base" aria-labelledby="bases-title">
             <h3 id="bases-title" class="panel__title">Base postures</h3>
-            <p class="panel__intro">One fencer, one posture at a time. Pick one here, or use the arrows under the stage. The camera turns the view.</p>
+            <p id="bases-intro" class="panel__intro"></p>
             <div id="base-list" class="base-list"></div>
+            <p id="bases-note" class="panel__intro hidden"></p>
           </section>
 
           <section class="panel panel--step hidden" data-modes="creator" aria-labelledby="step-title">
@@ -291,8 +300,8 @@
 
           <section class="panel panel--poses hidden" data-modes="creator" aria-labelledby="poses-title">
             <h3 id="poses-title" class="panel__title">Poses</h3>
-            <p class="panel__intro">Tap a pose to put it on the current step for the fencer you are editing. The Base postures describe each one.</p>
-            <div id="poses" class="poses"></div>
+            <p class="panel__intro">Tap a pose to put it on the current step for the fencer you are editing. The base postures of Live knowledge and of Book knowledge describe each one.</p>
+            <div id="poses" class="pose-groups"></div>
           </section>
         </aside>
       </main>

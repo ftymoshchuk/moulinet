@@ -33,7 +33,7 @@ Foreword, Introduction and **Part One** (Chapters I–II): everything up to the 
 
 ## Postures made from it
 
-The last twelve base postures of the app (the group "Leszák, 1906" in `site/js/bases.js`, the poses in `site/js/library.js`) are taken from this translation. `tests/book.test.js` checks each against what the book says of it.
+The twelve base postures of the app's Book knowledge tab (the group "Leszák, 1906" in `site/js/bases.js`, the poses in `site/js/library.js`) are taken from this translation. `tests/book.test.js` checks each against what the book says of it.
 
 | Pose | Book | Figure | Where the model only approximates the book |
 |---|---|---|---|

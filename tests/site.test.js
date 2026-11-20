@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 
+import { SECTIONS } from "../site/js/library.js";
 import { TEXT_KEYS, TEXT_LIMITS } from "../site/js/phrase.js";
 
 const SITE = new URL("../site/", import.meta.url);
@@ -64,19 +65,30 @@ test("every element the scripts look up is on the page, once", () => {
   }
   assert.ok(wanted.length > 60);
   for (const id of wanted) assert.ok(ids.includes(id), `#${id} is not in index.html`);
-  for (const attr of ["data-speed", "data-toggle", "data-mode", "data-modes"]) {
+  for (const attr of ["data-speed", "data-toggle", "data-tab", "data-mode", "data-modes"]) {
     assert.ok(html.includes(attr) && app.includes(`[${attr}]`), attr);
   }
 });
 
 const MODES = ["library", "base", "creator"];
 
-test("each mode has a button and panels of its own, and the page opens on the library with only its panels showing", () => {
-  const buttons = [...html.matchAll(/<button\b[^>]*\bdata-mode="([^"]+)"[^>]*>/g)];
-  assert.deepEqual(buttons.map((m) => m[1]), MODES);
-  assert.match(buttons[0][0], /aria-pressed="true"/);
-  for (const button of buttons.slice(1)) assert.match(button[0], /aria-pressed="false"/);
+test("the page has a tab for each section and one for the Creator, and a switch between a section's library and postures", () => {
+  const tabs = [...html.matchAll(/<button\b[^>]*\bdata-tab="([^"]+)"[^>]*>([^<]*)</g)];
+  assert.deepEqual(tabs.map((m) => m[1]), [...SECTIONS.map(({ id }) => id), "creator"]);
+  assert.deepEqual(tabs.slice(0, -1).map((m) => m[2]), SECTIONS.map(({ name }) => name), "each tab is named as its section is");
+  assert.match(tabs[0][0], /aria-pressed="true"/);
+  for (const tab of tabs.slice(1)) assert.match(tab[0], /aria-pressed="false"/);
+  assert.equal([...html.matchAll(/class="mode-button"/g)].length, tabs.length, "the tabs are the page's mode buttons");
 
+  // The switch chooses between the two modes a section has: its practice library and its base postures.
+  const choices = [...html.matchAll(/<button\b[^>]*\bdata-mode="([^"]+)"[^>]*>/g)];
+  assert.deepEqual(choices.map((m) => m[1]), ["library", "base"]);
+  assert.match(choices[0][0], /aria-pressed="true"/);
+  assert.match(choices[1][0], /aria-pressed="false"/);
+  assert.match(html, /<div id="view-switch"[^>]*data-modes="library base"/);
+});
+
+test("each mode has panels of its own, and the page opens on the library with only its panels showing", () => {
   const panels = [...html.matchAll(/<[a-z]+\b[^>]*\bdata-modes="([^"]+)"[^>]*>/g)].map((m) => ({ modes: m[1].split(" "), tag: m[0] }));
   assert.ok(panels.length >= 15);
   for (const { modes, tag } of panels) {

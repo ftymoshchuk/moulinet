@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { BASES, BASE_CAMERA, BASE_GROUPS, BASE_X, basePhrase } from "../site/js/bases.js";
-import { POSES, POSE_NAMES } from "../site/js/library.js";
+import { BASES, BASE_CAMERA, BASE_GROUPS, BASE_SECTIONS, BASE_X, basePhrase, basesOf } from "../site/js/bases.js";
+import { POSES, POSE_NAMES, PRESETS, SECTIONS } from "../site/js/library.js";
 import { buildTimeline, parsePhrase, phraseToText, poseAt } from "../site/js/phrase.js";
 
 test("every pose in the library is a base posture, once, and no posture is a pose the library lacks", () => {
@@ -61,4 +61,48 @@ test("each posture has a moment of its own, so the stage can rest on any of them
 test("the camera for the postures is within the range the slider has", () => {
   assert.ok(Math.abs(BASE_CAMERA) <= 60);
   assert.equal(basePhrase().camera, BASE_CAMERA);
+});
+
+test("the base postures are kept in the sections of the page, each with groups, an introduction and postures of its own", () => {
+  assert.deepEqual(Object.keys(BASE_SECTIONS), SECTIONS.map(({ id }) => id), "a list of postures for each section, in the order of the tabs");
+  const seen = [];
+  for (const [id, { groups, intro }] of Object.entries(BASE_SECTIONS)) {
+    assert.ok(groups.length > 0, `${id} has groups`);
+    assert.ok(intro.endsWith("."), `${id} has an introduction`);
+    for (const group of groups) {
+      assert.ok(!seen.includes(group), `${group} is in one section only`);
+      seen.push(group);
+    }
+    assert.ok(basesOf(id).length > 0, `${id} has postures`);
+  }
+  assert.deepEqual(BASE_GROUPS, seen);
+});
+
+test("the sections share the postures out between them, in order, so every posture is in one section and each section's numbers climb from 1", () => {
+  assert.deepEqual(SECTIONS.flatMap(({ id }) => basesOf(id)), BASES);
+  for (const { id } of SECTIONS) {
+    for (const base of basesOf(id)) assert.ok(BASE_SECTIONS[id].groups.includes(base.group), `${base.pose} is in ${id}`);
+  }
+});
+
+test("each section's postures make a phrase of their own, and with no section named the phrase has them all", () => {
+  for (const { id } of SECTIONS) {
+    const phrase = basePhrase(id);
+    assert.deepEqual(
+      phrase.steps.map((step) => step.A.pose),
+      basesOf(id).map(({ pose }) => pose),
+    );
+    const timeline = buildTimeline(phrase);
+    assert.equal(timeline.solo, true);
+    assert.deepEqual(timeline.unknown, []);
+    assert.equal(phrase.camera, BASE_CAMERA);
+  }
+  assert.equal(basePhrase().steps.length, BASES.length);
+  assert.notEqual(basePhrase("live"), basePhrase("live"), "each call is a phrase of its own");
+});
+
+test("every built-in scene belongs to a section of the page, and the page opens on a section that has scenes", () => {
+  const ids = SECTIONS.map(({ id }) => id);
+  for (const { id, section } of PRESETS) assert.ok(ids.includes(section), `${id}: section ${section}`);
+  assert.ok(PRESETS.some(({ section }) => section === ids[0]), "the first section has scenes, for the page to open on");
 });

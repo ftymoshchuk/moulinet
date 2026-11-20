@@ -2,12 +2,28 @@
 // order they are learned, and the phrase that shows them one fencer at a time.
 import { POSE_NAMES } from "./library.js";
 
-// What each posture is for, in the order the page groups them. The last group is
-// not a purpose but a source: the postures of the base chapters of Leszák Károly's
-// Kardvívás (1906), as the translation in sources/kardvivas-1906 gives them. They
-// come last so that the others keep their numbers, and each says where in the book
-// it is, and what the book leaves open.
-export const BASE_GROUPS = ["Stance", "Footwork", "Attack", "Defence", "Leszák, 1906"];
+// The base postures belong to the sections of the page (SECTIONS in library.js),
+// since what live knowledge and a book teach are not the same postures. Each
+// section lists its groups in the order the page shows them, and says a word about
+// them. The groups of live knowledge say what the postures are for. The one group
+// of the book's section is not a purpose but a source: the postures of the base
+// chapters of Leszák Károly's Kardvívás (1906), as the translation in
+// sources/kardvivas-1906 gives them. Each says where in the book it is, and what
+// the book leaves open. They come after the others, so those keep their order.
+export const BASE_SECTIONS = {
+  live: {
+    groups: ["Stance", "Footwork", "Attack", "Defence"],
+    intro: "One fencer, one posture at a time. Pick one here, or use the arrows under the stage. The camera turns the view.",
+  },
+  book: {
+    groups: ["Leszák, 1906"],
+    intro: "One fencer, one posture at a time, from the base chapters of Leszák Károly's Kardvívás (1906). Each says where in the book it is, and what the book leaves open. Pick one here, or use the arrows under the stage.",
+    note: "No scenes are made from the book yet: its drills are still to come.",
+  },
+};
+
+// Every group, in the order of the postures.
+export const BASE_GROUPS = Object.values(BASE_SECTIONS).flatMap(({ groups }) => groups);
 
 // Where the one fencer stands for every posture (cm), the same for all, so
 // moving from one to the next changes the fencer and not the view.
@@ -335,12 +351,21 @@ export const BASES = [
   },
 ];
 
-/** The base postures as a phrase for one fencer, a step for each, so the stage can show them one at a time. */
-export function basePhrase() {
+/** The base postures of a section of the page, in the order they are shown. */
+export function basesOf(section) {
+  const { groups } = BASE_SECTIONS[section];
+  return BASES.filter(({ group }) => groups.includes(group));
+}
+
+/**
+ * The base postures as a phrase for one fencer, a step for each, so the stage can
+ * show them one at a time: those of `section`, or all of them with none given.
+ */
+export function basePhrase(section) {
   return {
     name: "Base postures",
     camera: BASE_CAMERA,
     solo: true,
-    steps: BASES.map(({ pose }) => ({ label: POSE_NAMES[pose], hold: 1000, A: { pose, x: BASE_X } })),
+    steps: (section === undefined ? BASES : basesOf(section)).map(({ pose }) => ({ label: POSE_NAMES[pose], hold: 1000, A: { pose, x: BASE_X } })),
   };
 }

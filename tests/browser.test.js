@@ -13,7 +13,7 @@ import { delimiter, join } from "node:path";
 import { test } from "node:test";
 import { promisify } from "node:util";
 
-import { BASES, BASE_BLADE, BASE_GROUPS, basePhrase } from "../site/js/bases.js";
+import { BASE_BLADE, BASE_SECTIONS, basePhrase, basesOf } from "../site/js/bases.js";
 import { frameOf, handFrame } from "../site/js/figure.js";
 import { JOINTS, POSE_NAMES, PRESETS } from "../site/js/library.js";
 import { buildTimeline, resolvePose } from "../site/js/phrase.js";
@@ -110,13 +110,15 @@ test("in a browser, the page opens on the practice library and builds its contro
   const { dom, consoleLines } = await openInBrowser("/");
   assert.deepEqual(consoleLines, []);
   const count = (pattern) => (dom.match(pattern) ?? []).length;
-  assert.equal(count(/class="mode-button"/g), 3, "mode buttons");
+  assert.equal(count(/class="mode-button"/g), 3, "tabs");
+  assert.match(dom, /<button[^>]*data-tab="live"[^>]*aria-pressed="true"[^>]*>Live knowledge</);
   assert.match(dom, /<button[^>]*data-mode="library"[^>]*aria-pressed="true"[^>]*>Practice library</);
   assert.equal(count(/class="scene-button"/g), PRESETS.length, "scenes in the library");
   assert.match(dom, /id="scene-title"[^>]*>Advance, lunge, head cut</);
   assert.equal(count(/class="step-button"/g), 8, "step buttons");
   assert.equal(count(/class="pose-button"/g), Object.keys(POSE_NAMES).length, "pose buttons");
-  assert.equal(count(/class="base-button"/g), BASES.length, "posture buttons");
+  // A section's postures are listed when they are shown, not before.
+  assert.equal(count(/class="base-button"/g), 0, "posture buttons");
   // The fencers are drawn in 3D on a canvas over the stage, with a stick figure for each to stand in where they cannot be.
   assert.match(dom, /<canvas id="stage-3d" class="stage__3d[^"]*" aria-hidden="true"/);
   assert.equal(count(/class="stick( fencer-b)?"/g), 2, "a stick figure for each fencer");
@@ -199,11 +201,11 @@ test("in a browser, a scene is looked at with its whole blades in view, and the 
   };
   assert.equal(seen.sceneViews.length, PRESETS.length);
   PRESETS.forEach(({ phrase }, i) => lookedAt(seen.sceneViews[i], frameOf(buildTimeline(phrase)), phrase.name));
-  lookedAt(seen.baseView, frameOf(buildTimeline(basePhrase()), BASE_BLADE), "the postures");
+  lookedAt(seen.baseView, frameOf(buildTimeline(basePhrase("live")), BASE_BLADE), "the postures");
 
   // The close-up looks at A's sword hand from outside the arm, round on the other side of the piste, wherever the hand
   // is and however the camera is turned; turned off, the stage looks at the scene again.
-  const posture = (i) => buildTimeline(basePhrase()).steps[i].A;
+  const posture = (i) => buildTimeline(basePhrase("live")).steps[i].A;
   assert.equal(seen.closeUp.pressed, "true");
   assert.equal(seen.closeUp.floorTurned, true, "the piste turns round with the camera");
   lookedAt(seen.closeUp.guard, handFrame(posture(0), 1, 25 + 180), "the hand in guard");
@@ -216,12 +218,27 @@ test("in a browser, a scene is looked at with its whole blades in view, and the 
   assert.equal(seen.closeUp.off.pressed, "false");
 });
 
-test("in a browser, the base postures show one fencer, not a pair, and describe each posture", { skip, timeout: 120_000 }, async () => {
+/** What the page says of each posture of a section, as the driver saw it: the postures are numbered within their section. */
+const described = (bases) =>
+  bases.map((base, i) => ({
+    name: POSE_NAMES[base.pose],
+    group: base.group,
+    key: base.pose,
+    text: base.text,
+    points: base.points,
+    label: POSE_NAMES[base.pose],
+    count: `${two(i + 1)} / ${two(bases.length)}`,
+    pressed: 1,
+    pressedIs: i,
+  }));
+
+test("in a browser, the base postures of live knowledge show one fencer, not a pair, and describe each posture", { skip, timeout: 120_000 }, async () => {
   const { seen } = await drive();
+  const live = basesOf("live");
   assert.deepEqual(seen.baseShows, { chosen: ["base"], panels: ["stage", "detail", "bases"], controls: ["[data-toggle=ink]", "[data-toggle=closeUp]", "#camera"] });
   assert.deepEqual(seen.baseStage, {
     label: "Guard (tierce)",
-    count: `01 / ${two(BASES.length)}`,
+    count: `01 / ${two(live.length)}`,
     solo: true,
     stickA: "inline",
     stickB: "none",
@@ -234,30 +251,50 @@ test("in a browser, the base postures show one fencer, not a pair, and describe 
     prev: "Previous posture",
     next: "Next posture",
   });
-  assert.deepEqual(
-    seen.postures,
-    BASES.map((base, i) => ({
-      name: POSE_NAMES[base.pose],
-      group: base.group,
-      key: base.pose,
-      text: base.text,
-      points: base.points,
-      label: POSE_NAMES[base.pose],
-      count: `${two(i + 1)} / ${two(BASES.length)}`,
-      pressed: 1,
-      pressedIs: i,
-    })),
-  );
-  assert.deepEqual(seen.groups, BASE_GROUPS);
+  assert.deepEqual(seen.postures, described(live));
+  assert.deepEqual(seen.groups, BASE_SECTIONS.live.groups);
+  assert.deepEqual(seen.liveBase, { tabs: ["live"], switchShown: true, intro: BASE_SECTIONS.live.intro, noteShown: false, listed: live.length });
   assert.deepEqual(seen.arrows, {
-    atStart: `01 / ${two(BASES.length)}`,
+    atStart: `01 / ${two(live.length)}`,
     third: "Advance, land",
-    announced: `Posture 3 of ${BASES.length}: Advance, land`,
-    atEnd: `${two(BASES.length)} / ${two(BASES.length)}`,
+    announced: `Posture 3 of ${live.length}: Advance, land`,
+    atEnd: `${two(live.length)} / ${two(live.length)}`,
     cameraTurned: true,
     inkOff: null,
   });
-  assert.deepEqual(seen.baseKept, { count: `05 / ${two(BASES.length)}`, label: "Blade up" });
+  assert.deepEqual(seen.baseKept, { count: `05 / ${two(live.length)}`, label: "Blade up" });
+});
+
+test("in a browser, book knowledge opens on the book's postures with no switch to scenes, and each tab keeps its place", { skip, timeout: 120_000 }, async () => {
+  const { seen } = await drive();
+  const book = basesOf("book");
+  const live = basesOf("live");
+  // The book's section has no scenes, so there is nothing to choose between, and the postures are what shows.
+  assert.deepEqual(seen.bookShows, {
+    chosen: ["base"],
+    panels: ["stage", "detail", "bases"],
+    controls: ["[data-toggle=ink]", "[data-toggle=closeUp]", "#camera"],
+    tabs: ["book"],
+    switchShown: false,
+  });
+  assert.deepEqual(seen.bookStage, {
+    label: POSE_NAMES[book[0].pose],
+    count: `01 / ${two(book.length)}`,
+    intro: BASE_SECTIONS.book.intro,
+    note: BASE_SECTIONS.book.note,
+    noteShown: true,
+  });
+  assert.deepEqual(seen.bookPostures, described(book));
+  assert.deepEqual(seen.bookGroups, BASE_SECTIONS.book.groups);
+  assert.deepEqual(seen.bookArrows, { atStart: `01 / ${two(book.length)}`, atEnd: `${two(book.length)} / ${two(book.length)}` });
+  // The Creator is a tab of its own: no switch, and its tab takes the focus from the posture button it hid.
+  assert.deepEqual(seen.bookToCreator, { tabs: ["creator"], switchShown: false, chosen: ["creator"], focus: "creator" });
+  // Each section is as it was left: the book on its fourth posture, live knowledge on its fifth, with its switch.
+  assert.deepEqual(seen.bookKept, { count: `04 / ${two(book.length)}`, label: POSE_NAMES[book[3].pose], tabs: ["book"] });
+  assert.deepEqual(seen.liveKept, { count: `05 / ${two(live.length)}`, label: "Blade up", tabs: ["live"], switchShown: true, chosen: ["base"] });
+  // The switch brings live knowledge's scenes back, all of them and only its own.
+  assert.deepEqual(seen.liveLibrary, { tabs: ["live"], cards: PRESETS.filter(({ section }) => section === "live").length, chosen: ["library"] });
+  assert.deepEqual(seen.liveLibraryKept, { tabs: ["live"], chosen: ["library"], title: PRESETS[0].phrase.name });
 });
 
 test("in a browser, the Creator edits a copy of a scene the way the page always has", { skip, timeout: 120_000 }, async () => {
