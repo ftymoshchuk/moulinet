@@ -11,8 +11,7 @@ your browser: no account, no server, and nothing you type leaves the page.
 Scenes you save stay in your browser's own storage, on that device.
 
 The name comes from the *moulinet*, the sabre's circular cut: the blade drops
-forward past the arm, swings up behind and comes down over the top. It is one
-of the eight scenes built in.
+forward past the arm, swings up behind and comes down over the top.
 
 ## Three tabs
 One stage, three tabs. Choose the tab at the top of the page: **Live knowledge**,
@@ -25,29 +24,29 @@ tab remembers what it was showing, and comes back to it.
 
 **Live knowledge: the practice library.** Scenes to practise from, each with the kind of learning
 it comes from, such as a class taken in person, a video or a book, the event it
-was noted at and a link to a reference, such as a video of the bout. Pick a
-scene and it plays; the eight built in are an advance, lunge and head cut; a
-chest cut parried in 3 and riposted; a head attack parried in 5 and riposted to
-the head; a cut at the outside of the face met with face protection, as an old
-plate draws it; the moulinet, solo; and three drills from a class, as they were
-taught there. In each of the drills the attacker cuts lightly across the
-defender's blade, level, just above the guard, and the defender ripostes to the
-attacker's sword hand: down onto the top of the glove; in onto its outside, level,
-when the attacker raises the point; or, when the attacker turns the guard out over
-that side, which is tierce, round and under the hand and up into the underside of
-the glove, the Hungarian cut. In the pairs the older man holds a guard of his
-own, standing a little higher, with the sword arm bent and tucked in, so the two
-do not stand as mirror images. The drills say where they come from: live
-learning, at Warsaw advanced sabre on 15 November 2026. The other built-in scenes
-have no source, event or link, because there is no real bout behind them. A
-scene's source shows as a tag on its card. Scenes you save in the Creator are
-listed below them, with whatever you noted, and a link opens in a new tab. They
-live in your browser's storage, so one saved or deleted in another tab of the
-page appears or goes here too.
+was noted at and a link to a reference, such as a video of the bout. The library
+holds only what was learned live: the three built in are drills from a class, as
+they were taught there. The page opens paused, and so does each scene you pick;
+nothing on it plays until you press Play. In each of the drills the attacker cuts
+lightly across the defender's blade, level, just above the guard, and the
+defender ripostes to the attacker's sword hand: down onto the top of the glove; in
+onto its outside, level, when the attacker raises the point; or, when the attacker
+turns the guard out over that side, which is tierce, round and under the hand and
+up into the underside of the glove, the Hungarian cut. In the pairs the older man
+holds a guard of his own, standing a little higher, with the sword arm bent and
+tucked in, so the two do not stand as mirror images. The drills say where they
+come from: live learning, at Warsaw advanced sabre on 15 November 2026. A scene's
+source shows as a tag on its card. Scenes you save in the Creator are listed
+below them, with whatever you noted, and a link opens in a new tab. They live in
+your browser's storage, so one saved or deleted in another tab of the page
+appears or goes here too.
 
 **Base postures.** One fencer, never a pair, in one posture at a time, with the
 posture described in words: what it is for, and the parts worth looking at,
-the hand that holds the sabre among them. Pick a posture from the list, or use the arrows under the stage. The
+the hand that holds the sabre among them. He is right-handed and faces left, as
+the book's fencer does in its photographs: the sabre is in his right hand and the
+sword arm on the far side of his chest, which is turned toward you, with the rear
+hand on the hip nearer to you. Pick a posture from the list, or use the arrows under the stage. The
 postures are the poses of the library, twenty-six of them, shared between the two
 sections and numbered from 1 within each. **Live knowledge** has the first
 fourteen, in the order they are learned: the guard; the two halves of an advance;
@@ -78,19 +77,24 @@ the camera angle counts, since a saved scene keeps it. If you save a scene that
 another tab changed or deleted after you opened it, yours is kept as a new scene
 beside theirs, and the Creator says so, so neither is lost.
 
-All three share the stage, and its **camera**, which turns the view up to 60°
-either way to see a blade come toward you or swing away. The library looks as
-close as keeps everyone and their whole blades in view; the base postures, as
-close as keeps the fencer and most of the blade in view, so the point of the
-blade held up in Blade up runs off the top. Turning the camera never zooms, and
-the Creator keeps one view while you reshape a scene.
+All three share the stage, and its **camera**, which turns the view all the way
+round the piste, up to a half turn either way: to see a blade come toward you or
+swing away, end on, or from the other side of the piste, where the fencers change
+places, so how you view them is up to you. The library looks as close as keeps
+everyone and their whole blades in view; the base postures, as close as keeps the
+fencer and most of the blade in view, so the point of the blade held up in Blade
+up runs off the top. Turning the camera never zooms, and the view slides to keep
+them in the frame as it goes round. The Creator keeps one view while you reshape
+a scene.
 
 **Hand close-up**, in every mode, looks closely at the sword hand instead, and
 follows it as it moves: A's, or in the Creator the fencer you are reshaping. It
 looks from outside the sword arm, which is where the old books draw the grip and
-the hand positions from, so the blade points the way it does in their plates:
-for A from the other side of the piste, and for B, whose sword arm is on your
-side, from this one. The camera turns it from there.
+the hand positions from, so the blade points the way it does in their plates. In
+a scene A's sword arm is on your side and B's on the far side, so for A it looks
+from where you are and for B from the other side of the piste; in the base
+postures the fencer's sword arm is on the far side, so it looks from there. The
+camera turns it from there.
 
 The library and the Creator, which play scenes, add:
 - **Playback** at ¼, ½ or full speed, a step at a time, or scrubbed along the
@@ -181,7 +185,7 @@ exactly where the skeleton has it. A hand that would have to bend further at
 the wrist, or turn further about the forearm, than an arm can goes only so far,
 and the sabre turns between thumb and forefinger for the rest, as it does in a
 moulinet. The shoulder comes forward on the collarbone to let the hand reach,
-and in the few moments of the moulinet it still cannot, the hand falls short by
+and in the few moments of a moulinet it still cannot, the hand falls short by
 a few centimetres and the sabre goes with it. The blade is drawn as a blade, broad at
 the guard and narrowing to the point, the back sweeping down to meet the edge there,
 and the edge, ground thin, in the colour of its fencer's blade path, so that which way
@@ -190,9 +194,31 @@ turns its elbow or knee the way the skeleton's would bend, or failing that the
 way the hand or the foot has it, so a limb passing through straight never turns
 over: no bone turns more than 25° in 4 ms.
 
-The fencer facing left stands as the skeleton has him, which is the one facing
-right turned round: his sword arm is on your side, and the blades meet in three
-dimensions at a parry, not only from the side, as the scenes are worked out.
+In the skeleton's own frame, the fencer facing left stands as the skeleton has
+him, which is the one facing right turned round: his sword arm is on your side,
+and the blades meet in three dimensions where they touch, not only from the side,
+as the drills are worked out.
+
+**Which hand.** The skeleton has the sword on the side of the chest away from the
+camera, so as it is worked out both fencers hold the sabre in the left hand: A
+stands on the left facing right, his chest turned toward you, and B, who is A
+turned round, faces left with his back to you. The stage is shown in a mirror, so
+on the page they are right-handed, as in life and in the book. Everything on the
+stage turns with it, the figures, their marks on the floor, the motion ghosts and
+the blade paths. A mirror alone would put A on the right, so the camera for the
+scenes and the Creator goes round to the other side of the piste, facing B: A is
+back on the left, facing right, with his back and his sword arm toward you, and B
+faces left with his chest toward you and his sword arm on the far side. The base
+postures have one fencer and are seen from the first side, so that he faces left
+with his chest toward you and his sword arm on the far side, as the book's
+photographs show him. That is where the camera starts, and you can turn it all the
+way round to the other side: for a scene, round to where A is on the right facing
+left with his chest toward you and B has his back to you. The light is on the
+camera's side, to the upper left of what is seen. The poses, the scenes and the
+camera angle mean what they always did: the piste still runs from A's end on the
+left to B's on the right. Where this page says a pose turns toward the camera or
+toward you, it means toward the side the chest turns to, which is toward you in the
+postures and away from you in the scenes, until you turn the camera round.
 
 **The ink.** The figures are drawn with [three.js](https://threejs.org), r170,
 kept in `site/vendor/`, three times over, off the page: in the flat colours of
@@ -245,9 +271,10 @@ data** shows the one on stage, a step per line:
   `http` and `https` addresses become links; anything else is shown as not a
   link.
 - `note`: whatever else is worth saying, up to 1,000 characters.
-- `camera`: the view in degrees from side on, -60 to 60. A pasted phrase with
-  a new angle turns the view to it, and saving a scene keeps the angle it was
-  seen from.
+- `camera`: the view in degrees from side on, -180 to 180: 0 is the side the
+  page starts on, B's side for a scene, and 180 the other side of the piste. A
+  pasted phrase with a new angle turns the view to it, and saving a scene keeps
+  the angle it was seen from.
 - `solo`: `true` for one fencer. B leaves the stage, and every edit goes to A.
 - `steps`: the keyframes, in order, at least one.
 
@@ -288,7 +315,8 @@ A fencer is `{"pose": …, "x": …, "adj": {…}}`:
   clears them.
 
 The joints `adj` can set. Lengths are centimetres; angles are degrees, where 0
-points at the opponent and 90 straight up.
+points at the opponent and 90 straight up. Where a row says the camera, it means
+the side the chest turns to, as in **Which hand** above.
 
 | Key | Joint |
 |---|---|
@@ -353,24 +381,34 @@ it passes, the feet that stay and the feet that step, and a wrist that never ben
 past what parry 5 asks), the edits the Creator makes to a scene, the saved
 scenes (what they keep and what they leave alone) and the check that a
 reference link is a web address, the base postures of each section, the skeleton and the camera
-(the knees and the arms, the hand positions, where the stage looks, and every
-phrase and posture at every moment from eight camera angles, checked for broken
-path data), the postures of the 1906 book, each checked against what the book
+(the knees and the arms, the hand positions, where the stage looks, with every
+fencer in it at every camera angle all the way round, and every phrase and posture
+at every moment from eight camera angles, checked for broken path data), the
+postures of the 1906 book, each checked against what the book
 says of it, the figures (the bodies read back as they were baked, and posed in
 every scene with the ankles, the rear hand and the blade's point where the
-skeleton has them, from any camera, the wrist bending no further than a wrist
+skeleton has them, from any camera, the sabre in the left hand of both fencers,
+which the stage's mirror makes the right, the wrist bending no further than a wrist
 can and no bone turning over, and the drills from the class landing where the class
 has them: the light cut on the inside of the defender's blade just above his guard,
 and each riposte edge first on the attacker's glove, on top, on the outside or
 underneath, with no blade going into an arm at any moment), and the published files (only relative links to
 files that exist, no outside requests, every element the scripts need, and the
-licences of what is bundled). Sixteen more run in a real browser: headless
+licences of what is bundled). Twenty more run in a real browser: headless
 Chrome or Chromium loads the page, then a driver page works every control of
 every tab and mode, with hostile input among it, and checks the result, down to
-two browser tabs saving the same scene and the 3D figures taking the stage; and once more with
+the page opening paused, the stage turned in its mirror, the camera on the side
+of the piste it should be and turning all the way round, two browser tabs saving
+the same scene and the 3D figures taking the stage; and once more with
 WebGL turned off, where the stick figures stand in and the note says why. They
 need Chrome or Chromium on your `PATH`, or `CHROME_BIN` pointing at one, and are
 skipped without it.
+
+The practice library lists only the drills from the class. The five scenes it used
+to list, an advance, lunge and head cut, a chest cut parried in 3, a head attack
+parried in 5, a cut at the face met with face protection, and the moulinet, stay in
+`tests/retired-scenes.js` as test data: they are the longest runs of poses the
+timeline, the figures and the rig are tried on.
 
 To change the bodies, edit `scripts/bake-fencers.js` and run it on MakeHuman's
 files, from its repository at the commit the script names:

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { BASES, BASE_CAMERA, BASE_GROUPS, BASE_SECTIONS, BASE_X, basePhrase, basesOf } from "../site/js/bases.js";
+import { CAMERA_LIMIT } from "../site/js/figure.js";
 import { POSES, POSE_NAMES, PRESETS, SECTIONS } from "../site/js/library.js";
 import { buildTimeline, parsePhrase, phraseToText, poseAt } from "../site/js/phrase.js";
 
@@ -59,7 +60,7 @@ test("each posture has a moment of its own, so the stage can rest on any of them
 });
 
 test("the camera for the postures is within the range the slider has", () => {
-  assert.ok(Math.abs(BASE_CAMERA) <= 60);
+  assert.ok(Math.abs(BASE_CAMERA) <= CAMERA_LIMIT);
   assert.equal(basePhrase().camera, BASE_CAMERA);
 });
 

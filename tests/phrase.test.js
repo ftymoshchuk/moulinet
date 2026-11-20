@@ -27,6 +27,11 @@ import {
   setSolo,
   setStepField,
 } from "../site/js/phrase.js";
+import { RETIRED } from "./retired-scenes.js";
+
+// The scenes the library lists, and the ones it no longer does, which the tests keep for the longer runs of poses.
+const LIBRARY = [...PRESETS, ...RETIRED];
+const retired = (id) => RETIRED.find((scene) => scene.id === id).phrase;
 
 const spans = (timeline) => timeline.steps.map((step) => [step.start, step.holdStart, step.end]);
 
@@ -68,19 +73,21 @@ test("the built-in phrases have the lengths the page reports", () => {
     return [timeline.steps.length, timeline.duration];
   });
   assert.deepEqual(lengths, [
-    [8, 3390],
-    [4, 3320],
-    [5, 3440],
-    [4, 2760],
-    [7, 2680],
     [6, 3220],
     [10, 3730],
     [10, 3750],
   ]);
 });
 
-test("the built-in phrases use only library poses, and only the moulinet is solo", () => {
-  for (const { phrase } of PRESETS) {
+test("the library lists only what was learned live: each built-in scene says it is live learning, and which class", () => {
+  for (const { id, phrase } of PRESETS) {
+    assert.equal(phrase.source, "Live learning", id);
+    assert.equal(phrase.event, "Warsaw advanced sabre, 15 Nov 2026", id);
+  }
+});
+
+test("the built-in phrases, and the retired ones kept as test data, use only library poses, and only the moulinet is solo", () => {
+  for (const { phrase } of LIBRARY) {
     const timeline = buildTimeline(phrase);
     assert.deepEqual(timeline.unknown, [], phrase.name);
     assert.equal(timeline.solo, phrase.name === "Moulinet to the head", phrase.name);
@@ -211,7 +218,7 @@ test("a step with no hold is passed through: the body runs on through it, and co
     last = now;
   }
   // In the first scene the lunge in flight runs on into the landing, and the advance's lifted foot into its landing.
-  const scene = buildTimeline(PRESETS[0].phrase);
+  const scene = buildTimeline(retired("advance-lunge-head-cut"));
   const hips = (pose) => pose.x + pose.hipX;
   for (const label of ["Lunge", "Advance: front foot lifts", "Advance: front foot lands"]) {
     const step = scene.steps.find((s) => s.label === label);
@@ -261,7 +268,7 @@ test("between two steps it holds, a move eases as it always has", () => {
 });
 
 test("a foot that stays where it is from one step to the next stays there, however the body moves through the steps round it", () => {
-  for (const { phrase } of PRESETS) {
+  for (const { phrase } of LIBRARY) {
     const timeline = buildTimeline(phrase);
     for (let i = 1; i < timeline.steps.length; i++) {
       const [from, to] = [timeline.steps[i - 1], timeline.steps[i]];
@@ -288,7 +295,7 @@ test("a foot that travels along the floor while the other stays is lifted on the
     for (let t = step.start; t < step.holdStart; t += 1) most = Math.max(most, poseAt(timeline, t)[who][lift]);
     return { most, ends: [poseAt(timeline, step.start)[who][lift], step[who][lift]] };
   };
-  const first = buildTimeline(PRESETS[0].phrase);
+  const first = buildTimeline(retired("advance-lunge-head-cut"));
   // The recovery brings the front foot back 49 cm; the advance brings the back foot up 30 cm.
   const recovery = lifted(first, "Recover to guard", "A", "liftF");
   near(recovery.most, 4, 0.01, "lifted, but no higher than the advance lifts it");
@@ -299,7 +306,7 @@ test("a foot that travels along the floor while the other stays is lifted on the
   const own = lifted(first, "Advance: front foot lifts", "A", "liftF").most;
   assert.ok(own <= POSES.advLift.liftF + 1e-9 && own > POSES.advLift.liftF - 0.01, `the advance lifts the foot as it says: ${own}`);
   // B faces the other way: he draws his front foot back 28 cm for face protection.
-  const face = buildTimeline(PRESETS[3].phrase);
+  const face = buildTimeline(retired("outside-face-cut-face-protection"));
   near(lifted(face, "A cuts at the face, B takes face protection", "B", "liftF").most, 2.8, 0.01, "B steps too");
   // A foot that moves less than 2 cm is only slid, and when both feet travel the fencer glides.
   const move = (adjA, xA = 0) => buildTimeline({ steps: [{ A: { pose: "guard", x: 0 } }, { ms: 200, hold: 100, A: { pose: "guard", x: xA, adj: adjA } }] });
@@ -402,7 +409,7 @@ test("each slider moves a joint the poses have, and reaches the value every pose
 });
 
 test("phrase text keeps one setting per line and one step per line, and reads back the same", () => {
-  for (const { phrase } of PRESETS) {
+  for (const { phrase } of LIBRARY) {
     const text = phraseToText(phrase);
     assert.deepEqual(parsePhrase(text), phrase);
     const lines = text.split("\n");
@@ -517,7 +524,7 @@ const LEANING = {
     { ms: 100 },
   ],
 };
-const SCENES = [...PRESETS.map(({ phrase }) => phrase), LEANING];
+const SCENES = [...LIBRARY.map(({ phrase }) => phrase), LEANING];
 
 test("a step added after step i stands as step i does, so nothing else on the page changes", () => {
   for (const phrase of SCENES) {

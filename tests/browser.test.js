@@ -13,8 +13,8 @@ import { delimiter, join } from "node:path";
 import { test } from "node:test";
 import { promisify } from "node:util";
 
-import { BASE_BLADE, BASE_SECTIONS, FIGURE_DIR, FIGURE_NOTE, basePhrase, basesOf } from "../site/js/bases.js";
-import { frameOf, handFrame } from "../site/js/figure.js";
+import { BASE_BLADE, BASE_CAMERA, BASE_SECTIONS, FIGURE_DIR, FIGURE_NOTE, basePhrase, basesOf } from "../site/js/bases.js";
+import { DEFAULT_FRAME, floorPath, frameFrom, frameOf, handFrame } from "../site/js/figure.js";
 import { JOINTS, POSE_NAMES, PRESETS } from "../site/js/library.js";
 import { buildTimeline, resolvePose } from "../site/js/phrase.js";
 import { siteHandler } from "../scripts/serve.js";
@@ -114,8 +114,8 @@ test("in a browser, the page opens on the practice library and builds its contro
   assert.match(dom, /<button[^>]*data-tab="live"[^>]*aria-pressed="true"[^>]*>Live knowledge</);
   assert.match(dom, /<button[^>]*data-mode="library"[^>]*aria-pressed="true"[^>]*>Practice library</);
   assert.equal(count(/class="scene-button"/g), PRESETS.length, "scenes in the library");
-  assert.match(dom, /id="scene-title"[^>]*>Advance, lunge, head cut</);
-  assert.equal(count(/class="step-button"/g), 8, "step buttons");
+  assert.match(dom, /id="scene-title"[^>]*>Light cut on the blade, riposte to the top of the glove</);
+  assert.equal(count(/class="step-button"/g), 6, "step buttons");
   assert.equal(count(/class="pose-button"/g), Object.keys(POSE_NAMES).length, "pose buttons");
   // A section's postures are listed when they are shown, not before.
   assert.equal(count(/class="base-button"/g), 0, "posture buttons");
@@ -123,7 +123,9 @@ test("in a browser, the page opens on the practice library and builds its contro
   assert.match(dom, /<canvas id="stage-3d" class="stage__3d[^"]*" aria-hidden="true"/);
   assert.equal(count(/class="stick( fencer-b)?"/g), 2, "a stick figure for each fencer");
   assert.equal(count(/<input type="range" id="joint-/g), JOINTS.length, "joint sliders");
-  assert.match(dom, /id="step-count"[^>]*>\d\d \/ 08</);
+  // Nothing plays on its own: the page is at the first step, and Play is what it offers.
+  assert.match(dom, /id="step-count"[^>]*>01 \/ 06</);
+  assert.match(dom, /id="play-button"[^>]*aria-label="Play"/);
   // The panels of the other modes are there, and out of sight.
   assert.match(dom, /class="panel panel--poses hidden"/);
   assert.doesNotMatch(dom, /class="panel panel--library hidden"/);
@@ -140,31 +142,70 @@ test("in a browser, working every control logs nothing and draws no broken path"
   assert.equal(seen.badPaths, 0, "paths with NaN, Infinity or undefined");
 });
 
-// What a library card and the scene beside it say of where a scene comes from: nothing yet, or live learning.
-const NO_SOURCE = { source: "", sourceFact: "Not noted yet" };
+// What a library card and the scene beside it say of where a scene comes from: the drills are live learning.
 const LIVE = { source: "Live learning", sourceFact: "Live learning" };
+// How the browser says the stage is turned: flipped across the page and not otherwise.
+const MIRRORED = "matrix(-1, 0, 0, 1, 0, 0)";
 
-test("in a browser, the practice library plays each scene and says what it is", { skip, timeout: 120_000 }, async () => {
+test("in a browser, the page opens paused on the first scene, and nothing plays until Play is pressed", { skip, timeout: 120_000 }, async () => {
   const { seen } = await drive();
+  assert.deepEqual(seen.opening, { title: PRESETS[0].phrase.name, play: "Play", pauseHidden: true, playShown: true, count: "01 / 06", time: "0.00 / 3.22 s" });
+});
+
+test("in a browser, the stage is shown in a mirror in every mode, so the fencers are right-handed", { skip, timeout: 120_000 }, async () => {
+  const { seen } = await drive();
+  // The skeleton has the sabre in the left hand of both fencers; flipped across the page they hold it in the right, in the
+  // library, the postures and the Creator alike.
+  assert.deepEqual(seen.mirror, { library: MIRRORED, base: MIRRORED, creator: MIRRORED });
+});
+
+test("in a browser, the scenes and the Creator are seen from the other side of the piste, facing B, and the postures from the side they always were", { skip, timeout: 120_000 }, async () => {
+  const { seen } = await drive();
+  // The mirror alone puts A on the right. The camera goes round to the side B faces, which puts him back on the left, with his
+  // back and his sword arm toward you and B's chest toward you. The floor is drawn for the camera it is seen from, so which
+  // way round its ticks run says which side that is.
+  assert.deepEqual(seen.floors, { library: floorPath(180), creator: floorPath(180), base: floorPath(25) });
+});
+
+test("in a browser, the camera can be turned all the way round, to the other side of the piste, and the stage goes round with it", { skip, timeout: 120_000 }, async () => {
+  const { seen } = await drive();
+  // The slider goes a half turn either way, and its ends are the same view. A scene starts on B's side, at 180, so a half
+  // turn takes it round to the original side, at 360: A on the right with his chest toward you, as before, with the floor
+  // and the box the stage looks at as they are for the camera at 0, and a quarter turn takes it end on, with the box
+  // centred on the pivot.
+  assert.deepEqual(seen.round.range, ["-180", "180"]);
+  const box = frameOf(buildTimeline(PRESETS[0].phrase));
+  const at = (angle, total) => ({ shown: `${angle}°`, floor: floorPath(total), view: frameFrom(box, total) });
+  const looked = (got, want, what) => {
+    assert.equal(got.shown, want.shown, `${what}: the slider`);
+    assert.equal(got.floor, want.floor, `${what}: the floor`);
+    const view = got.view.split(" ").map(Number);
+    view.forEach((value, i) => assert.ok(Math.abs(value - want.view[i]) <= 0.1 + 1e-9, `${what}: the stage looks at ${got.view}, not ${want.view.join(" ")}`));
+  };
+  looked(seen.round[90], at(90, 270), "a quarter turn from B's side");
+  looked(seen.round[180], at(180, 360), "a half turn: the original side");
+  looked(seen.round[-180], at(-180, 0), "a half turn the other way: the same view");
+  assert.equal(seen.round[180].floor, seen.round[-180].floor, "the ends of the slider are one view");
+  assert.equal(seen.round[180].view, seen.round[-180].view);
+});
+
+test("in a browser, the practice library holds the drills from the class, shows each one paused, and says what it is", { skip, timeout: 120_000 }, async () => {
+  const { seen } = await drive();
+  // The drills from the class say what kind of learning they come from, on the card and beside the scene. Choosing one
+  // does not play it.
   assert.deepEqual(seen.scenes, [
-    { title: "Advance, lunge, head cut", pressed: "true", card: "Pair · 8 steps · 3.4 s", ...NO_SOURCE, count: "01 / 08", solo: false, camera: "0", time: "0.00 / 3.39 s", scrubbedTo: "08 / 08" },
-    { title: "Lunge to the chest, parry 3, riposte", pressed: "true", card: "Pair · 4 steps · 3.3 s", ...NO_SOURCE, count: "01 / 04", solo: false, camera: "0", time: "0.00 / 3.32 s", scrubbedTo: "04 / 04" },
-    { title: "Head attack, parry 5, riposte to head", pressed: "true", card: "Pair · 5 steps · 3.4 s", ...NO_SOURCE, count: "01 / 05", solo: false, camera: "28", time: "0.00 / 3.44 s", scrubbedTo: "05 / 05" },
-    { title: "Outside face cut, face protection", pressed: "true", card: "Pair · 4 steps · 2.8 s", ...NO_SOURCE, count: "01 / 04", solo: false, camera: "0", time: "0.00 / 2.76 s", scrubbedTo: "04 / 04" },
-    { title: "Moulinet to the head", pressed: "true", card: "Solo · 7 steps · 2.7 s", ...NO_SOURCE, count: "01 / 07", solo: true, camera: "25", time: "0.00 / 2.68 s", scrubbedTo: "07 / 07" },
-    // The drills from the class say what kind of learning they come from, on the card and beside the scene.
-    { title: "Light cut on the blade, riposte to the top of the glove", pressed: "true", card: "Pair · 6 steps · 3.2 s", ...LIVE, count: "01 / 06", solo: false, camera: "0", time: "0.00 / 3.22 s", scrubbedTo: "06 / 06" },
-    { title: "Light cut on the blade, riposte to the side of the glove", pressed: "true", card: "Pair · 10 steps · 3.7 s", ...LIVE, count: "01 / 10", solo: false, camera: "0", time: "0.00 / 3.73 s", scrubbedTo: "10 / 10" },
-    { title: "Light cut on the blade, tierce, Hungarian cut under the glove", pressed: "true", card: "Pair · 10 steps · 3.8 s", ...LIVE, count: "01 / 10", solo: false, camera: "0", time: "0.00 / 3.75 s", scrubbedTo: "10 / 10" },
+    { title: "Light cut on the blade, riposte to the top of the glove", pressed: "true", card: "Pair · 6 steps · 3.2 s", ...LIVE, play: "Play", count: "01 / 06", solo: false, camera: "0", time: "0.00 / 3.22 s", scrubbedTo: "06 / 06" },
+    { title: "Light cut on the blade, riposte to the side of the glove", pressed: "true", card: "Pair · 10 steps · 3.7 s", ...LIVE, play: "Play", count: "01 / 10", solo: false, camera: "0", time: "0.00 / 3.73 s", scrubbedTo: "10 / 10" },
+    { title: "Light cut on the blade, tierce, Hungarian cut under the glove", pressed: "true", card: "Pair · 10 steps · 3.8 s", ...LIVE, play: "Play", count: "01 / 10", solo: false, camera: "0", time: "0.00 / 3.75 s", scrubbedTo: "10 / 10" },
   ]);
-  // A built-in scene has no event or link to give, and says so, and cannot be deleted.
+  // A built-in scene says which class it was learned in, has no link to give, and cannot be deleted.
   assert.deepEqual(seen.builtIn, {
-    title: "Lunge to the chest, parry 3, riposte",
+    title: "Light cut on the blade, riposte to the side of the glove",
     kind: "Built in",
-    source: "Not noted yet",
-    sourceNone: true,
-    event: "Not noted yet",
-    eventNone: true,
+    source: "Live learning",
+    sourceNone: false,
+    event: "Warsaw advanced sabre, 15 Nov 2026",
+    eventNone: false,
     reference: "No link yet",
     links: 0,
     note: PRESETS[1].phrase.note,
@@ -175,11 +216,11 @@ test("in a browser, the practice library plays each scene and says what it is", 
   assert.deepEqual(seen.libraryShows, { chosen: ["library"], panels: ["stage", "detail", "library"], controls: CONTROLS });
 
   assert.deepEqual(seen.stepped, {
-    count: "03 / 08",
-    label: "Advance: front foot lands",
+    count: "03 / 06",
+    label: "B's guard holds; top of A's glove open",
     play: "Play",
-    announced: "Step 3 of 8: Advance: front foot lands",
-    // A advances and has all four ghosts, a body and a blade each; B holds the guard and has none.
+    announced: "Step 3 of 6: B's guard holds; top of A's glove open",
+    // A has just come off B's blade and has all four ghosts, a body and a blade each; B holds the guard and has none.
     ghosts: { A: 8, B: 0 },
   });
   // (The close-up of the hand starts off, and is not one of the four.)
@@ -199,9 +240,12 @@ test("in a browser, a scene is looked at with its whole blades in view, and the 
     assert.equal(got.length, 4, `${what}: ${actual}`);
     got.forEach((value, i) => assert.ok(Math.abs(value - expected[i]) <= 0.1 + 1e-9, `${what}: the stage looks at ${actual}, not ${expected.join(" ")}`));
   };
+  // The box is worked out for the camera at 0 and goes round with it. The scenes start on the other side of the piste, facing
+  // B, at 180, so their box is across the page; the postures start at 0 and are turned a little, as they always were.
   assert.equal(seen.sceneViews.length, PRESETS.length);
-  PRESETS.forEach(({ phrase }, i) => lookedAt(seen.sceneViews[i], frameOf(buildTimeline(phrase)), phrase.name));
-  lookedAt(seen.baseView, frameOf(buildTimeline(basePhrase("live")), BASE_BLADE), "the postures");
+  PRESETS.forEach(({ phrase }, i) => lookedAt(seen.sceneViews[i], frameFrom(frameOf(buildTimeline(phrase)), 180), phrase.name));
+  lookedAt(seen.baseView, frameFrom(frameOf(buildTimeline(basePhrase("live")), BASE_BLADE), BASE_CAMERA), "the postures");
+  lookedAt(seen.creatorView, frameFrom(DEFAULT_FRAME, 180), "the Creator");
 
   // The close-up looks at A's sword hand from outside the arm, round on the other side of the piste, wherever the hand
   // is and however the camera is turned; turned off, the stage looks at the scene again.
@@ -214,7 +258,7 @@ test("in a browser, a scene is looked at with its whole blades in view, and the 
   // A scene opens with the camera it was seen from, side on for this one.
   lookedAt(seen.closeUp.library.view, handFrame(resolvePose(PRESETS[0].phrase.steps[0].A), 1, PRESETS[0].phrase.camera + 180), "the hand in a scene");
   assert.equal(seen.closeUp.library.pressed, "true", "it stays on from mode to mode");
-  lookedAt(seen.closeUp.off.view, frameOf(buildTimeline(PRESETS[0].phrase)), "the scene again");
+  lookedAt(seen.closeUp.off.view, frameFrom(frameOf(buildTimeline(PRESETS[0].phrase)), 180), "the scene again");
   assert.equal(seen.closeUp.off.pressed, "false");
 });
 
@@ -263,7 +307,7 @@ test("in a browser, the base postures of live knowledge show one fencer, not a p
     ghostsHidden: true,
     trailsHidden: true,
     ghostToggle: "true",
-    camera: "25",
+    camera: String(BASE_CAMERA),
     prev: "Previous posture",
     next: "Next posture",
   });
@@ -323,37 +367,41 @@ test("in a browser, the Creator edits a copy of a scene the way the page always 
   const { seen } = await drive();
   assert.deepEqual(seen.copied, {
     showing: { chosen: ["creator"], panels: ["stage", "scene", "phrase", "step", "adjust", "poses"], controls: CONTROLS },
-    name: "Advance, lunge, head cut",
-    note: "A advances, raises the b",
-    event: "",
+    name: "Light cut on the blade, riposte to the top of the glove",
+    note: "A attacks, B defends, bo",
+    // The copy keeps where the drill comes from.
+    source: "Live learning",
+    event: "Warsaw advanced sabre, 15 Nov 2026",
     save: "Save to library",
     copyHidden: true,
-    status: "Applied: 8 steps, 3.39 s",
-    count: "01 / 08",
+    status: "Applied: 6 steps, 3.22 s",
+    count: "01 / 06",
     asked: 0,
     // The button that was pressed went away with the mode; focus went to the mode's button.
     focus: "creator",
   });
+  // The third step of the drill, with fencer B given a pose of the library: A's part of it is as the drill has it.
+  const third = `    {"label":"B's guard holds; top of A's glove open","ms":140,"hold":60,"A":{"pose":"extend","x":0,"adj":{"arm":-15,"fore":5,"blade":4,"yaw":-4,"hand":-45}},`;
   assert.deepEqual(seen.posed, {
-    line: '    {"label":"Advance: front foot lands","ms":110,"A":{"pose":"advLand","x":-30},"B":{"pose":"parry3","x":310}},',
+    line: `${third}"B":{"pose":"parry3","x":310}},`,
     pressed: ["Parry 3parry3"],
-    editing: "Step 3: Advance: front foot lands. Fencer B.",
+    editing: "Step 3: B's guard holds; top of A's glove open. Fencer B.",
   });
   assert.deepEqual(seen.adjusted, {
-    line: '    {"label":"Advance: front foot lands","ms":110,"A":{"pose":"advLand","x":-30},"B":{"pose":"parry3","x":200,"adj":{"blade":100}}},',
+    line: `${third}"B":{"pose":"parry3","x":200,"adj":{"blade":100}}},`,
     said: "100°",
   });
-  assert.equal(seen.reset, '    {"label":"Advance: front foot lands","ms":110,"A":{"pose":"advLand","x":-30},"B":{"pose":"parry3","x":200}},');
+  assert.equal(seen.reset, `${third}"B":{"pose":"parry3","x":200}},`);
 
   assert.match(seen.broken.status, /^Not applied: /);
   assert.equal(seen.broken.isError, true);
   assert.equal(seen.broken.kept, '{"steps": [', "the text stays as typed");
-  assert.equal(seen.broken.count, "03 / 08", "the last good phrase stays on stage");
+  assert.equal(seen.broken.count, "03 / 06", "the last good phrase stays on stage");
   assert.deepEqual(seen.unknown, {
     status: "Applied. Unknown pose flunge shown as guard",
     isWarning: true,
     count: "02 / 02",
-    camera: "60",
+    camera: "180",
     labels: ["01Feint", "02<b>Cut</b>"],
     markup: 0,
   });
@@ -499,9 +547,9 @@ test("in a browser, scenes are saved on this device, listed in the library with 
   assert.deepEqual(seen.cleanEdit, { asked: 0, mode: ["creator"] });
 
   assert.deepEqual(seen.deleteDeclined, { cards: 3, asked: 'Delete "<b>Evil</b>" from this device?' });
-  assert.deepEqual(seen.deleted, { cards: 2, stored: 3, title: "Advance, lunge, head cut", focus: "library" });
+  assert.deepEqual(seen.deleted, { cards: 2, stored: 3, title: PRESETS[0].phrase.name, focus: "library" });
   assert.deepEqual(seen.allDeleted, { cards: 0, stored: 1, emptyShown: true, builtIn: PRESETS.length }, "all that is left is the entry it cannot show");
-  assert.deepEqual(seen.elsewhere, { cards: 0, title: "Advance, lunge, head cut" }, "a scene deleted in another tab leaves this one's list");
+  assert.deepEqual(seen.elsewhere, { cards: 0, title: PRESETS[0].phrase.name }, "a scene deleted in another tab leaves this one's list");
   const replace = "The scene in the Creator has changes that are not saved. Replace it?";
   assert.deepEqual(seen.asked, [replace, replace, replace, replace, replace, 'Delete "<b>Evil</b>" from this device?', 'Delete "<b>Evil</b>" from this device?', 'Delete "Lunge to the head" from this device?', 'Delete "Lunge to the head" from this device?']);
 });
@@ -573,7 +621,7 @@ test("in a browser, two tabs never write over each other's scenes", { skip, time
   assert.deepEqual(seen.deletedThenSaved, { count: 1, status: "Saved to the practice library on this device.", save: "Save changes" });
   assert.deepEqual(seen.deletedUnseen, { count: 1, status: "The saved scene was deleted in another tab, so this is saved as a new scene.", idChanged: true }, "even when this tab was not told");
   // On stage in the library.
-  assert.deepEqual(seen.unchangedElsewhere, { count: "02 / 02", cards: 2 }, "a scene that did not change plays on");
+  assert.deepEqual(seen.unchangedElsewhere, { count: "02 / 02", cards: 2 }, "a scene that did not change stays on its step");
   assert.deepEqual(seen.changedElsewhere, { count: "01 / 03", title: "Live, changed", steps: 3, label: "One" }, "one that did is loaded again");
 });
 
@@ -591,8 +639,8 @@ test("in a browser, the fencers are 3D figures, one alone and two in a pair, or 
   const { figures3d } = seen;
   if (figures3d.loaded.canvas) {
     assert.deepEqual(figures3d.loaded, { canvas: true, sticks: [false, false], note: "" });
-    assert.equal(figures3d.solo, "A");
     assert.equal(figures3d.pair, "A B");
+    assert.equal(figures3d.solo, "A");
   } else {
     // A browser that cannot draw them in 3D, such as one with no graphics at all.
     assert.match(figures3d.loaded.note, /^The fencers are drawn as stick figures, as .+\.$/);
@@ -609,4 +657,6 @@ test("in a browser without WebGL, stick figures stand in for the 3D figures, and
     sticks: [true, true],
     note: "The fencers are drawn as stick figures, as this browser cannot draw them in 3D, having no WebGL 2.",
   });
+  // The stick figures stand in the same frame as the 3D ones, which is shown in a mirror.
+  assert.equal(seen.fallbackMirror, MIRRORED);
 });

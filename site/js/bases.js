@@ -47,8 +47,8 @@ export const BASE_BLADE = 60;
 export const FIGURE_DIR = "img/kardvivas-1906/";
 const figure = (n, file, caption, page, width, height) => ({ n, file, caption, page, width, height });
 // Said under the photographs: they are as printed, and the fencer in them is
-// right-handed, where the one on the stage is drawn the other way round.
-export const FIGURE_NOTE = "As printed in the book: its fencer is right-handed, so the fencer on the stage is the mirror image.";
+// right-handed, as the one on the stage is.
+export const FIGURE_NOTE = "As printed in the book. Its fencer is right-handed, and so is the one on the stage.";
 
 // `text` says what the posture is and what it is for. `points` are the parts
 // worth looking at, as [what, how]. A posture the book pictures has its `figures`.
@@ -89,7 +89,7 @@ export const BASES = [
   {
     pose: "extend",
     group: "Attack",
-    text: "The sword arm straight out in front. An attack starts with the arm: it extends first and the legs follow. The moulinet on this page starts from here too.",
+    text: "The sword arm straight out in front. An attack starts with the arm: it extends first and the legs follow.",
     points: [
       ["Sword arm", "Straight, at about shoulder height, with no tension in the shoulder."],
       ["Blade", "In line with the arm, pointing forward and a little up."],
@@ -100,7 +100,7 @@ export const BASES = [
   {
     pose: "prep",
     group: "Attack",
-    text: "The arm lifts and the blade stands almost upright, ready to fall forward onto the head. The built-in head-cut scenes use it just before the lunge.",
+    text: "The arm lifts and the blade stands almost upright, ready to fall forward onto the head. A cut to the head starts from here, before the lunge.",
     points: [
       ["Sword arm", "The elbow bent and the hand lifted above shoulder height."],
       ["Blade", "Nearly vertical, the point to the ceiling."],

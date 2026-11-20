@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 
+import { CAMERA_LIMIT } from "../site/js/figure.js";
 import { SECTIONS } from "../site/js/library.js";
 import { TEXT_KEYS, TEXT_LIMITS } from "../site/js/phrase.js";
 
@@ -139,6 +140,21 @@ test("the fields hold typing to the same limits the scene is saved and shown wit
   const limitOf = (id) => Number(html.match(new RegExp(`<(?:input|textarea)\\b[^>]*\\bid="${id}"[^>]*>`))?.[0].match(/\bmaxlength="(\d+)"/)?.[1]);
   for (const key of TEXT_KEYS) assert.equal(limitOf(`meta-${key}`), TEXT_LIMITS[key], `#meta-${key}`);
   assert.equal(limitOf("step-name"), TEXT_LIMITS.label, "#step-name");
+});
+
+test("the stage is shown in a mirror, so the fencers are right-handed", () => {
+  // The skeleton has the sabre in the left hand of both fencers (rig.test.js holds it to that), which flipped across the page
+  // is the right. A mirror puts A on the right, and the camera for the scenes goes round to the other side to put him back
+  // (browser.test.js holds the page to that).
+  const frame = css.match(/\.stage__frame\s*\{([^}]*)\}/)?.[1] ?? "";
+  assert.match(frame, /transform:\s*scaleX\(-1\)/, "the frame the figures and the stage's own drawing share is flipped");
+});
+
+test("the camera slider goes as far round either way as the camera may, all the way round", () => {
+  const slider = html.match(/<input\b[^>]*\bid="camera"[^>]*>/)?.[0] ?? "";
+  assert.equal(Number(slider.match(/\bmin="(-?\d+)"/)?.[1]), -CAMERA_LIMIT, "its low end");
+  assert.equal(Number(slider.match(/\bmax="(-?\d+)"/)?.[1]), CAMERA_LIMIT, "its high end");
+  assert.equal(CAMERA_LIMIT, 180, "a half turn either way is the same view from the other side of the piste");
 });
 
 test("each fencer's sabre edge is drawn in the colour of his blade's path, as the page's styles have it", () => {

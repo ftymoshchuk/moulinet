@@ -6,10 +6,20 @@
 // The body is worked out in centimetres, y up, facing +x with the back foot at
 // 0; a projector then places it on the piste and turns it for the camera,
 // which swings around a point on the piste. Out come SVG units, y down.
+//
+// All of it is in the frame the skeleton has: the sword on the side of the chest
+// away from the camera, A on the left facing right, which makes both fencers
+// left-handed. The page shows the stage in a mirror (`.stage__frame` in
+// styles.css), which makes them right-handed, and looks at the pair from the
+// other side of the piste, the camera at 180, so that A is back on the left (see
+// `viewCamera` in app.js).
 import { poseAt } from "./phrase.js";
 
 // The camera turns around this point on the piste (cm).
 export const PIVOT = 115;
+// How far the person can turn the camera either way from the side the page looks from (degrees): all the way round, so
+// that the ends of the slider are the same view, from the other side of the piste.
+export const CAMERA_LIMIT = 180;
 
 const RAD = Math.PI / 180;
 // Thigh and shin, hip to ankle (cm).
@@ -261,13 +271,26 @@ export const DEFAULT_FRAME = [-80, -236, 420, 254];
 const FRAME_SHAPE = DEFAULT_FRAME[2] / DEFAULT_FRAME[3];
 
 /**
+ * A frame worked out for the camera at 0, as it is for the camera `camera` degrees
+ * round the piste: the same box, its middle where the middle of what it holds goes
+ * as the camera swings round the pivot. A fencer's distance from the pivot along the
+ * piste shrinks with the cosine of the angle, so the box slides toward the pivot
+ * going round to end on, and across it to the other side, where it is the box across
+ * the page about the pivot. Its size never changes, so turning the camera never zooms.
+ */
+export function frameFrom([x, y, w, h], camera = 0) {
+  const middle = PIVOT + (x + w / 2 - PIVOT) * Math.cos(camera * RAD);
+  return [Math.round((middle - w / 2) * 10) / 10, y, w, h];
+}
+
+/**
  * Where the stage should look so that the fencers fill it: the box round everyone
  * at every moment of the phrase, seen side on, with room round it, in the shape of
  * the default view and no closer than a third of the way in. The camera does not
- * change it, so turning the camera never zooms. The box holds the blade as far
- * along as `blade` cm from the hand, all of it unless told less: a blade held up
- * or reaching far then no longer sets the view for the body, and its point may
- * run off the edge.
+ * change its size, so turning the camera never zooms; see `frameFrom` for where it
+ * is as the camera goes round. The box holds the blade as far along as `blade` cm
+ * from the hand, all of it unless told less: a blade held up or reaching far then no
+ * longer sets the view for the body, and its point may run off the edge.
  */
 export function frameOf(timeline, blade = BLADE) {
   let minX = Infinity;
@@ -333,6 +356,25 @@ export function floorPath(camera) {
   let d = `M${X(-600)} 0 H${X(900)}`;
   for (let x = -550; x <= 850; x += 50) d += ` M${X(x)} 0 V${x === 100 ? 6 : 3}`;
   return d;
+}
+
+/**
+ * The light for the camera `camera` degrees round the piste: two, one on each side of
+ * it, as `at` places in centimetres in the frame the figures are drawn in (x along the
+ * piste, y up, z toward the camera at 0) and how much of the light each gives, their
+ * `weight`s making one. Each is high, in front of the camera when it is on that side,
+ * and to the left of what is seen, which is the right of the figures, the stage being
+ * shown in a mirror. The camera's own side gives all the light while the camera is
+ * within 60° of side on, as the one light did when the camera went no further, and the
+ * other side takes over as it goes round, so the light never jumps as it passes end on.
+ */
+export function lightsFor(camera) {
+  const t = Math.min(1, Math.max(0, Math.cos(camera * RAD) + 0.5));
+  const near = t * t * (3 - 2 * t);
+  return [
+    { at: [150, 300, 260], weight: near },
+    { at: [-150, 300, -260], weight: 1 - near },
+  ];
 }
 
 /**

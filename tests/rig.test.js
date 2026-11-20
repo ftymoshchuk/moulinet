@@ -12,6 +12,7 @@ import { gripFrame, projector, skeleton } from "../site/js/figure.js";
 import { POSES, PRESETS } from "../site/js/library.js";
 import { buildTimeline, poseAt, resolvePose } from "../site/js/phrase.js";
 import { bladeSection, createFigure, poseRig } from "../site/js/rig.js";
+import { RETIRED } from "./retired-scenes.js";
 
 const bufferOf = (bytes) => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
 const bodies = readBodies(bufferOf(gunzipSync(readFileSync(new URL("../site/models/fencers.bin", import.meta.url)))));
@@ -19,9 +20,11 @@ const figures = { A: createFigure(bodies, "A"), B: createFigure(bodies, "B") };
 const DIR = { A: 1, B: -1 };
 const near = (a, b, tolerance, message) => assert.ok(a.distanceTo(b) <= tolerance, `${message}: ${a.distanceTo(b)} cm off`);
 
-// Every built-in scene at 30 moments, and every pose on its own, for both fencers.
+// Every scene at 30 moments, and every pose on its own, for both fencers: the scenes the library lists, and the ones it
+// no longer does, which stay as test data for the moulinet and the parries.
+const LIBRARY = [...PRESETS, ...RETIRED];
 const moments = [];
-for (const preset of PRESETS) {
+for (const preset of LIBRARY) {
   const timeline = buildTimeline(preset.phrase);
   for (let i = 0; i <= 30; i++) {
     const t = (timeline.duration * i) / 30;
@@ -145,6 +148,19 @@ test("the fencer facing left is the one facing right turned round, so the blade'
   }
 });
 
+test("the sabre is in the left hand of both fencers as the rig has them, which is why the stage is shown in a mirror: on the page it is the right", () => {
+  const p = resolvePose({ pose: "guard" });
+  for (const who of ["A", "B"]) {
+    const figure = figures[who];
+    figure.pose(p, DIR[who]);
+    const world = (name) => figure.mesh.skeleton.bones[figure.rig.at[name]].getWorldPosition(new Vector3());
+    // With x to the right and z toward the camera, a fencer facing right has his right hand toward the camera, and one
+    // facing left has it away from it. The sword is the model's left hand, and the rear hand its right.
+    const toSword = world("upperarm01.L").sub(world("upperarm01.R"));
+    assert.ok(toSword.dot(new Vector3(0, 0, DIR[who])) < 0, `${who}: the sword shoulder is on his left`);
+  }
+});
+
 test("three.js turns the bones as the rig worked them out, for either fencer", () => {
   for (const { where, who, p } of moments.filter((_, i) => i % 7 === 0)) {
     const figure = figures[who];
@@ -159,7 +175,7 @@ test("three.js turns the bones as the rig worked them out, for either fencer", (
 });
 
 test("the body moves smoothly: through every scene, no bone turns more than 25 degrees in 4 ms, even where a limb passes through straight", () => {
-  for (const preset of PRESETS) {
+  for (const preset of LIBRARY) {
     const timeline = buildTimeline(preset.phrase);
     for (const who of timeline.solo ? ["A"] : ["A", "B"]) {
       const { rig } = figures[who];
