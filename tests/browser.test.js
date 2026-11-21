@@ -1224,28 +1224,55 @@ test("in a browser, the plan does not turn with the camera, but looks from the s
   assert.equal(part(otherSide, aboveTitle("A", "sword hand")).down < 0.5, true, "and A's sword is away from the camera, which is on the other side now");
   assertOnThePlan(back, "and back");
   assert.deepEqual(back.dots.map(({ across, down }) => [across, down]), aside.dots.map(({ across, down }) => [across, down]));
+  // A part taken hold of on the plan with the camera turned goes where the pointer takes it all the same: the plan is not the
+  // stage, and is not seen from where the stage is.
+  const { turnedDrag } = plan;
+  assert.equal(turnedDrag.before.camera, 60);
+  assert.deepEqual({ held: turnedDrag.held, stillHeld: turnedDrag.stillHeld, letGo: turnedDrag.letGo }, { held: true, stillHeld: true, letGo: true });
+  const [along, deeper] = movedBy(turnedDrag.before, turnedDrag.after, aboveTitle("A", "blade tip"));
+  near(along, 0, 2.5, "the tip did not go along the piste");
+  near(deeper, 10, 2.5, "the tip went down with the pointer");
+  assertOnThePlan(turnedDrag.after, "the tip taken with the camera turned");
+  assert.ok(Number(turnedDrag.sliders.yaw) < Number(back.phrase.match(/"yaw":(-?\d+)/)[1]), "the blade turned further across");
 });
 
-test("in a browser, a part taken far across the plan stops at the end of its slider, and the plan holds still while it is dragged and takes the whole blade in when it is let go", { skip, timeout: 120_000 }, async () => {
+test("in a browser, a part taken far across the plan stops at the end of its slider, and the plan holds still while it is dragged and takes in the whole scene when it is let go", { skip, timeout: 120_000 }, async () => {
   const { plan } = (await drive()).seen;
-  const { before, during, after, sliders } = plan.far;
+  const { before, during, after, sliders, back, firstStep } = plan.far;
+  assert.equal(before.step, 1, "at a second step");
   assert.equal(during.view, before.view, "the view holds still");
   const title = aboveTitle("A", "blade tip");
   assert.equal(part(during, title).dragging, true);
-  // The tip went down the page with the pointer, as far as the blade turns across the body, which is not 200 px.
+  // The tip went down the page with the pointer, as far as the blade turns across the body, which is not 200 px, and it is still
+  // there to be seen, off the box the plan has, for as long as it is held.
   const [, deeper] = movedBy(before, during, title);
   assert.ok(deeper > 100 && deeper < 190, `the tip went down ${deeper.toFixed(0)} px`);
-  assertOnThePlan({ ...during, view: before.view }, "the tip dragged far");
+  assert.equal(part(during, title).shown, true, "the dot goes with the pointer past the edge");
+  assert.ok(part(during, title).down > 1, "which is past the edge");
+  assertOnThePlan(during, "the tip dragged far");
   assert.ok(Number(sliders.yaw) <= -75 && Number(sliders.yaw) >= JOINTS.find(({ key }) => key === "yaw").min, `the blade is turned across as far as it goes: ${sliders.yaw}`);
-  // Let go, the box grows to hold it, in the same shape, with the piste still along its middle.
-  const [bx, by, bw, bh] = before.view.split(" ").map(Number);
-  const [ax, ay, aw, ah] = after.view.split(" ").map(Number);
+  // Let go, the box grows to hold the scene's reach, in the same shape, with the piste still along its middle.
+  const [, , bw, bh] = before.view.split(" ").map(Number);
+  const [, ay, aw, ah] = after.view.split(" ").map(Number);
   assert.ok(aw > bw * 1.5 && ah > bh * 1.5, `${before.view} grew to ${after.view}`);
   assert.ok(Math.abs(aw / ah - bw / bh) < 0.05, "in the shape it had");
   assert.ok(Math.abs(ay + ah / 2) < 0.2, "the piste along the middle");
   assert.equal(after.view, planFrame(planFencersOf(after), planCameraOf(after)).join(" "));
   assertOnThePlan(after, "the plan after the drag");
   for (const dot of after.dots.filter((d) => d.shown)) assert.ok(dot.across >= -0.011 && dot.across <= 1.011 && dot.down >= -0.011 && dot.down <= 1.011, `${dot.title} is in view`);
+  // The first step is looked at through the box that holds the whole scene, the second step's reach in it, not through its own.
+  assert.equal(firstStep.step, 0);
+  assert.notEqual(firstStep.view, before.view, "not the box the first step alone would have");
+  assert.equal(firstStep.view, planFrame(planFencersOf(firstStep), planCameraOf(firstStep)).join(" "));
+  assertOnThePlan(firstStep, "the first step in the box that holds the second");
+  // A part taken hold of in the box it grew to follows the pointer at the size it is now: 30 px up the plan is 30 px, while it is
+  // held; let go, the box fits what the scene reaches now.
+  assert.equal(back.before.view, after.view);
+  assert.equal(back.during.view, after.view, "held still");
+  const [backAlong, backUp] = movedBy(back.before, back.during, title);
+  near(backAlong, 0, 3, "the tip did not go along the piste");
+  near(backUp, -30, 3, "the tip went up with the pointer");
+  assert.notEqual(back.after.view, back.during.view, "and the box fits the scene when it is let go");
 });
 
 test("in a browser, the plan stays while the dots are put away or a scene plays, goes with its own toggle, and has no dots or figure for a fencer who is not there", { skip, timeout: 120_000 }, async () => {

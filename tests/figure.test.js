@@ -816,10 +816,18 @@ test("a shoe seen from above is 28 cm long and 10 wide: along the piste in front
     near(by, -along[1] * (SHOE.heel + SHOE.toe), 0.15, `and across it at ${toeBack}`);
     const [wx, wy] = side(front, 1, 2);
     near(Math.hypot(wx, wy), 2 * SHOE.half, 0.15, "the width");
-    // Both lie round their ankles: the ankle is within the shoe's box.
-    const ankle = topProjector(pose, 1, 180)(J.ankF);
-    const xs = front.points.map((p) => p[0]);
-    assert.ok(Math.min(...xs) < ankle[0] && Math.max(...xs) > ankle[0]);
+    // Each is a rectangle, the last side as long as the one across from it, and each is under its own foot: the ankle is 7 cm
+    // on from the heel and in the middle across.
+    const T = topProjector(pose, 1, 180);
+    for (const [shoe, ankle] of [[front, J.ankF], [back, J.ankB]]) {
+      const [p0, p1, p2, p3] = shoe.points;
+      near(p3[0] - p0[0], p2[0] - p1[0], 0.15, "opposite sides of a shoe are as long and as turned");
+      near(p3[1] - p0[1], p2[1] - p1[1], 0.15, "across too");
+      const along = SHOE.heel / (SHOE.heel + SHOE.toe);
+      const [ax, ay] = T(ankle);
+      near(ax, p0[0] + (p1[0] - p0[0]) * along + (p3[0] - p0[0]) / 2, 0.15, "the ankle is along the shoe");
+      near(ay, p0[1] + (p1[1] - p0[1]) * along + (p3[1] - p0[1]) / 2, 0.15, "and in the middle of it across");
+    }
   }
   // The feet's directions: the front at the opponent, the back across the piste and turned back by the pose's toe.
   assert.deepEqual(footDirections({ toeBack: 0 }).front, [1, 0]);

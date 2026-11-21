@@ -685,21 +685,11 @@
         input($("#camera"), 0);
         plan.aside = aside;
         plan.back = looks();
-
-        // ---------- A drag taken far ----------
-
-        // A tip taken far down the plan goes as far as its slider lets it, the plan holds its view still while it does, so that the
-        // tip stays under the pointer, and takes in the whole blade when it is let go.
-        const farTitle = above("A", "blade tip");
-        const farBefore = looks();
-        const farTip = dot(farTitle);
-        const [tx, ty] = middle(farTip);
-        fire(farTip, "pointerdown", [tx, ty]);
-        for (let i = 1; i <= 5; i++) fire(win, "pointermove", [tx, ty + 40 * i]);
-        const farDuring = looks();
-        fire(win, "pointerup", [tx, ty + 200]);
-        plan.far = { before: farBefore, during: farDuring, after: looks(), sliders: sliders("yaw", "blade") };
-        $("#reset-step").click();
+        // Turned, the plan is read as it was, so a drag on it goes where the pointer goes all the same.
+        input($("#camera"), 60);
+        const turnedBefore = looks();
+        plan.turnedDrag = { ...dragDot(above("A", "blade tip"), [0, 10]), before: turnedBefore, after: looks(), sliders: sliders("yaw", "blade") };
+        input($("#camera"), 0);
 
         // ---------- When they are not there ----------
 
@@ -732,6 +722,34 @@
         plan.left = { plan: visible($("#plan")) };
         button("Creator").click();
         plan.returned = { plan: visible($("#plan")), dots: visible($("#plan-handles")) };
+
+        // ---------- A far reach in a later step ----------
+
+        // A second step with A's tip taken far down the plan: it goes as far as its slider lets it, the plan holds its view still
+        // while it does, so that the tip stays under the pointer, and when it is let go the plan takes in the reach of the whole
+        // scene, the first step looked at through the same box, and a part taken hold of in the box it grew to follows the pointer.
+        $("#reset-step").click();
+        $("#step-add").click();
+        const farTitle = above("A", "blade tip");
+        const farBefore = looks();
+        const farTip = dot(farTitle);
+        const [tx, ty] = middle(farTip);
+        fire(farTip, "pointerdown", [tx, ty]);
+        for (let i = 1; i <= 5; i++) fire(win, "pointermove", [tx, ty + 40 * i]);
+        const farDuring = looks();
+        fire(win, "pointerup", [tx, ty + 200]);
+        const farAfter = looks();
+        const farSliders = sliders("yaw", "blade");
+        const backBefore = looks();
+        const backTip = dot(farTitle);
+        const [bx, by] = middle(backTip);
+        fire(backTip, "pointerdown", [bx, by]);
+        for (let i = 1; i <= 5; i++) fire(win, "pointermove", [bx, by - 6 * i]);
+        const backDuring = looks();
+        fire(win, "pointerup", [bx, by - 30]);
+        plan.far = { before: farBefore, during: farDuring, after: farAfter, sliders: farSliders, back: { before: backBefore, during: backDuring, after: looks() } };
+        $$(".step-button")[0].click();
+        plan.far.firstStep = looks();
       }
 
       function drive(win, doc, seen) {
