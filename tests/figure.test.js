@@ -620,12 +620,15 @@ test("a frame holds the blade only as far as it is told, and all of it unless to
 });
 
 test("a lone fencer is looked at closer than a pair, and the frame is worked out from the phrase alone", () => {
-  const lone = frameOf(buildTimeline({ solo: true, steps: [{ A: { pose: "guard", x: 40 } }] }));
+  // A guard with the sword arm low and the blade angled forward, whatever hand the library's own guard holds: the test is of how
+  // the frame is worked out, and a blade held upright is taller than the pair's lunge is wide.
+  const guard = (x) => ({ pose: "guard", x, adj: { arm: -24, fore: -4, blade: 34 } });
+  const lone = frameOf(buildTimeline({ solo: true, steps: [{ A: guard(40) }] }));
   const pair = frameOf(buildTimeline({ steps: [{ A: { pose: "lungeChest", x: 0 }, B: { pose: "parry3", x: 245 } }] }));
   assert.ok(lone[2] < pair[2], `${lone[2]} is closer than ${pair[2]}`);
-  assert.deepEqual(frameOf(buildTimeline({ solo: true, steps: [{ A: { pose: "guard", x: 40 } }] })), lone);
+  assert.deepEqual(frameOf(buildTimeline({ solo: true, steps: [{ A: guard(40) }] })), lone);
   // Where the fencers stand moves the frame across, and does not zoom it.
-  const moved = frameOf(buildTimeline({ solo: true, steps: [{ A: { pose: "guard", x: 340 } }] }));
+  const moved = frameOf(buildTimeline({ solo: true, steps: [{ A: guard(340) }] }));
   assert.ok(Math.abs(moved[2] - lone[2]) < 1e-9 && Math.abs(moved[3] - lone[3]) < 1e-9);
   assert.ok(Math.abs(moved[0] - lone[0] - 300) < 0.2, "moved with him");
 });
@@ -724,7 +727,7 @@ test("the sword arm can be turned out of the plane of its shoulder, across the c
   const across = skeleton(resolvePose({ pose: "guard", adj: { armYaw: 40 } }));
   near(across.el[2] - across.sh[2], 32 * Math.sin((40 * Math.PI) / 180), 1e-9, "the elbow goes across by the sine of the turn");
   assert.equal(across.hn[2], across.el[2], "the forearm stays level with the elbow");
-  near(across.el[0] - across.sh[0], 32 * Math.cos((-24 * Math.PI) / 180) * Math.cos((40 * Math.PI) / 180), 1e-9, "and goes forward as far as the turn leaves it");
+  near(across.el[0] - across.sh[0], 32 * Math.cos((POSES.guard.arm * Math.PI) / 180) * Math.cos((40 * Math.PI) / 180), 1e-9, "and goes forward as far as the turn leaves it");
   // The forearm turned across takes the hand across, and the turn of each adds.
   const both = skeleton(resolvePose({ pose: "guard", adj: { armYaw: 20, foreYaw: 30 } }));
   near(both.hn[2] - both.sh[2], 32 * Math.sin((20 * Math.PI) / 180) + 37 * Math.sin((30 * Math.PI) / 180), 1e-9, "the hand goes across by both");

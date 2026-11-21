@@ -33,8 +33,8 @@ defender ripostes to the attacker's sword hand: down onto the top of the glove; 
 onto its outside, level, when the attacker raises the point; or, when the attacker
 turns the guard out over that side, which is tierce, round and under the hand and
 up into the underside of the glove, the Hungarian cut. In the pairs the older man
-holds a guard of his own, standing a little higher, with the sword arm bent and
-tucked in, so the two do not stand as mirror images. The drills say where they
+holds a guard of his own, standing a little higher and holding the sword hand his
+own way, so the two do not stand as mirror images. The drills say where they
 come from: live learning, at Warsaw advanced sabre on 15 November 2026. A scene's
 source shows as a tag on its card. Scenes you save in the Creator are listed
 below them, with whatever you noted, and a link opens in a new tab. They live in
