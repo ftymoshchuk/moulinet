@@ -696,6 +696,13 @@ function moveJointOfPosture(key, value) {
   if (next) changeVersions(next, "Saved on this device.");
 }
 
+// Several joints of the posture at once, as a drag of one of its parts moves them: one version, kept once.
+function moveJointsOfPosture(joints) {
+  let next = versionsInUse();
+  for (const [key, value] of joints) next = moveJoint(next, currentPosture(), key, value) ?? next;
+  changeVersions(next, "Saved on this device.");
+}
+
 function putJointOfPostureBack(key) {
   changeVersions(putJointBack(versionsInUse(), currentPosture(), key), "Saved on this device.");
 }
@@ -963,6 +970,8 @@ const dots = ["A", "B"].flatMap((who) =>
   ),
 );
 
+// The joints a posture has: every one the sliders have but where the fencer stands.
+const POSTURE_KEYS = new Set(POSTURE_JOINTS.map(({ key }) => key));
 // What each view looks at, as it was last drawn, which is what a point of the page is placed against.
 const looking = { side: DEFAULT_FRAME, plan: planFrame([], 180) };
 // The drag in progress: the pointer that began it, whose part it is, in which view, the view's box as it was when it took
@@ -979,6 +988,8 @@ let wasRecording = false;
 // is a moment stopped in a step's hold, which is where pasting a phrase, pausing and moving along the timeline can leave
 // the stage. Nothing is dragged while a scene plays.
 function handlesShown() {
+  // In the base postures the posture on show is always a step's own, and its dots are there while its numbers are open to change.
+  if (state.mode === "base") return state.editPosture;
   if (state.mode !== "creator" || !state.handles || state.phraseError !== "" || state.playing) return false;
   if (state.pin !== null) return state.pin < timeline.steps.length;
   const at = poseAt(timeline, state.time);
@@ -1000,7 +1011,9 @@ function drawDots(view, now, camera, box) {
     // A scene of one fencer has no dots on the other. The one being dragged stays, whether or not the part has gone beyond what
     // the view holds, which a view that holds still for the drag, as the plan does, lets it do.
     const outside = across < -0.01 || across > 1.01 || down < -0.01 || down > 1.01;
-    const gone = (who === "B" && timeline.solo) || (view === "side" && state.closeUp && who !== editing) || (outside && drag?.el !== el);
+    // A posture has no say in where the fencer stands, so in the postures a part that is moved by it has no dot.
+    const placed = state.mode !== "base" || jointsOf(part, view).every((key) => POSTURE_KEYS.has(key));
+    const gone = !placed || (who === "B" && timeline.solo) || (view === "side" && state.closeUp && who !== editing) || (outside && drag?.el !== el);
     el.classList.toggle("hidden", gone);
     if (gone) continue;
     el.style.left = `${(across * 100).toFixed(2)}%`;
@@ -1012,7 +1025,7 @@ function drawDots(view, now, camera, box) {
 // Which side of the piste the plan looks from: the one the stage looks from, as near as it goes, so that the two have A on
 // the same side. Unlike the stage it does not turn with the camera, a plan being easiest to read with the piste across it.
 function planCamera() {
-  return Math.cos(((state.camera + SCENE_SIDE) * Math.PI) / 180) < 0 ? 180 : 0;
+  return Math.cos(((state.camera + sideOf()) * Math.PI) / 180) < 0 ? 180 : 0;
 }
 
 // What the plan looks at: every pose of the scene in it, so that it keeps one view as the scene is reshaped; and while a
@@ -1029,7 +1042,8 @@ function planBox(camera) {
 
 // The plan, in the Creator: the fencers from above, and the dots.
 function drawPlan(now) {
-  const show = state.mode === "creator" && state.plan;
+  // In the Creator when it is turned on, in the base postures while the posture's numbers are open to change.
+  const show = (state.mode === "creator" && state.plan) || (state.mode === "base" && state.editPosture);
   planEl.classList.toggle("hidden", !show);
   if (!show) return;
   const camera = planCamera();
@@ -1090,6 +1104,8 @@ function dragTo(event) {
   const values = solve(pose, who === "A" ? 1 : -1, cameraOf(view), part, [pointer[0] - offset[0], pointer[1] - offset[1]], view === "side" && state.closeUp ? 0.1 : 1, view);
   const changed = Object.entries(values).filter(([key, value]) => value !== pose[key]);
   if (changed.length === 0) return;
+  // In the base postures what is changed is the posture itself, as the person's own version of it, as the sliders change it.
+  if (state.mode === "base") return moveJointsOfPosture(changed);
   // Recording, the first change a drag makes begins a milestone, which the drag then reshapes.
   if (state.record && drag.milestone === undefined) beginMilestone();
   editCurrent((spec) => {
@@ -1424,8 +1440,10 @@ function polyline(points, count) {
 //
 // The box is worked out once for the camera at 0, and goes round with the camera.
 function frameFor(now) {
+  // While a part is dragged on the stage the view holds still, so that the part stays under the pointer: the postures' view fits
+  // the postures, and a drag that reshapes one would move it, and a close-up follows the hand.
+  if (drag?.view === "side") return drag.frame;
   if (state.closeUp) {
-    if (drag?.view === "side") return drag.frame;
     const who = state.mode === "creator" ? editingFencer() : "A";
     return handFrame(now[who], who === "A" ? 1 : -1, viewCamera());
   }
