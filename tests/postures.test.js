@@ -203,14 +203,14 @@ test("the numbers to send on are lines for POSES, as they would read with the ch
   const text = numbersText({ guard: { arm: -30, blade: 40 } });
   const [header, line, changes, ...more] = text.split("\n");
   assert.match(header, /^\/\/ Sabre Motion Lab: my versions of postures\. .*site\/js\/library\.js/);
-  assert.equal(line, "guard: { hipX: 41, hipY: 77, footF: 84, liftF: 0, liftB: 0, lean: 0, turn: 58, arm: -30, fore: -4, armYaw: 0, foreYaw: 0, blade: 40, yaw: 0, hand: -45, rArm: -140, rFore: -28, toeBack: 14, kneeOut: 40 },");
-  assert.equal(changes, `// ${POSE_NAMES.guard}: arm -24 → -30, blade 34 → 40`);
+  assert.equal(line, "guard: { hipX: 41, hipY: 77, footF: 84, liftF: 0, liftB: 0, lean: 0, turn: 58, arm: -30, fore: 26, armYaw: 0, foreYaw: 0, blade: 40, yaw: 0, hand: -45, rArm: -140, rFore: -28, toeBack: 14, kneeOut: 40 },");
+  assert.equal(changes, `// ${POSE_NAMES.guard}: arm -52 → -30, blade 80 → 40`);
   assert.deepEqual(more, []);
 
   // A posture says what it sets itself and what was changed; a joint it takes from the guard is shown against the guard's.
   const advance = numbersText({ advLift: { arm: -10 } }).split("\n");
   assert.equal(advance[1], "advLift: { hipX: 44, hipY: 79, footF: 103, liftF: 4, arm: -10 },");
-  assert.equal(advance[2], `// ${POSE_NAMES.advLift}: arm -24 → -10`);
+  assert.equal(advance[2], `// ${POSE_NAMES.advLift}: arm -52 → -10`);
 
   // Several, in the order of the library whatever the order they were made in, the changes in the order of the sliders.
   const several = numbersText({ parry3: { blade: 100 }, guard: { hand: -90, hipY: 70 } }).split("\n");

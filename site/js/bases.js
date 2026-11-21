@@ -60,8 +60,8 @@ export const BASES = [
     points: [
       ["Feet", "The front foot points at the opponent. The back foot sits well behind it, turned across to face you, so that the two feet make an L, about as far apart as a leg is long."],
       ["Legs", "Both knees bent, each over its own foot, so both shins stand upright; the back knee is turned out toward you a little, over the back foot. The torso is upright and the weight shared evenly."],
-      ["Sword arm", "Nearly straight, reaching forward, the hand at the height of the chest."],
-      ["Blade", "Angled up and forward, in tierce: it covers the high outside line."],
+      ["Sword arm", "Bent, the elbow low in front of the body and the forearm rising from it, the hand forward at the height of the chest."],
+      ["Blade", "Near vertical, leaning a little forward, in tierce: it covers the high outside line."],
       ["Hand", "Half way between the second position and the third, the 2/3: the thumb on the back of the grip, and the edge turned down and out, so the knuckle bow covers the fingers from below and outside."],
       ["Rear arm", "Bent, the elbow out behind, and the hand resting on the hip at the belt."],
     ],

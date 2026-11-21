@@ -56,7 +56,7 @@
 // protection; and right over, to the first, for parry 5, so the edge faces up at a
 // cut to the head.
 export const POSES = {
-  guard: { hipX: 41, hipY: 77, footF: 84, liftF: 0, liftB: 0, lean: 0, turn: 58, arm: -24, fore: -4, armYaw: 0, foreYaw: 0, blade: 34, yaw: 0, hand: -45, rArm: -140, rFore: -28, toeBack: 14, kneeOut: 40 },
+  guard: { hipX: 41, hipY: 77, footF: 84, liftF: 0, liftB: 0, lean: 0, turn: 58, arm: -52, fore: 26, armYaw: 0, foreYaw: 0, blade: 80, yaw: 0, hand: -45, rArm: -140, rFore: -28, toeBack: 14, kneeOut: 40 },
   advLift: { hipX: 44, hipY: 79, footF: 103, liftF: 4 },
   advLand: { hipX: 52.5, hipY: 79, footF: 114 },
   prep: { hipX: 42, lean: 1, arm: 15, fore: 30, blade: 85, hand: 0 },
@@ -122,10 +122,11 @@ export const POSE_NAMES = {
 };
 
 // The older man's own guard, so the pair do not stand as mirror images in the
-// scenes: he stands 3 cm higher, in a shallower bend, and holds the sword arm bent
-// and tucked in, the blade a little steeper. Only joints that every other pose he
-// takes sets for itself are changed, so none of it carries into his parries and
-// ripostes, and no foot moves.
+// scenes: he stands 3 cm higher, in a shallower bend, and holds his sword hand his
+// own way, the upper arm a little higher, the forearm lower and the blade lower
+// than the guard of the class has it. Only joints that every other pose he takes
+// sets for itself are changed, so none of it carries into his parries and ripostes,
+// and no foot moves.
 const OLDER_GUARD = { hipY: 80, arm: -42, fore: 10, blade: 38 };
 const olderGuard = (x) => ({ pose: "guard", x, adj: { ...OLDER_GUARD } });
 

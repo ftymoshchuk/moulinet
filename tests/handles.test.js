@@ -150,6 +150,27 @@ test("dragging a little at a time follows the pointer, the way a mouse moves", (
   assert.ok(Math.abs(end[0] - (start[0] + 12)) < 1.3 && Math.abs(end[1] - (start[1] - 24)) < 1.3);
 });
 
+test("in a view so close that a degree is a long way, a part is placed in tenths, which put it nearer, within the sliders", () => {
+  const pose = resolvePose({ pose: "guard", x: 0 });
+  const part = handle("swordHand");
+  const here = placeOf(pose, 1, 180, part);
+  const miss = (got, target) => distance(placeOf({ ...pose, ...got }, 1, 180, part), target);
+  // A quarter of a centimetre across and four tenths up: a few pixels of a close-up of a hand, and less than a degree of the forearm.
+  const target = [here[0] + 0.25, here[1] - 0.4];
+  const whole = solve(pose, 1, 180, part, target);
+  const fine = solve(pose, 1, 180, part, target, 0.1);
+  assert.ok(miss(fine, target) < 0.12, `tenths put the hand ${miss(fine, target).toFixed(3)} cm from it`);
+  assert.ok(miss(fine, target) < miss(whole, target), "nearer than whole numbers");
+  for (const [key, value] of Object.entries(fine)) {
+    assert.ok(Math.abs(value * 10 - Math.round(value * 10)) < 1e-6, `${key} ${value} is in tenths`);
+    assert.ok(value >= LIMITS[key].min && value <= LIMITS[key].max, `${key} ${value} is within its slider`);
+  }
+  // With no unit given it is whole numbers, as always, and a joint put in tenths can be put back to the pose's own whole number.
+  for (const value of Object.values(whole)) assert.ok(Number.isInteger(value));
+  const back = solve({ ...pose, ...fine }, 1, 180, part, here, 0.1);
+  for (const key of part.params) assert.ok(Math.abs(back[key] - pose[key]) < 0.35, `${key} ${back[key]} goes back to ${pose[key]}`);
+});
+
 test("where the stage's box is on the page, and what share of it a point is, turn into each other, with the mirror", () => {
   const view = [-80, -236, 420, 254];
   const box = { left: 100, top: 50, width: 840, height: 508 };

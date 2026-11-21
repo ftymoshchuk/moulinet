@@ -384,6 +384,7 @@
             camera: Number($("#camera").value),
             phrase: $("#phrase-text").value,
             step: Number(text("#step-count").split("/")[0]) - 1,
+            closeUp: pressed($("[data-toggle=closeUp]")),
             editing: text("#edit-title"),
             shown: visible($("#handles")),
             dots: $$(".handle").map((dot) => {
@@ -514,20 +515,40 @@
 
         // ---------- When they are not there ----------
 
-        // Playing hides them, since the stage shows a moment between steps, and so does stopping where it is, which may be
-        // between two. Picking a step brings them back.
+        // Playing hides them. Stopped where the stage shows a step's own pose, in a step's hold, they are there, whether a step
+        // was picked or the stage was left there by pausing, by the timeline or by pasting a phrase; stopped between two
+        // steps, in a move, they are not, since a moment between two is not a pose that changing it would change.
         button("Play").click();
         handles.playing = { shown: visible($("#handles")), toggle: visible($("[data-toggle=handles]")) };
         button("Pause").click();
-        handles.paused = { shown: visible($("#handles")) };
-        // So does moving along the timeline, until a step is picked.
-        input($("#timeline"), 0);
-        handles.scrubbed = { shown: visible($("#handles")) };
+        handles.paused = { shown: visible($("#handles")), time: text("#timecode") };
+        // The second step moves in from 600 ms to 900 and holds to 1100.
+        input($("#timeline"), 750);
+        handles.between = { shown: visible($("#handles")), time: text("#timecode") };
+        input($("#timeline"), 300);
+        handles.firstHold = { shown: visible($("#handles")), time: text("#timecode"), looks: looks() };
+        input($("#timeline"), 1000);
+        handles.secondHold = { shown: visible($("#handles")), time: text("#timecode"), looks: looks() };
+        input($("#timeline"), 750);
         $$(".step-button")[0].click();
         handles.stepPicked = { shown: visible($("#handles")) };
-        // The close-up of the hand looks at one place only.
+
+        // In the close-up of a hand the dots that are in view stay, and they are the hand's own fencer's. While one is dragged the
+        // view holds still, so the part stays under the pointer, and it follows the hand again when the pointer is let go.
+        $("#fencer-a").click();
         button("Hand close-up").click();
-        handles.closeUp = { shown: visible($("#handles")) };
+        const closeBefore = looks();
+        const closeHand = dot("Drag to move A's sword hand");
+        const [chx, chy] = middle(closeHand);
+        fire(closeHand, "pointerdown", [chx, chy]);
+        // Back toward the shoulder and up, which a nearly straight arm can follow as well as a bent one.
+        for (let i = 1; i <= 6; i++) fire(win, "pointermove", [chx - 4 * i, chy - 3 * i]);
+        const closeDuring = looks();
+        fire(win, "pointerup", [chx - 24, chy - 18]);
+        handles.closeUp = { before: closeBefore, during: closeDuring, after: looks() };
+        $("#fencer-b").click();
+        handles.closeUpB = looks();
+        $("#fencer-a").click();
         button("Hand close-up").click();
         // The toggle puts them away and brings them back.
         button("Drag dots").click();
@@ -539,8 +560,14 @@
         input($("#phrase-text"), '{"steps": [');
         handles.onHold = { shown: visible($("#handles")) };
         input($("#phrase-text"), good);
-        $$(".step-button")[0].click();
         handles.resumed = { shown: visible($("#handles")) };
+        // A phrase pasted in, which leaves no step picked and the stage at the time it was at, in a hold if it is one.
+        input($("#phrase-text"), JSON.stringify({ camera: 0, steps: [{ label: "En garde", hold: 600, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 310, adj: { arm: -52, blade: 80, fore: 26 } } }] }, null, 2));
+        handles.pasted = { ...looks(), shown: visible($("#handles")) };
+        input($("#camera"), 40);
+        handles.pastedThenCamera = { ...looks(), shown: visible($("#handles")) };
+        input($("#camera"), 0);
+        $$(".step-button")[0].click();
         // One fencer alone has no dots on the other.
         $("#meta-solo").click();
         handles.solo = { A: $$(".handle").filter((d) => d.title.startsWith("Drag to move A") && visible(d)).length, B: $$(".handle").filter((d) => d.title.startsWith("Drag to move B") && visible(d)).length };

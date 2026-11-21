@@ -33,8 +33,8 @@ defender ripostes to the attacker's sword hand: down onto the top of the glove; 
 onto its outside, level, when the attacker raises the point; or, when the attacker
 turns the guard out over that side, which is tierce, round and under the hand and
 up into the underside of the glove, the Hungarian cut. In the pairs the older man
-holds a guard of his own, standing a little higher, with the sword arm bent and
-tucked in, so the two do not stand as mirror images. The drills say where they
+holds a guard of his own, standing a little higher and holding the sword hand his
+own way, so the two do not stand as mirror images. The drills say where they
 come from: live learning, at Warsaw advanced sabre on 15 November 2026. A scene's
 source shows as a tag on its card. Scenes you save in the Creator are listed
 below them, with whatever you noted, and a link opens in a new tab. They live in
@@ -152,12 +152,18 @@ In the Creator there is more:
   hips go up, down and along, the feet staying where they are. What is written
   to the step is whole numbers within the ranges of the sliders, and only the
   joints the drag moved; a joint taken back to what the pose gives it is no
-  longer an adjustment. The dots show while a step is on the stage, not between
-  two steps, in a close-up or while the data is text that is not a phrase yet,
-  and **Drag dots** puts them away. They work with a mouse, a finger or a pen.
-  The sliders stay for what a drag cannot show, the turn of the shoulders, the
-  back foot and knee, how the arm and the blade turn across the chest and the
-  hand position, and are the way in for the keyboard.
+  longer an adjustment. The dots show while the stage shows a step's own pose: a
+  step picked, or a moment stopped in a step's hold, which is where pausing,
+  moving along the timeline and pasting a phrase leave it. They are not there
+  while a scene plays, between two steps or while the data is text that is not a
+  phrase yet, and **Drag dots** puts them away. In the close-up of a hand the dots
+  in view stay, those of the fencer whose hand it is, and the view holds still
+  while one is dragged, and follows the hand again when it is let go; there the
+  values are in tenths, since a degree of the arm is a long way on a stage that
+  close. They work with a mouse, a finger or a pen. The sliders stay for what a
+  drag cannot show, the turn of the shoulders, the back foot and knee, how the
+  arm and the blade turn across the chest and the hand position, and are the way
+  in for the keyboard.
 - **Poses:** twenty-six named poses to put on any step, in the groups the
   sections of the page keep their base postures in.
 - **Phrase data:** the whole scene as text. Edit it in place or paste one in;

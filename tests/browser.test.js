@@ -704,7 +704,7 @@ test("in a browser, a posture's numbers stay closed until Edit this posture open
     numbers: "",
     sliderIds: 0,
   });
-  assert.deepEqual(posture.guard, { hip: said("77 cm", "77"), arm: said("-24°", "-24"), hand: said("-45° (2/3)", "-45") }, "the sliders show the posture as built in, with nothing to put back");
+  assert.deepEqual(posture.guard, { hip: said("77 cm", "77"), arm: said(`${POSES.guard.arm}°`, String(POSES.guard.arm)), hand: said("-45° (2/3)", "-45") }, "the sliders show the posture as built in, with nothing to put back");
   assert.deepEqual(posture.closedAgain, { open: false, button: "Edit this posture", expanded: "false", target: GUARD, tag: false, marked: [], status: "", stage: false, focus: "posture-edit" }, "the same button closes it, and keeps the focus");
 });
 
@@ -719,10 +719,10 @@ test("in a browser, moving a slider makes the person's own version of the postur
     tag: true,
     marked: [0],
     status: "Saved on this device.",
-    arm: said("-70°", "-70", { moved: true, back: "-24°" }),
+    arm: said("-70°", "-70", { moved: true, back: `${POSES.guard.arm}°` }),
     hipY: said("68 cm", "68", { moved: true, back: "77 cm" }),
     footF: said("100 cm", "100", { moved: true, back: "84 cm" }),
-    blade: said("34°", "34"),
+    blade: said(`${POSES.guard.blade}°`, String(POSES.guard.blade)),
     kept: STORED({ guard }),
     feetFollow: true,
     resetOff: false,
@@ -752,7 +752,7 @@ test("in a browser, moving a slider makes the person's own version of the postur
   assert.deepEqual(posture.advanceOwn, { arm: said("-10°", "-10", { moved: true, back: "-70°" }), kept: STORED({ guard, advLand: { arm: -10 } }), marked: [0, 2] });
   assert.deepEqual(posture.advanceBack, { arm: said("-70°", "-70"), kept: STORED({ guard }), marked: [0], focus: "posture-joint-arm" }, "the slider keeps the focus when its Reset goes");
   // One joint of the guard is put back on its own and the others stay; a joint moved back to what the posture has is not a version.
-  assert.deepEqual(posture.armBack, { arm: said("-24°", "-24"), kept: STORED({ guard: { footF: 100, hipY: 68 } }), focus: "posture-joint-arm", hipY: said("68 cm", "68", { moved: true, back: "77 cm" }) });
+  assert.deepEqual(posture.armBack, { arm: said(`${POSES.guard.arm}°`, String(POSES.guard.arm)), kept: STORED({ guard: { footF: 100, hipY: 68 } }), focus: "posture-joint-arm", hipY: said("68 cm", "68", { moved: true, back: "77 cm" }) });
   assert.deepEqual(posture.hipBack, { hipY: said("77 cm", "77"), kept: STORED({ guard: { footF: 100 } }) });
 });
 
@@ -859,10 +859,12 @@ const specsOf = (looks, index = 0) => {
 function dotsShouldBe(looks) {
   const step = buildTimeline(parsePhrase(looks.phrase)).steps[looks.step];
   const view = looks.view.split(" ").map(Number);
+  // The camera the page looks from: the slider's, on the side the Creator looks from, which for a close-up of B's hand is B's own.
+  const camera = looks.camera + (looks.closeUp && looks.editing.endsWith("Fencer B.") ? 0 : 180);
   const expected = {};
   for (const [who, dir] of [["A", 1], ["B", -1]]) {
     for (const handle of HANDLES) {
-      const [across, down] = shareOf(placeOf(step[who], dir, looks.camera + 180, handle), view);
+      const [across, down] = shareOf(placeOf(step[who], dir, camera, handle), view);
       expected[`Drag to move ${who}'s ${handle.name}`] = [1 - across, down];
     }
   }
@@ -1018,21 +1020,75 @@ test("in a browser, a finger drags a part as a mouse does, and at a later step t
   near(foot, -24, 2.5, "B's foot went across with the pointer");
 });
 
-test("in a browser, the dots are not on the stage when it shows a moment between steps, a close-up, text that is not a phrase yet, or when they are turned off, and one fencer alone has dots only on A", { skip, timeout: 120_000 }, async () => {
+test("in a browser, the dots show while the stage shows a step's own pose, however it was left there, and not while a scene plays, between two steps, over text that is not a phrase yet, or when turned off", { skip, timeout: 120_000 }, async () => {
   const { handles } = (await drive()).seen;
   assert.deepEqual(handles.playing, { shown: false, toggle: true }, "playing");
-  assert.deepEqual(handles.paused, { shown: false }, "stopped between two steps");
-  assert.deepEqual(handles.scrubbed, { shown: false }, "along the timeline");
-  assert.deepEqual(handles.stepPicked, { shown: true }, "a step brings them back");
-  assert.deepEqual(handles.closeUp, { shown: false });
+  // Stopped in a step's hold, the stage shows that step's own pose, so the dots are there: after pausing, along the timeline, and
+  // with a phrase pasted in, none of which pick a step. Between two steps the stage shows a moment that no step has.
+  assert.deepEqual(handles.paused, { shown: true, time: "0.90 / 1.10 s" }, "paused where it started, which was the picked second step's hold");
+  assert.deepEqual(handles.between, { shown: false, time: "0.75 / 1.10 s" }, "in the move into the second step");
+  assert.deepEqual({ shown: handles.firstHold.shown, time: handles.firstHold.time }, { shown: true, time: "0.30 / 1.10 s" });
+  assert.equal(handles.firstHold.looks.step, 0);
+  assertOnTheParts(handles.firstHold.looks, "the timeline in the first hold");
+  assert.deepEqual({ shown: handles.secondHold.shown, time: handles.secondHold.time }, { shown: true, time: "1.00 / 1.10 s" });
+  assert.equal(handles.secondHold.looks.step, 1, "and in the second");
+  assertOnTheParts(handles.secondHold.looks, "the timeline in the second hold");
+  assert.deepEqual(handles.stepPicked, { shown: true }, "a step picked");
   assert.deepEqual(handles.off, { shown: false, pressed: false });
   assert.deepEqual(handles.on, { shown: true, pressed: true });
-  assert.deepEqual(handles.onHold, { shown: false });
-  assert.deepEqual(handles.resumed, { shown: true });
+  assert.deepEqual(handles.onHold, { shown: false }, "text that is not a phrase yet");
+  assert.deepEqual(handles.resumed, { shown: true }, "and as soon as it is one again, with no step picked");
+  assert.equal(handles.pasted.shown, true, "a phrase pasted in");
+  assertOnTheParts(handles.pasted, "the pasted phrase");
+  assert.deepEqual(specsOf(handles.pasted).B.adj, { arm: -52, blade: 80, fore: 26 });
+  assert.equal(handles.pastedThenCamera.camera, 40);
+  assert.equal(handles.pastedThenCamera.shown, true, "and the camera turned after it");
+  assertOnTheParts(handles.pastedThenCamera, "the pasted phrase from a turned camera");
   assert.deepEqual(handles.solo, { A: HANDLES.length, B: 0 });
   assert.deepEqual(handles.pair, { B: HANDLES.length });
   assert.deepEqual(handles.left, { shown: false });
   assert.deepEqual(handles.back, { shown: true });
+});
+
+test("in a browser, the dots stay in the close-up of a hand, those in view and the fencer's being edited, and the view holds still while one is dragged", { skip, timeout: 120_000 }, async () => {
+  const { handles } = (await drive()).seen;
+  const { before, during, after } = handles.closeUp;
+  const title = "Drag to move A's sword hand";
+  const shown = (looks) => looks.dots.filter((dot) => dot.shown);
+  // A's hand is looked at: only A's dots, those that are in view, and the hand among them.
+  assert.equal(before.closeUp, true);
+  assert.ok(shown(before).length >= 1 && shown(before).length < HANDLES.length, `${shown(before).length} dots in view`);
+  assert.ok(shown(before).every((dot) => dot.title.startsWith("Drag to move A")), "A's");
+  assert.ok(shown(before).some((dot) => dot.title === title), "the hand is among them");
+  for (const dot of shown(before)) assert.ok(dot.across >= -0.011 && dot.across <= 1.011 && dot.down >= -0.011 && dot.down <= 1.011, `${dot.title} is in view`);
+  assertOnTheParts(before, "the close-up of A's hand");
+  // Taken hold of and moved 24 px back toward the shoulder and 18 up, the hand goes with the pointer and the view does not move.
+  assert.equal(during.view, before.view, "the view holds still");
+  assert.equal(part(during, title).dragging, true);
+  const [across, up] = movedBy(before, during, title);
+  near(across, -24, 3, "the hand went back with the pointer");
+  near(up, -18, 3, "and up");
+  assertOnTheParts(during, "the hand dragged in the close-up");
+  // Let go, the view follows the hand again, and the hand is back in the middle of it where it was, to within a few pixels: the
+  // view is centred between the wrist and the forte of the blade, which the turn of the forearm moves a little.
+  assert.notEqual(after.view, during.view, "the view follows the hand when it is let go");
+  const [backAcross, backUp] = movedBy(before, after, title);
+  assert.ok(Math.hypot(backAcross, backUp) < 10, `the hand is ${Math.hypot(backAcross, backUp).toFixed(1)} px from where it was in the view`);
+  assertOnTheParts(after, "the close-up after the drag");
+  // What was written is in tenths: a drag of a centimetre or two at this size is a few degrees, and whole degrees would move the hand
+  // in steps of ten pixels.
+  const adj = specsOf(after).A.adj;
+  const was = specsOf(before).A.adj ?? {};
+  const moved = ["arm", "fore"].filter((key) => adj[key] !== was[key]);
+  assert.ok(moved.length >= 1, "the arm moved");
+  for (const key of moved) assert.ok(Math.abs(adj[key] * 10 - Math.round(adj[key] * 10)) < 1e-6, `${key} ${adj[key]} is in tenths`);
+  assert.ok(moved.some((key) => !Number.isInteger(adj[key])), "and not in whole degrees");
+  // B's hand is looked at when B is the one being edited: B's dots.
+  const { closeUpB } = handles;
+  assert.equal(closeUpB.editing.endsWith("Fencer B."), true);
+  assert.ok(shown(closeUpB).length >= 1 && shown(closeUpB).every((dot) => dot.title.startsWith("Drag to move B")), "B's");
+  assert.ok(shown(closeUpB).some((dot) => dot.title === "Drag to move B's sword hand"));
+  assertOnTheParts(closeUpB, "the close-up of B's hand");
 });
 
 test("in a browser, the fencers are 3D figures, one alone and two in a pair, or stick figures with a note saying why", { skip, timeout: 120_000 }, async () => {
