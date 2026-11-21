@@ -8,8 +8,8 @@
 // The page has three tabs. Live knowledge and Book knowledge are sections, each
 // with a practice library and base postures of its own; the Creator is the third.
 import { BASE_BLADE, BASE_SECTIONS, FIGURE_DIR, FIGURE_NOTE, basePhrase, basesOf } from "./bases.js";
-import { CAMERA_LIMIT, DEFAULT_FRAME, bladePaths, floorPath, frameFrom, frameOf, groundPath, handFrame, stickFigure } from "./figure.js";
-import { HANDLES, placeOf, shareOf, solve, stagePoint } from "./handles.js";
+import { CAMERA_LIMIT, DEFAULT_FRAME, bladePaths, floorPath, frameFrom, frameOf, groundPath, handFrame, planFigure, planFloorPath, planFrame, stickFigure } from "./figure.js";
+import { HANDLES, jointsOf, placeOf, shareOf, solve, stagePoint } from "./handles.js";
 import { JOINTS, POSE_NAMES, POSES, PRESETS, SECTIONS } from "./library.js";
 import {
   TEXT_KEYS,
@@ -79,6 +79,16 @@ const stagePanelEl = document.getElementById("stage-panel");
 const stageEl = document.getElementById("stage");
 const frameEl = document.getElementById("stage-frame");
 const handlesEl = document.getElementById("handles");
+// The plan: the fencers from above, under the stage, with the dots of the parts that turn toward or away from you.
+const planEl = document.getElementById("plan");
+const planFrameEl = document.getElementById("plan-frame");
+const planViewEl = document.getElementById("plan-view");
+const planHandlesEl = document.getElementById("plan-handles");
+const planFloorEl = document.getElementById("plan-floor");
+const planPaths = {
+  A: { shoes: document.getElementById("plan-shoes-a"), body: document.getElementById("plan-body-a"), blade: document.getElementById("plan-blade-a") },
+  B: { shoes: document.getElementById("plan-shoes-b"), body: document.getElementById("plan-body-b"), blade: document.getElementById("plan-blade-b") },
+};
 const canvas3dEl = document.getElementById("stage-3d");
 const stageNoteEl = document.getElementById("stage-note");
 const versionsNoteEl = document.getElementById("versions-note");
@@ -201,6 +211,8 @@ const state = {
   closeUp: false,
   // In the Creator, the dots on the stage that parts of the fencers are dragged by.
   handles: true,
+  // In the Creator, the fencers seen from above, under the stage, with dots of their own.
+  plan: true,
   camera: 0,
   fencer: "A",
   // The step on show while paused on one; null when the time decides.
@@ -914,22 +926,33 @@ const postureControls = POSTURE_JOINTS.map((joint) =>
 
 // ---------- Dragging the parts of a fencer ----------
 
-// The dot on each part of each fencer, made once and put where the part is each time the stage is drawn. Taking hold of
-// one makes its fencer the one being edited.
+// There are two views to drag in: the stage, from the side, where a part goes along the piste and up, and the plan, from
+// above, where it goes along the piste and toward or away from you. Each has a box that is mirrored, the dots laid over it.
+const surfaces = {
+  side: { frame: frameEl, dots: handlesEl },
+  plan: { frame: planFrameEl, dots: planHandlesEl },
+};
+
+// The dot on each part of each fencer in each view that has the part, made once and put where the part is each time the
+// stage is drawn. Taking hold of one makes its fencer the one being edited.
 const dots = ["A", "B"].flatMap((who) =>
-  HANDLES.map((part) => {
-    const el = element("div", `handle handle--${who.toLowerCase()}`);
-    setAttr(el, "title", `Drag to move ${who}'s ${part.name}`);
-    el.addEventListener("pointerdown", (event) => startDrag(event, who, part, el));
-    handlesEl.append(el);
-    return { who, part, el };
-  }),
+  HANDLES.flatMap((part) =>
+    ["side", "plan"]
+      .filter((view) => jointsOf(part, view).length > 0)
+      .map((view) => {
+        const el = element("div", `handle handle--${who.toLowerCase()}${view === "plan" ? " handle--plan" : ""}`);
+        setAttr(el, "title", view === "plan" ? `Drag to move ${who}'s ${part.name}, seen from above` : `Drag to move ${who}'s ${part.name}`);
+        el.addEventListener("pointerdown", (event) => startDrag(event, who, part, el, view));
+        surfaces[view].dots.append(el);
+        return { who, part, view, el };
+      }),
+  ),
 );
 
-// What the stage looks at, as it was last drawn, which is what a point of the page is placed against.
-let stageView = DEFAULT_FRAME;
-// The drag in progress: the pointer that began it, whose part it is, the view the stage had when it took hold, and how far
-// the pointer was from the part then, so that the part does not jump to the pointer.
+// What each view looks at, as it was last drawn, which is what a point of the page is placed against.
+const looking = { side: DEFAULT_FRAME, plan: planFrame([], 180) };
+// The drag in progress: the pointer that began it, whose part it is, in which view, the view's box as it was when it took
+// hold, and how far the pointer was from the part then, so that the part does not jump to the pointer.
 let drag = null;
 
 // Whether the dots are on the stage: in the Creator, while the stage shows a step's own pose, which is what changing it
@@ -944,18 +967,21 @@ function handlesShown() {
   return at.A === step.A && at.B === step.B;
 }
 
-// Puts each dot on its part of the fencer on the stage, by how far across and down the stage it is, as the stage is drawn.
-// A part that is off the stage, as most are in the close-up of a hand, has no dot, and in the close-up only the hand of the
-// fencer being reshaped is looked at, so only that fencer has dots.
-function drawHandles(now, camera, view) {
+// Puts each dot of a view on its part of the fencer, by how far across and down the view it is, as it is drawn. A part that
+// is off the view, as most are in the close-up of a hand, has no dot, and in the close-up only the hand of the fencer being
+// reshaped is looked at, so only that fencer has dots.
+function drawDots(view, now, camera, box) {
   const show = handlesShown();
-  handlesEl.classList.toggle("hidden", !show);
+  surfaces[view].dots.classList.toggle("hidden", !show);
   if (!show) return;
   const editing = editingFencer();
-  for (const { who, part, el } of dots) {
-    const [across, down] = shareOf(placeOf(now[who], who === "A" ? 1 : -1, camera, part), view);
-    // A scene of one fencer has no dots on the other.
-    const gone = (who === "B" && timeline.solo) || (state.closeUp && who !== editing) || across < -0.01 || across > 1.01 || down < -0.01 || down > 1.01;
+  for (const { who, part, view: dotView, el } of dots) {
+    if (dotView !== view) continue;
+    const [across, down] = shareOf(placeOf(now[who], who === "A" ? 1 : -1, camera, part, view), box);
+    // A scene of one fencer has no dots on the other. The one being dragged stays, whether or not the part has gone beyond what
+    // the view holds, which a view that holds still for the drag, as the plan does, lets it do.
+    const outside = across < -0.01 || across > 1.01 || down < -0.01 || down > 1.01;
+    const gone = (who === "B" && timeline.solo) || (view === "side" && state.closeUp && who !== editing) || (outside && drag?.el !== el);
     el.classList.toggle("hidden", gone);
     if (gone) continue;
     el.style.left = `${(across * 100).toFixed(2)}%`;
@@ -964,13 +990,54 @@ function drawHandles(now, camera, view) {
   }
 }
 
-// Where on the stage, in its units, a pointer is. The stage is shown in a mirror, which the page's own coordinates know nothing of.
-function stageAt(event) {
-  const mirrored = new DOMMatrixReadOnly(getComputedStyle(frameEl).transform).a < 0;
-  return stagePoint([event.clientX, event.clientY], frameEl.getBoundingClientRect(), stageView, mirrored);
+// Which side of the piste the plan looks from: the one the stage looks from, as near as it goes, so that the two have A on
+// the same side. Unlike the stage it does not turn with the camera, a plan being easiest to read with the piste across it.
+function planCamera() {
+  return Math.cos(((state.camera + SCENE_SIDE) * Math.PI) / 180) < 0 ? 180 : 0;
 }
 
-function startDrag(event, who, part, el) {
+// What the plan looks at: every pose of the scene in it, so that it keeps one view as the scene is reshaped; and while a
+// part is dragged in it, the view it had when the part was taken hold of, so that the part stays under the pointer.
+let planned = { timeline: null, camera: null, frame: looking.plan };
+function planBox(camera) {
+  if (drag?.view === "plan") return drag.frame;
+  if (planned.timeline !== timeline || planned.camera !== camera) {
+    const fencers = timeline.steps.flatMap((step) => [[step.A, 1], ...(timeline.solo ? [] : [[step.B, -1]])]);
+    planned = { timeline, camera, frame: planFrame(fencers, camera) };
+  }
+  return planned.frame;
+}
+
+// The plan, in the Creator: the fencers from above, and the dots.
+function drawPlan(now) {
+  const show = state.mode === "creator" && state.plan;
+  planEl.classList.toggle("hidden", !show);
+  if (!show) return;
+  const camera = planCamera();
+  const box = planBox(camera);
+  looking.plan = box;
+  setAttr(planViewEl, "viewBox", box.join(" "));
+  setAttr(planFloorEl, "d", planFloorPath(camera));
+  for (const [who, dir] of [["A", 1], ["B", -1]]) {
+    const figure = planFigure(now[who], dir, camera);
+    setAttr(planPaths[who].shoes, "d", figure.shoes);
+    setAttr(planPaths[who].body, "d", figure.body);
+    setAttr(planPaths[who].blade, "d", figure.blade);
+  }
+  drawDots("plan", now, camera, box);
+}
+
+// Where on a view, in its units, a pointer is. The views are shown in a mirror, which the page's own coordinates know nothing of.
+function viewAt(event, view) {
+  const el = surfaces[view].frame;
+  const mirrored = new DOMMatrixReadOnly(getComputedStyle(el).transform).a < 0;
+  return stagePoint([event.clientX, event.clientY], el.getBoundingClientRect(), looking[view], mirrored);
+}
+
+// The camera a view is looked at from.
+const cameraOf = (view) => (view === "plan" ? planCamera() : viewCamera());
+
+function startDrag(event, who, part, el, view) {
   if (event.pointerType === "mouse" && event.button !== 0) return;
   if (drag) {
     // Another finger is not heard. The same pointer pressing again says the last drag never saw it lifted, so that one is over.
@@ -981,9 +1048,9 @@ function startDrag(event, who, part, el) {
   event.preventDefault();
   state.fencer = who;
   const pose = timeline.steps[currentIndex()][who];
-  const point = placeOf(pose, who === "A" ? 1 : -1, viewCamera(), part);
-  const grabbed = stageAt(event);
-  drag = { pointer: event.pointerId, who, part, el, frame: stageView, offset: [grabbed[0] - point[0], grabbed[1] - point[1]] };
+  const point = placeOf(pose, who === "A" ? 1 : -1, cameraOf(view), part, view);
+  const grabbed = viewAt(event, view);
+  drag = { pointer: event.pointerId, who, part, el, view, frame: looking[view], offset: [grabbed[0] - point[0], grabbed[1] - point[1]] };
   el.classList.add("is-dragging");
   window.addEventListener("pointermove", dragTo);
   window.addEventListener("pointerup", endDrag);
@@ -991,17 +1058,17 @@ function startDrag(event, who, part, el) {
   update();
 }
 
-// Moves the part toward the pointer: the joints that move it take the values that put it nearest, as the camera sees it, and
+// Moves the part toward the pointer: the joints that move it take the values that put it nearest, as the view sees it, and
 // only those that change are written to the step.
 function dragTo(event) {
   if (!drag || event.pointerId !== drag.pointer) return;
   // A mouse button let go outside the page leaves no word of it.
   if (event.pointerType === "mouse" && event.buttons === 0) return endDrag(event);
-  const { who, part, offset } = drag;
-  const pointer = stageAt(event);
+  const { who, part, view, offset } = drag;
+  const pointer = viewAt(event, view);
   const pose = timeline.steps[currentIndex()][who];
   // Whole numbers, except in the close-up of a hand, where a degree of the arm is a long way on the stage, so tenths.
-  const values = solve(pose, who === "A" ? 1 : -1, viewCamera(), part, [pointer[0] - offset[0], pointer[1] - offset[1]], state.closeUp ? 0.1 : 1);
+  const values = solve(pose, who === "A" ? 1 : -1, cameraOf(view), part, [pointer[0] - offset[0], pointer[1] - offset[1]], view === "side" && state.closeUp ? 0.1 : 1, view);
   const changed = Object.entries(values).filter(([key, value]) => value !== pose[key]);
   if (changed.length === 0) return;
   editCurrent((spec) => {
@@ -1307,7 +1374,7 @@ function polyline(points, count) {
 // The box is worked out once for the camera at 0, and goes round with the camera.
 function frameFor(now) {
   if (state.closeUp) {
-    if (drag) return drag.frame;
+    if (drag?.view === "side") return drag.frame;
     const who = state.mode === "creator" ? editingFencer() : "A";
     return handFrame(now[who], who === "A" ? 1 : -1, viewCamera());
   }
@@ -1346,7 +1413,7 @@ function viewCamera() {
 function drawStage(now) {
   const camera = viewCamera();
   const view = frameFor(now);
-  stageView = view;
+  looking.side = view;
   setAttr(stageEl, "viewBox", view.join(" "));
   // The postures stand still, so they have no motion to show.
   const moving = state.mode !== "base";
@@ -1391,7 +1458,8 @@ function drawStage(now) {
     setAttr(trailEls.doneA, "d", polyline(trails.a, done));
     setAttr(trailEls.doneB, "d", polyline(trails.b, done));
   }
-  drawHandles(now, camera, view);
+  drawDots("side", now, camera, view);
+  drawPlan(now);
 }
 
 // A link to a reference, which opens in a new tab and tells that page nothing about this one.

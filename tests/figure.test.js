@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { BASE_BLADE, basePhrase } from "../site/js/bases.js";
-import { CAMERA_LIMIT, DEFAULT_FRAME, PIVOT, bladePaths, bladeTip, floorPath, frameFrom, frameOf, gripFrame, groundPath, handFrame, knee, knee3, kneeBehind, lightsFor, projector, skeleton, stickFigure } from "../site/js/figure.js";
+import { CAMERA_LIMIT, DEFAULT_FRAME, PIVOT, SHOE, bladePaths, bladeTip, floorPath, footDirections, frameFrom, frameOf, gripFrame, groundPath, handFrame, knee, knee3, kneeBehind, lightsFor, planFigure, planFloorPath, planFrame, projector, skeleton, stickFigure, topProjector } from "../site/js/figure.js";
 import { POSES, PRESETS } from "../site/js/library.js";
 import { buildTimeline, poseAt, resolvePose } from "../site/js/phrase.js";
 import { boxOf, readPath } from "./path-data.js";
@@ -736,4 +736,148 @@ test("the sword arm can be turned out of the plane of its shoulder, across the c
   const at = (adj) => skeleton(resolvePose({ pose: "guard", adj }));
   const [a, b] = [at({}), at({ armYaw: 40 })];
   near(b.tip[2] - a.tip[2], b.hn[2] - a.hn[2], 1e-9, "the point moves across as far as the hand");
+});
+
+// ---------- The plan: the fencers seen from above ----------
+
+// Every point of the skeleton the plan has to hold, as the plan's frame takes them.
+const PLAN_POINTS = (J) => [J.hipF, J.hipB, J.kF, J.kB, J.sh, J.rs, J.el, J.hn, J.re, J.rh, J.tip];
+
+test("seen from above, a point is as far across the page as the stage has it, and as far toward the camera as the stage's depth says", () => {
+  const pose = resolvePose({ pose: "guard", x: 40, adj: { armYaw: 20, yaw: 12 } });
+  const J = skeleton(pose);
+  for (const dir of [1, -1]) {
+    for (const camera of [-180, -140, -90, -33, 0, 25, 90, 180, 205]) {
+      const [W, T] = [projector(pose, dir, camera), topProjector(pose, dir, camera)];
+      for (const q of [J.ankB, J.hipF, J.sh, J.el, J.hn, J.tip, J.rs, J.kB]) {
+        assert.equal(T(q)[0].toFixed(9), W(q)[0].toFixed(9), `across the page, dir ${dir}, camera ${camera}`);
+        // Two points of the body differ in depth by what the stage says a step toward the camera is.
+        const step = [3, 0, -7];
+        const at = [q[0], q[1], q[2] || 0];
+        const moved = at.map((v, i) => v + step[i]);
+        near(T(moved)[1] - T(at)[1], W.depth(step), 1e-9, `depth, dir ${dir}, camera ${camera}`);
+      }
+    }
+  }
+  // Seen from the side the page starts on (180, with the stage mirrored) the sword side of A is toward the camera and so
+  // lower down the page, and B, who is A turned round, has his the other way; seen from the other side (0), the opposite.
+  const T = (dir, camera) => topProjector(pose, dir, camera);
+  assert.ok(T(1, 180)(J.sh)[1] > 0 && T(1, 180)(J.rs)[1] < 0, "A's sword shoulder toward the camera at 180, the rear one away");
+  assert.ok(T(-1, 180)(J.sh)[1] < 0 && T(-1, 180)(J.rs)[1] > 0, "B's the other way");
+  assert.ok(T(1, 0)(J.sh)[1] < 0 && T(1, 0)(J.rs)[1] > 0, "and from the other side of the piste, the other way again");
+  // The line of the piste, the feet on it, has no depth, on either side; end on it runs down the page.
+  for (const camera of [0, 180]) for (const dir of [1, -1]) near(topProjector(pose, dir, camera)([J.ankB[0], 0, 0])[1], 0, 1e-12, `the piste at ${camera}`);
+  assert.ok(Math.abs(topProjector(pose, 1, 90)(J.ankF)[1] - topProjector(pose, 1, 90)(J.ankB)[1]) > 50, "end on, the piste runs down the page");
+});
+
+test("the plan draws each fencer from above: the legs, shoulders, arms, head and blade of the stage's sticks, and a shoe under each foot", () => {
+  const number = "-?\\d+(?:\\.\\d)?";
+  for (const camera of [0, 180]) {
+    for (const [pose, dir] of [[resolvePose({ pose: "guard", x: 0, adj: { yaw: 18, armYaw: 10 } }), 1], [resolvePose({ pose: "lungeHead", x: 310 }), -1]]) {
+      const J = skeleton(pose);
+      const T = topProjector(pose, dir, camera);
+      const figure = planFigure(pose, dir, camera);
+      for (const d of Object.values(figure)) assert.doesNotMatch(d, BAD_NUMBER);
+      // The blade is the stage's line, from a little behind the hand to the point, seen from above.
+      const [from, to] = [T(J.at(-7)), T(J.tip)];
+      assert.equal(figure.blade, `M${from[0].toFixed(1)} ${from[1].toFixed(1)}L${to[0].toFixed(1)} ${to[1].toFixed(1)}`);
+      // The head is a circle round the head's place.
+      const head = T(J.hd);
+      assert.match(figure.body, new RegExp(`M${(head[0] - 10).toFixed(1)} ${head[1].toFixed(1)}a10 10 0 1 0 20 0a10 10 0 1 0 -20 0$`));
+      // Every joint is a point of the body's lines, in its place from above.
+      for (const q of [J.hipB, J.kB, J.ankB, J.hipF, J.kF, J.ankF, J.sh, J.el, J.hn, J.rs, J.re, J.rh]) {
+        const [x, y] = T(q);
+        assert.ok(figure.body.includes(`${x.toFixed(1)} ${y.toFixed(1)}`), `${camera}: ${x.toFixed(1)} ${y.toFixed(1)}`);
+      }
+      assert.match(figure.body, new RegExp(`^M${number} ${number}(L${number} ${number})*`));
+      // Two shoes, each a shut shape of four corners.
+      const shoes = readPath(figure.shoes);
+      assert.equal(shoes.length, 2);
+      for (const shoe of shoes) assert.ok(shoe.closed && shoe.points.length === 4, "a shoe is four corners");
+    }
+  }
+});
+
+test("a shoe seen from above is 28 cm long and 10 wide: along the piste in front, across it behind, turned back as the foot is", () => {
+  for (const toeBack of [0, 14, 30, 45]) {
+    const pose = resolvePose({ pose: "guard", x: 0, adj: { toeBack } });
+    const J = skeleton(pose);
+    const [front, back] = readPath(planFigure(pose, 1, 180).shoes);
+    const side = (shoe, a, b) => [shoe.points[b][0] - shoe.points[a][0], shoe.points[b][1] - shoe.points[a][1]];
+    // The first side of each is from heel to toe, on one side of the foot (the points go heel, toe, toe, heel).
+    const [fx, fy] = side(front, 0, 1);
+    near(Math.hypot(fx, fy), SHOE.heel + SHOE.toe, 0.15, "the front shoe's length");
+    near(fy, 0, 0.15, "the front shoe lies along the piste");
+    const [bx, by] = side(back, 0, 1);
+    near(Math.hypot(bx, by), SHOE.heel + SHOE.toe, 0.15, "the back shoe's length");
+    // Across the piste, turned back by `toeBack`: toward the camera at 0 and so up the page seen from 180.
+    const along = footDirections(pose).back;
+    near(bx, -along[0] * (SHOE.heel + SHOE.toe), 0.15, `the back shoe's way along the piste at ${toeBack}`);
+    near(by, -along[1] * (SHOE.heel + SHOE.toe), 0.15, `and across it at ${toeBack}`);
+    const [wx, wy] = side(front, 1, 2);
+    near(Math.hypot(wx, wy), 2 * SHOE.half, 0.15, "the width");
+    // Both lie round their ankles: the ankle is within the shoe's box.
+    const ankle = topProjector(pose, 1, 180)(J.ankF);
+    const xs = front.points.map((p) => p[0]);
+    assert.ok(Math.min(...xs) < ankle[0] && Math.max(...xs) > ankle[0]);
+  }
+  // The feet's directions: the front at the opponent, the back across the piste and turned back by the pose's toe.
+  assert.deepEqual(footDirections({ toeBack: 0 }).front, [1, 0]);
+  near(footDirections({ toeBack: 30 }).back[0], -0.5, 1e-12);
+  near(footDirections({ toeBack: 30 }).back[1], Math.cos(Math.PI / 6), 1e-12);
+  assert.deepEqual(footDirections({}).back, [-0, 1]);
+});
+
+test("the piste seen from above is its centre line with a tick every 50 cm, and a longer one at the centre", () => {
+  for (const camera of [0, 180]) {
+    const d = planFloorPath(camera);
+    assert.doesNotMatch(d, BAD_NUMBER);
+    const shapes = readPath(d);
+    // The line, then a tick at each 50 cm from -550 to 850.
+    assert.equal(shapes.length, 1 + 29);
+    const [line, ...ticks] = shapes;
+    near(Math.abs(line.points[1][0] - line.points[0][0]), 1500, 0.2, "the line is the piste's length");
+    near(line.points[0][1], 0, 0.06, "on the piste's line");
+    near(line.points[1][1], 0, 0.06);
+    // Each tick runs across the line, three cm either side, the one at 100 cm six.
+    const lengths = ticks.map((tick) => Math.abs(tick.points[1][1] - tick.points[0][1]));
+    for (const [i, length] of lengths.entries()) near(length, -550 + i * 50 === 100 ? 12 : 6, 0.2, `tick ${i}`);
+    // The ticks are across the page where the stage's floor has its own: each 50 cm from the pivot, turned for the camera.
+    const stage = [...floorPath(camera).matchAll(/M(-?[\d.]+) 0 V/g)].map((m) => m[1]);
+    assert.equal(stage.length, ticks.length);
+    assert.deepEqual(ticks.map((tick) => tick.points[0][0].toFixed(1)), stage);
+  }
+});
+
+test("the plan looks at the piste from above through one box, as wide as the stage's, which takes in a pose that reaches far across by growing", () => {
+  const guard = resolvePose({ pose: "guard", x: 0 });
+  const second = resolvePose({ pose: "guard", x: 310 });
+  for (const camera of [180, 0]) {
+    const [x, , w] = frameFrom(DEFAULT_FRAME, camera);
+    const frame = planFrame([[guard, 1], [second, -1]], camera);
+    // The piste is along the middle, and the box is in the stage's shape across the page, and a good deal less tall.
+    assert.deepEqual(frame, [x + w / 2 - 210, -45, 420, 90].map((v) => Math.round(v * 10) / 10));
+    // Poses that reach little across the piste give the same box, so that it never moves as they are shaped.
+    assert.deepEqual(planFrame([[resolvePose({ pose: "guard", x: 20, adj: { yaw: 10, armYaw: 6, kneeOut: 60 } }), 1]], camera), frame);
+    // With nobody in it, it is the same box too.
+    assert.deepEqual(planFrame([], camera), frame);
+    // A blade turned far across the body reaches past it: the box grows, in the same shape, about the same middle.
+    const wide = planFrame([[resolvePose({ pose: "guard", x: 0, adj: { yaw: 80 } }), 1]], camera);
+    assert.ok(wide[2] > 420 + 20 && wide[3] > 90 + 4, `${wide}`);
+    near(wide[2] / wide[3], 420 / 90, 0.05, "the shape");
+    near(wide[0] + wide[2] / 2, frame[0] + frame[2] / 2, 0.1, "the same middle across the page");
+    near(wide[1] + wide[3] / 2, 0, 0.1, "and the piste still along the middle");
+  }
+  // Everything of everyone is inside it, with room to spare, in every scene, at every step, from either side.
+  for (const phrase of [...SCENES.map((scene) => scene.phrase), basePhrase()]) {
+    const timeline = buildTimeline(phrase);
+    for (const camera of [180, 0]) {
+      const fencers = timeline.steps.flatMap((step) => [[step.A, 1], ...(timeline.solo ? [] : [[step.B, -1]])]);
+      const [, y, , h] = planFrame(fencers, camera);
+      for (const [pose, dir] of fencers) {
+        const T = topProjector(pose, dir, camera);
+        for (const q of PLAN_POINTS(skeleton(pose))) assert.ok(T(q)[1] > y + 13.9 && T(q)[1] < y + h - 13.9, `${phrase.name}: ${T(q)[1]} in ${y}..${y + h}`);
+      }
+    }
+  }
 });

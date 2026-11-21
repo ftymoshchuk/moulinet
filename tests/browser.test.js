@@ -14,8 +14,8 @@ import { test } from "node:test";
 import { promisify } from "node:util";
 
 import { BASE_BLADE, BASE_CAMERA, BASE_SECTIONS, FIGURE_DIR, FIGURE_NOTE, basePhrase, basesOf } from "../site/js/bases.js";
-import { DEFAULT_FRAME, floorPath, frameFrom, frameOf, handFrame } from "../site/js/figure.js";
-import { HANDLES, placeOf, shareOf } from "../site/js/handles.js";
+import { DEFAULT_FRAME, floorPath, frameFrom, frameOf, handFrame, planFloorPath, planFrame } from "../site/js/figure.js";
+import { HANDLES, jointsOf, placeOf, shareOf } from "../site/js/handles.js";
 import { JOINTS, POSE_NAMES, POSES, PRESETS } from "../site/js/library.js";
 import { buildTimeline, parsePhrase, resolvePose } from "../site/js/phrase.js";
 import { POSTURE_JOINTS, numbersText } from "../site/js/postures.js";
@@ -39,6 +39,11 @@ function findBrowser() {
   }
   return null;
 }
+
+// How much of its virtual clock the browser gives a page before it dumps the DOM (ms). The clock jumps over every wait, so the
+// page costs the same real time however much there is, but one that does its work in the real time of a slow machine can
+// spend a small budget on waiting before the work is done, and then the driver is cut off partway.
+const VIRTUAL_TIME = 120_000;
 
 const browser = findBrowser();
 const skip = !browser && process.env.REQUIRE_BROWSER !== "1" && "no Chrome or Chromium found; set CHROME_BIN to run it";
@@ -67,7 +72,7 @@ async function openInBrowser(path, flags = []) {
         "--no-first-run",
         `--user-data-dir=${profile}`,
         "--enable-logging=stderr",
-        "--virtual-time-budget=5000",
+        `--virtual-time-budget=${VIRTUAL_TIME}`,
         ...flags,
         "--dump-dom",
         `http://127.0.0.1:${server.address().port}${path}`,
@@ -229,7 +234,7 @@ test("in a browser, the practice library holds the drills from the class, shows 
     ghosts: { A: 8, B: 0 },
   });
   // (The close-up of the hand starts off, and is not one of the four; the Creator's dots to drag start on, and are not either.)
-  assert.deepEqual(seen.toggledOff, { pressed: ["false", "false", "false", "false", "false", "true"], ghostsHidden: true, trailsHidden: true, inkFilter: null });
+  assert.deepEqual(seen.toggledOff, { pressed: ["false", "false", "false", "false", "false", "true", "true"], ghostsHidden: true, trailsHidden: true, inkFilter: null });
   assert.equal(seen.inkFilter, "url(#ink-texture)");
   assert.deepEqual(seen.camera, { shown: "-40°", floorTurned: true });
   assert.deepEqual(seen.speed, ["true", "false", "false"]);
@@ -847,7 +852,10 @@ test("in a browser, the numbers close when the postures are left, the book's pos
 
 // ---------- Dragging the parts of a fencer ----------
 
-const PARTS = (who) => HANDLES.map(({ name }) => `Drag to move ${who}'s ${name}`);
+// The parts that have a dot on the stage, and the ones that have a dot on the plan under it, in the order they are made.
+const SIDE = HANDLES.filter((part) => jointsOf(part, "side").length > 0);
+const PLAN = HANDLES.filter((part) => jointsOf(part, "plan").length > 0);
+const PARTS = (who) => SIDE.map(({ name }) => `Drag to move ${who}'s ${name}`);
 const part = (looks, title) => looks.dots.find((dot) => dot.title === title);
 // The fencers' specs in a phrase as the Creator's data shows it, for one of its steps.
 const specsOf = (looks, index = 0) => {
@@ -863,7 +871,7 @@ function dotsShouldBe(looks) {
   const camera = looks.camera + (looks.closeUp && looks.editing.endsWith("Fencer B.") ? 0 : 180);
   const expected = {};
   for (const [who, dir] of [["A", 1], ["B", -1]]) {
-    for (const handle of HANDLES) {
+    for (const handle of SIDE) {
       const [across, down] = shareOf(placeOf(step[who], dir, camera, handle), view);
       expected[`Drag to move ${who}'s ${handle.name}`] = [1 - across, down];
     }
@@ -1044,8 +1052,8 @@ test("in a browser, the dots show while the stage shows a step's own pose, howev
   assert.equal(handles.pastedThenCamera.camera, 40);
   assert.equal(handles.pastedThenCamera.shown, true, "and the camera turned after it");
   assertOnTheParts(handles.pastedThenCamera, "the pasted phrase from a turned camera");
-  assert.deepEqual(handles.solo, { A: HANDLES.length, B: 0 });
-  assert.deepEqual(handles.pair, { B: HANDLES.length });
+  assert.deepEqual(handles.solo, { A: SIDE.length, B: 0 });
+  assert.deepEqual(handles.pair, { B: SIDE.length });
   assert.deepEqual(handles.left, { shown: false });
   assert.deepEqual(handles.back, { shown: true });
 });
@@ -1057,7 +1065,7 @@ test("in a browser, the dots stay in the close-up of a hand, those in view and t
   const shown = (looks) => looks.dots.filter((dot) => dot.shown);
   // A's hand is looked at: only A's dots, those that are in view, and the hand among them.
   assert.equal(before.closeUp, true);
-  assert.ok(shown(before).length >= 1 && shown(before).length < HANDLES.length, `${shown(before).length} dots in view`);
+  assert.ok(shown(before).length >= 1 && shown(before).length < SIDE.length, `${shown(before).length} dots in view`);
   assert.ok(shown(before).every((dot) => dot.title.startsWith("Drag to move A")), "A's");
   assert.ok(shown(before).some((dot) => dot.title === title), "the hand is among them");
   for (const dot of shown(before)) assert.ok(dot.across >= -0.011 && dot.across <= 1.011 && dot.down >= -0.011 && dot.down <= 1.011, `${dot.title} is in view`);
@@ -1089,6 +1097,168 @@ test("in a browser, the dots stay in the close-up of a hand, those in view and t
   assert.ok(shown(closeUpB).length >= 1 && shown(closeUpB).every((dot) => dot.title.startsWith("Drag to move B")), "B's");
   assert.ok(shown(closeUpB).some((dot) => dot.title === "Drag to move B's sword hand"));
   assertOnTheParts(closeUpB, "the close-up of B's hand");
+});
+
+// ---------- The plan: the fencers from above ----------
+
+// The side of the piste the plan looks from: the stage's, as near as it goes, so that A is on the same side of both.
+const planCameraOf = (looks) => (Math.cos(((looks.camera + 180) * Math.PI) / 180) < 0 ? 180 : 0);
+const aboveTitle = (who, name) => `Drag to move ${who}'s ${name}, seen from above`;
+const ABOVE = (who) => PLAN.map(({ name }) => aboveTitle(who, name));
+// The fencers' poses at every step of the phrase, with the way each faces, which is what the plan is box enough to hold.
+function planFencersOf(looks) {
+  const timeline = buildTimeline(parsePhrase(looks.phrase));
+  return timeline.steps.flatMap((step) => [[step.A, 1], ...(timeline.solo ? [] : [[step.B, -1]])]);
+}
+// Where each dot of the plan should be across and down its box as the page shows it, mirror and all: on its part of the
+// fencer, seen from above, for the step on show.
+function planDotsShouldBe(looks) {
+  const step = buildTimeline(parsePhrase(looks.phrase)).steps[looks.step];
+  const view = looks.view.split(" ").map(Number);
+  const expected = {};
+  for (const [who, dir] of [["A", 1], ["B", -1]]) {
+    for (const handle of PLAN) {
+      const [across, down] = shareOf(placeOf(step[who], dir, planCameraOf(looks), handle, "plan"), view);
+      expected[aboveTitle(who, handle.name)] = [1 - across, down];
+    }
+  }
+  return expected;
+}
+function assertOnThePlan(looks, what) {
+  const expected = planDotsShouldBe(looks);
+  const shown = looks.dots.filter((dot) => dot.shown);
+  assert.ok(shown.length > 0, `${what}: no dots`);
+  for (const dot of shown) {
+    const [across, down] = expected[dot.title];
+    assert.ok(Math.abs(dot.across - across) * looks.box[0] < 2.5 && Math.abs(dot.down - down) * looks.box[1] < 2.5, `${what}: ${dot.title} is at ${(dot.across * looks.box[0]).toFixed(1)}, ${(dot.down * looks.box[1]).toFixed(1)} px, not ${(across * looks.box[0]).toFixed(1)}, ${(down * looks.box[1]).toFixed(1)}`);
+  }
+}
+
+test("in a browser, the Creator has a plan under the stage, the fencers from above in the stage's mirror, with a dot on each part that turns toward or away from you, and only the Creator does", { skip, timeout: 120_000 }, async () => {
+  const { plan } = (await drive()).seen;
+  assert.deepEqual(plan.library, { plan: false, toggle: false });
+  assert.deepEqual(plan.base, { plan: false, toggle: false });
+  const { opening } = plan;
+  assert.equal(opening.shown, true);
+  assert.equal(opening.dotsShown, true);
+  assert.deepEqual(opening.toggle, { shown: true, pressed: true, label: "From above" });
+  assert.equal(opening.mirror, MIRRORED, "the plan is turned with the stage, so that A is on the same side of both");
+  // It looks at the piste through the box that holds the poses, the piste along its middle, and draws it and both fencers.
+  assert.equal(opening.view, planFrame(planFencersOf(opening), planCameraOf(opening)).join(" "));
+  assert.equal(opening.floor, planFloorPath(180));
+  for (const [what, d] of Object.entries(opening.drawn)) {
+    assert.match(d, /^M/, what);
+    assert.doesNotMatch(d, /NaN|Infinity|undefined/, what);
+  }
+  assert.ok(Math.abs(opening.box[0] / opening.box[1] - 420 / 90) < 0.05, "in the shape of its view");
+  // A dot on the six parts that turn that way, for each fencer, A's solid and B's rings, large enough for a finger.
+  assert.deepEqual(opening.dots.map((dot) => dot.title), [...ABOVE("A"), ...ABOVE("B")]);
+  assert.deepEqual(PLAN.map(({ id }) => id), ["swordShoulder", "swordElbow", "swordHand", "bladeTip", "backKnee", "backToe"]);
+  assert.ok(opening.dots.every((dot) => dot.shown), "both fencers' dots show");
+  assert.deepEqual(opening.dots.map((dot) => dot.other), [...ABOVE("A").map(() => false), ...ABOVE("B").map(() => true)]);
+  assert.ok(opening.dots.every((dot) => dot.size[0] >= 24 && dot.size[1] >= 24), "large enough for a finger");
+  assertOnThePlan(opening, "the pair in guard");
+  // Seen from above, A's sword is toward the camera, the bottom of the plan, and B's the other way; both swords' shoulders
+  // are nearer the middle of the piste than their rear sides, which the knee and the toe of the foot behind are on.
+  const down = (title) => part(opening, title).down;
+  assert.ok(down(aboveTitle("A", "sword hand")) > 0.5 && down(aboveTitle("B", "sword hand")) < 0.5, "A's sword hand toward you, B's away");
+  assert.ok(down(aboveTitle("A", "back knee")) < 0.5 && down(aboveTitle("B", "back knee")) > 0.5, "and their back legs the other way");
+  // A is on the left of the plan, as on the stage.
+  assert.ok(part(opening, aboveTitle("A", "sword hand")).across < part(opening, aboveTitle("B", "sword hand")).across);
+});
+
+test("in a browser, taking hold of a part on the plan and moving the pointer turns it toward or away from you with the joints the stage cannot show", { skip, timeout: 120_000 }, async () => {
+  const { plan } = (await drive()).seen;
+  const { opening, tip, other, shoulder, knee, toe } = plan;
+  for (const drag of [tip, other, shoulder, knee, toe]) {
+    assert.deepEqual({ defaultPrevented: drag.defaultPrevented, held: drag.held, stillHeld: drag.stillHeld, letGo: drag.letGo }, { defaultPrevented: true, held: true, stillHeld: true, letGo: true });
+  }
+  // A's blade tip taken 20 px down the plan, toward you, turns the blade across the body, one way, and moves nothing else of him.
+  const [across, deeper] = movedBy(opening, tip.after, aboveTitle("A", "blade tip"));
+  near(across, 0, 2.5, "the tip did not go along the piste");
+  near(deeper, 20, 2.5, "the tip went down with the pointer");
+  assertOnThePlan(tip.after, "the blade turned across");
+  const a = specsOf(tip.after).A;
+  assert.deepEqual(Object.keys(a.adj), ["yaw"], "the one joint that turned it");
+  near(a.adj.yaw, -(Math.asin((20 * cm(tip.after)) / 88) * 180) / Math.PI, 1.5, "by as much as the pointer took it");
+  assert.deepEqual(tip.sliders, { blade: String(POSES.guard.blade), yaw: String(a.adj.yaw), arm: String(POSES.guard.arm), fore: String(POSES.guard.fore), armYaw: "0", foreYaw: "0" });
+  assert.equal(tip.after.editing, "Step 1: En garde. Fencer A.");
+  // B's sword hand taken 18 px up the plan, away from you: B becomes the one being edited, and his arm and forearm go out of
+  // their plane, the way that is away from you for him, who is A turned round. A is as he was.
+  assert.equal(other.before, "Step 1: En garde. Fencer A.");
+  assert.equal(other.after.editing, "Step 1: En garde. Fencer B.");
+  const [bAcross, bDeeper] = movedBy(tip.after, other.after, aboveTitle("B", "sword hand"));
+  near(bAcross, 0, 3, "the hand did not go along the piste");
+  near(bDeeper, -18, 3, "the hand went up with the pointer");
+  assertOnThePlan(other.after, "B's arm turned out");
+  assert.ok(Number(other.sliders.armYaw) < -3 && Number(other.sliders.foreYaw) < -3, `${JSON.stringify(other.sliders)}`);
+  assert.deepEqual(specsOf(other.after).A, specsOf(tip.after).A, "A is as he was");
+  assert.ok(Object.keys(specsOf(other.after).B.adj).every((key) => ["arm", "fore", "armYaw", "foreYaw"].includes(key)), "only the arm's joints");
+  // The sword shoulder taken 8 px up, away from you, turns the shoulders more; the knee taken 12 px down, toward you, turns it
+  // less; the toe taken 8 px along the piste, toward A's back, turns the foot more.
+  near(movedBy(other.after, shoulder.after, aboveTitle("A", "sword shoulder"))[1], -8, 2.5, "the shoulder went up with the pointer");
+  assert.ok(Number(shoulder.sliders.turn) > POSES.guard.turn, `turn ${shoulder.sliders.turn}`);
+  assert.deepEqual(Object.keys(specsOf(shoulder.after).A.adj).toSorted(), ["turn", "yaw"]);
+  near(movedBy(shoulder.after, knee.after, aboveTitle("A", "back knee"))[1], 12, 2.5, "the knee went down with the pointer");
+  assert.ok(Number(knee.sliders.kneeOut) < POSES.guard.kneeOut, `kneeOut ${knee.sliders.kneeOut}`);
+  assert.equal(toe.sliders.x, "0", "the foot turned and the fencer stayed where he was");
+  assert.ok(Number(toe.sliders.toeBack) > POSES.guard.toeBack, `toeBack ${toe.sliders.toeBack}`);
+  near(movedBy(knee.after, toe.after, aboveTitle("A", "back toe"))[0], -8, 2.5, "the toe went along with the pointer");
+  assertOnThePlan(toe.after, "the shoulder, the knee and the toe turned");
+});
+
+test("in a browser, the plan does not turn with the camera, but looks from the same side of the piste as the stage does", { skip, timeout: 120_000 }, async () => {
+  const { plan } = (await drive()).seen;
+  const { aside, turned, otherSide, back } = plan;
+  // Turned 60° round, the stage looks from somewhere else and the plan is as it was; it is read with the piste across it.
+  assert.equal(turned.camera, 60);
+  assert.equal(turned.view, aside.view);
+  assert.deepEqual(turned.dots.map(({ across, down }) => [across, down]), aside.dots.map(({ across, down }) => [across, down]));
+  assert.notEqual(turned.stageHand, aside.stageHand, "the stage went round");
+  // All the way round to the other side of the piste, both are seen from there: A is on the right of each.
+  assert.equal(otherSide.camera, 180);
+  assert.notEqual(otherSide.view, aside.view);
+  assertOnThePlan(otherSide, "from the other side of the piste");
+  assert.ok(aside.stageHand < 0.5 && part(aside, aboveTitle("A", "sword hand")).across < 0.5, "A on the left of both");
+  assert.ok(otherSide.stageHand > 0.5 && part(otherSide, aboveTitle("A", "sword hand")).across > 0.5, "A on the right of both, seen from the other side");
+  assert.equal(part(otherSide, aboveTitle("A", "sword hand")).down < 0.5, true, "and A's sword is away from the camera, which is on the other side now");
+  assertOnThePlan(back, "and back");
+  assert.deepEqual(back.dots.map(({ across, down }) => [across, down]), aside.dots.map(({ across, down }) => [across, down]));
+});
+
+test("in a browser, a part taken far across the plan stops at the end of its slider, and the plan holds still while it is dragged and takes the whole blade in when it is let go", { skip, timeout: 120_000 }, async () => {
+  const { plan } = (await drive()).seen;
+  const { before, during, after, sliders } = plan.far;
+  assert.equal(during.view, before.view, "the view holds still");
+  const title = aboveTitle("A", "blade tip");
+  assert.equal(part(during, title).dragging, true);
+  // The tip went down the page with the pointer, as far as the blade turns across the body, which is not 200 px.
+  const [, deeper] = movedBy(before, during, title);
+  assert.ok(deeper > 100 && deeper < 190, `the tip went down ${deeper.toFixed(0)} px`);
+  assertOnThePlan({ ...during, view: before.view }, "the tip dragged far");
+  assert.ok(Number(sliders.yaw) <= -75 && Number(sliders.yaw) >= JOINTS.find(({ key }) => key === "yaw").min, `the blade is turned across as far as it goes: ${sliders.yaw}`);
+  // Let go, the box grows to hold it, in the same shape, with the piste still along its middle.
+  const [bx, by, bw, bh] = before.view.split(" ").map(Number);
+  const [ax, ay, aw, ah] = after.view.split(" ").map(Number);
+  assert.ok(aw > bw * 1.5 && ah > bh * 1.5, `${before.view} grew to ${after.view}`);
+  assert.ok(Math.abs(aw / ah - bw / bh) < 0.05, "in the shape it had");
+  assert.ok(Math.abs(ay + ah / 2) < 0.2, "the piste along the middle");
+  assert.equal(after.view, planFrame(planFencersOf(after), planCameraOf(after)).join(" "));
+  assertOnThePlan(after, "the plan after the drag");
+  for (const dot of after.dots.filter((d) => d.shown)) assert.ok(dot.across >= -0.011 && dot.across <= 1.011 && dot.down >= -0.011 && dot.down <= 1.011, `${dot.title} is in view`);
+});
+
+test("in a browser, the plan stays while the dots are put away or a scene plays, goes with its own toggle, and has no dots or figure for a fencer who is not there", { skip, timeout: 120_000 }, async () => {
+  const { plan } = (await drive()).seen;
+  assert.deepEqual(plan.playing, { plan: true, dots: false }, "the fencers move on it, with nothing to drag");
+  assert.deepEqual(plan.off, { plan: false, pressed: false, stageDots: true }, "the toggle puts it away and leaves the stage's dots");
+  assert.deepEqual(plan.on, { plan: true, pressed: true, dots: true });
+  assert.deepEqual(plan.dotsOff, { plan: true, dots: false, stageDots: false }, "without the dots there is the picture");
+  assert.deepEqual(plan.solo, { A: PLAN.length, B: 0, figureB: false, figureA: true });
+  assert.deepEqual(plan.pair, { B: PLAN.length, figureB: true });
+  assert.deepEqual(plan.onHold, { plan: true, dots: false }, "text that is not a phrase yet");
+  assert.deepEqual(plan.left, { plan: false });
+  assert.deepEqual(plan.returned, { plan: true, dots: true });
 });
 
 test("in a browser, the fencers are 3D figures, one alone and two in a pair, or stick figures with a note saying why", { skip, timeout: 120_000 }, async () => {
