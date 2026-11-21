@@ -21,8 +21,11 @@
         win.addEventListener("error", (event) => results.errors.push(event.message));
         win.addEventListener("unhandledrejection", (event) => results.errors.push(String(event.reason)));
         try {
-          // Opened as drive.html?fallback, in a browser that cannot draw in 3D, it only looks at what stands in.
+          // Opened as drive.html?fallback, in a browser that cannot draw in 3D, it only looks at what stands in. Opened as
+          // drive.html?record it only records: that takes real time, since every drag draws the 3D figures again, and a
+          // page of its own keeps the long run of the rest from going on for longer.
           if (location.search === "?fallback") await driveFallback(win, frame.contentDocument, results.seen);
+          else if (location.search === "?record") await driveRecord(win, frame.contentDocument, results.seen);
           else {
             drive(win, frame.contentDocument, results.seen);
             await drivePostures(win, frame.contentDocument, results.seen);
@@ -750,6 +753,115 @@
         plan.far = { before: farBefore, during: farDuring, after: farAfter, sliders: farSliders, back: { before: backBefore, during: backDuring, after: looks() } };
         $$(".step-button")[0].click();
         plan.far.firstStep = looks();
+      }
+
+      // Recording, in the Creator: each part let go of after a drag makes a milestone, a step after the one the drag began from,
+      // which takes as long as the drag did. Time passes between the pointer's events, for a drag to take some; the browser's clock
+      // is a virtual one, which runs on while the driver waits.
+      async function driveRecord(win, doc, seen) {
+        const $ = (selector) => doc.querySelector(selector);
+        const $$ = (selector) => [...doc.querySelectorAll(selector)];
+        const button = (name) => $$("button").find((b) => b.textContent.trim() === name || b.getAttribute("aria-label") === name);
+        const text = (selector) => $(selector).textContent;
+        const visible = (el) => el.getClientRects().length > 0;
+        const pressed = (b) => b.getAttribute("aria-pressed") === "true";
+        const sleep = (ms) => new Promise((resolve) => win.setTimeout(resolve, ms));
+        win.confirm = () => true;
+        seen.record = {};
+        const rec = seen.record;
+
+        const steps = () => JSON.parse($("#phrase-text").value).steps;
+        const note = () => ({ shown: visible($("#record-note")), text: text("#record-note") });
+        const toggle = () => ({ shown: visible($("[data-toggle=record]")), pressed: pressed($("[data-toggle=record]")), label: text("[data-toggle=record]").trim() });
+        const where = () => ({ steps: steps(), editing: text("#edit-title"), count: text("#step-count"), announced: text("#announcer"), note: note(), buttons: $$(".step-button").map((b) => b.textContent.trim()) });
+
+        const fire = (target, type, [x, y]) =>
+          target.dispatchEvent(new win.PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 7, pointerType: "mouse", isPrimary: true, button: 0, buttons: type === "pointerup" ? 0 : 1, clientX: x, clientY: y }));
+        const middle = (el) => {
+          const r = el.getBoundingClientRect();
+          return [r.left + r.width / 2, r.top + r.height / 2];
+        };
+        // Takes hold of a dot among those in `inside` (the stage's or the plan's), moves it through `points`, which are offsets on the
+        // page from where it was taken, with `gap` ms before each, and lets go.
+        const drag = async (inside, title, points, gap) => {
+          const el = $$(`${inside} .handle`).find((d) => d.title === title);
+          const [x, y] = middle(el);
+          fire(el, "pointerdown", [x, y]);
+          for (const [dx, dy] of points) {
+            await sleep(gap);
+            fire(win, "pointermove", [x + dx, y + dy]);
+          }
+          const [lx, ly] = points.length ? points[points.length - 1] : [0, 0];
+          fire(win, "pointerup", [x + lx, y + ly]);
+        };
+
+        button("Creator").click();
+        button("New scene").click();
+        rec.before = { toggle: toggle(), note: note(), steps: steps() };
+
+        // Turned on, it says what to do.
+        button("Record").click();
+        rec.on = { toggle: toggle(), note: note() };
+
+        // A's hand taken up the stage in three moves 300 ms apart: a milestone after the first step, which took 600 ms, from the
+        // first change to the last.
+        await drag("#handles", "Drag to move A's sword hand", [[0, -10], [0, -20], [0, -30]], 300);
+        rec.first = where();
+        // A pause of 700 ms and then A's blade tip taken down the plan, in two moves 200 ms apart, the first of them 200 ms after it
+        // was taken hold of: a second milestone, which took 200 ms, and the first is held for the pause, 900 ms from its last change.
+        await sleep(700);
+        await drag("#plan-handles", "Drag to move A's blade tip, seen from above", [[0, 8], [0, 16]], 200);
+        rec.second = where();
+
+        // A press that moves nothing makes no milestone.
+        const hand = $$("#handles .handle").find((d) => d.title === "Drag to move B's sword hand");
+        fire(hand, "pointerdown", middle(hand));
+        fire(win, "pointerup", middle(hand));
+        rec.press = where();
+
+        // A drag begun from the first step makes a milestone after that step, and holds nothing: it did not follow on from the last.
+        $$(".step-button")[0].click();
+        $("#fencer-a").click();
+        await drag("#handles", "Drag to move A's hips", [[-6, 0], [-12, 0]], 100);
+        rec.branch = where();
+
+        // Turned off, a drag reshapes the step it is on as it always did: the hips taken back past where they were.
+        button("Record").click();
+        rec.off = { toggle: toggle(), note: note() };
+        await drag("#handles", "Drag to move A's hips", [[12, 0], [24, 0]], 50);
+        rec.edited = where();
+
+        // Turned on again it starts from no milestones.
+        button("Record").click();
+        rec.again = { toggle: toggle(), note: note() };
+
+        // A milestone follows on from the one before only if nothing else was done to the scene in between: with a step added by
+        // hand between them, and a long pause, the first is held as a new step is, not for the pause.
+        await drag("#handles", "Drag to move A's front foot", [[-8, 0], [-16, 0]], 100);
+        const stepAt = () => Number(text("#step-count").split("/")[0]) - 1;
+        const first = stepAt();
+        $("#step-add").click();
+        $$(".step-button")[first].click();
+        await sleep(1200);
+        await drag("#handles", "Drag to move A's front foot", [[-8, 0], [-16, 0]], 100);
+        rec.apart = { ...where(), first };
+        // Done with a drag and nothing else, the pause is the hold.
+        await sleep(1200);
+        await drag("#handles", "Drag to move A's front foot", [[-8, 0], [-16, 0]], 100);
+        rec.together = { ...where(), first: stepAt() - 1 };
+
+        // Leaving the Creator turns it off.
+        button("Base postures").click();
+        button("Creator").click();
+        rec.left = { toggle: toggle(), note: note() };
+
+        // With the dots put away there is nothing to take hold of, and the note says so.
+        button("Record").click();
+        button("Drag dots").click();
+        rec.noDots = note();
+        button("Drag dots").click();
+        rec.dotsBack = note();
+        button("Record").click();
       }
 
       function drive(win, doc, seen) {

@@ -19,6 +19,7 @@ import { HANDLES, jointsOf, placeOf, shareOf } from "../site/js/handles.js";
 import { JOINTS, POSE_NAMES, POSES, PRESETS } from "../site/js/library.js";
 import { buildTimeline, parsePhrase, resolvePose } from "../site/js/phrase.js";
 import { POSTURE_JOINTS, numbersText } from "../site/js/postures.js";
+import { recordNote } from "../site/js/record.js";
 import { siteHandler } from "../scripts/serve.js";
 
 const run = promisify(execFile);
@@ -234,7 +235,7 @@ test("in a browser, the practice library holds the drills from the class, shows 
     ghosts: { A: 8, B: 0 },
   });
   // (The close-up of the hand starts off, and is not one of the four; the Creator's dots to drag start on, and are not either.)
-  assert.deepEqual(seen.toggledOff, { pressed: ["false", "false", "false", "false", "false", "true", "true"], ghostsHidden: true, trailsHidden: true, inkFilter: null });
+  assert.deepEqual(seen.toggledOff, { pressed: ["false", "false", "false", "false", "false", "true", "true", "false"], ghostsHidden: true, trailsHidden: true, inkFilter: null });
   assert.equal(seen.inkFilter, "url(#ink-texture)");
   assert.deepEqual(seen.camera, { shown: "-40°", floorTurned: true });
   assert.deepEqual(seen.speed, ["true", "false", "false"]);
@@ -1286,6 +1287,115 @@ test("in a browser, the plan stays while the dots are put away or a scene plays,
   assert.deepEqual(plan.onHold, { plan: true, dots: false }, "text that is not a phrase yet");
   assert.deepEqual(plan.left, { plan: false });
   assert.deepEqual(plan.returned, { plan: true, dots: true });
+});
+
+// ---------- Recording ----------
+
+let recorded = null;
+
+/**
+ * Runs the page that only records, once however many tests read it: every drag draws the 3D figures again, which is slow, so
+ * it has a run of its own beside the long one.
+ */
+function driveRecording() {
+  recorded ??= openInBrowser("/drive.html?record").then(resultsOf);
+  return recorded;
+}
+
+// The scene the Creator opens on: one step, both fencers in guard.
+const START_STEP = { label: "En garde", hold: 600, A: { pose: "guard", x: 0 }, B: { pose: "guard", x: 310 } };
+
+test("in a browser, the Creator has a Record toggle, off until it is pressed, which says what to do, starts again from none and stops when the Creator is left", { skip, timeout: 120_000 }, async () => {
+  const { seen, errors, consoleLines } = await driveRecording();
+  assert.deepEqual(errors, []);
+  assert.deepEqual(consoleLines, []);
+  const { before, on, off, again, left, noDots, dotsBack } = seen.record;
+  assert.deepEqual(before.toggle, { shown: true, pressed: false, label: "Record" });
+  assert.equal(before.note.shown, false, "nothing is said until it is on");
+  assert.deepEqual(on.toggle, { shown: true, pressed: true, label: "Record" });
+  assert.deepEqual(on.note, { shown: true, text: recordNote({ ready: true, count: 0 }) });
+  // Pressed again it stops, and the note goes.
+  assert.equal(off.toggle.pressed, false);
+  assert.equal(off.note.shown, false);
+  // Turned on once more it starts from no milestones, however many the last recording made.
+  assert.equal(again.toggle.pressed, true);
+  assert.equal(again.note.text, recordNote({ ready: true, count: 0 }));
+  // Leaving the Creator turns it off, so it is off when the Creator is back.
+  assert.equal(left.toggle.pressed, false);
+  assert.equal(left.note.shown, false);
+  // With the dots put away there is nothing to take hold of, and the note says so; with them back it is as it was.
+  assert.deepEqual(noDots, { shown: true, text: recordNote({ ready: false, count: 0 }) });
+  assert.deepEqual(dotsBack, { shown: true, text: recordNote({ ready: true, count: 0 }) });
+});
+
+test("in a browser, each part let go of while recording makes a milestone: a step after the one the drag began from, named for the part, that takes as long as the drag did", { skip, timeout: 120_000 }, async () => {
+  const { before, first, second } = (await driveRecording()).seen.record;
+  assert.deepEqual(before.steps, [START_STEP]);
+  // A's hand taken up in three moves 300 ms apart: a second step, and the first, which it began from, is as it was.
+  assert.equal(first.steps.length, 2);
+  assert.deepEqual(first.steps[0], START_STEP);
+  const hand = first.steps[1];
+  assert.equal(hand.label, "A moves the sword hand");
+  assert.deepEqual(Object.keys(hand.A.adj).toSorted(), ["arm", "fore"], "the joints the drag moved, and no more");
+  assert.deepEqual(hand.B, START_STEP.B, "B stands as he did");
+  near(hand.ms, 600, 60, "the move into it took as long as the drag, from its first change to its last");
+  assert.equal(hand.hold, 200, "and it is held as a new step is");
+  assert.equal(first.editing, "Step 2: A moves the sword hand. Fencer A.", "it is the step on show, for the drag to reshape");
+  assert.equal(first.count, "02 / 02");
+  assert.deepEqual(first.buttons, ["01En garde", "02A moves the sword hand"]);
+  assert.equal(first.announced, "Milestone 1: step 2 of 2");
+  assert.equal(first.note.text, recordNote({ ready: true, count: 1 }));
+  // After a pause, A's blade tip taken across the plan in two moves 200 ms apart: a third step, and the second, which it followed
+  // on from, is held for the pause, from its last change to this one's first.
+  assert.equal(second.steps.length, 3);
+  assert.deepEqual(second.steps[0], START_STEP, "the first step is not held for a pause: nothing followed on from it");
+  const tip = second.steps[2];
+  assert.equal(tip.label, "A moves the blade tip");
+  assert.ok(["arm", "fore", "yaw"].every((key) => key in tip.A.adj) && Object.keys(tip.A.adj).every((key) => ["arm", "fore", "blade", "yaw"].includes(key)), "the hand's joints it began with, and the blade's");
+  assert.deepEqual({ arm: tip.A.adj.arm, fore: tip.A.adj.fore }, { arm: hand.A.adj.arm, fore: hand.A.adj.fore }, "the hand as the step before had it");
+  assert.ok(tip.A.adj.yaw < 0, "turned across the body, toward you");
+  near(tip.ms, 200, 60, "the move into it took as long as that drag");
+  near(second.steps[1].hold, 900, 60, "the step before is held for the pause");
+  assert.equal(tip.hold, 200);
+  assert.deepEqual({ ...second.steps[1], hold: 0 }, { ...hand, hold: 0 }, "and is otherwise as it was");
+  assert.equal(second.announced, "Milestone 2: step 3 of 3");
+  assert.equal(second.note.text, recordNote({ ready: true, count: 2 }));
+  assert.deepEqual(second.buttons, ["01En garde", "02A moves the sword hand", "03A moves the blade tip"]);
+});
+
+test("in a browser, a press that moves nothing makes no milestone, a drag from an earlier step makes one after that step, and with recording off a drag reshapes the step as it always did", { skip, timeout: 120_000 }, async () => {
+  const { second, press, branch, edited } = (await driveRecording()).seen.record;
+  // Taking hold of a dot and letting go leaves the steps as they were; it only makes that fencer the one being edited.
+  assert.deepEqual(press.steps, second.steps);
+  assert.ok(press.editing.endsWith("Fencer B."));
+  assert.equal(press.note.text, recordNote({ ready: true, count: 2 }), "and counts none");
+  // A drag begun from the first step puts its milestone right after that step, between it and the rest, which are as they were.
+  assert.deepEqual(branch.steps.map((step) => step.label), ["En garde", "A moves the hips", "A moves the sword hand", "A moves the blade tip"]);
+  assert.deepEqual(branch.steps.slice(2), second.steps.slice(1), "the later steps are as they were");
+  assert.equal(branch.steps[0].hold, 600, "the first step is not held for a pause: the drag did not follow on from the last milestone");
+  near(branch.steps[1].ms, 100, 60, "a drag that took 100 ms");
+  assert.equal(branch.steps[1].hold, 200);
+  assert.equal(branch.editing, "Step 2: A moves the hips. Fencer A.");
+  assert.equal(branch.announced, "Milestone 3: step 2 of 4");
+  // Turned off, the same drag reshapes the step it is on, in place: no step is added, and no other changes.
+  assert.equal(edited.steps.length, 4);
+  assert.notEqual(edited.steps[1].A.adj.hipX, branch.steps[1].A.adj.hipX, "the hips moved");
+  assert.deepEqual(edited.steps.filter((_, i) => i !== 1), branch.steps.filter((_, i) => i !== 1));
+  assert.equal(edited.steps[1].label, "A moves the hips");
+  assert.equal(edited.steps[1].ms, branch.steps[1].ms, "and the time it took to move into stayed as it was");
+});
+
+test("in a browser, a milestone follows on from the one before, and holds it for the pause, only if nothing else was done to the scene in between", { skip, timeout: 120_000 }, async () => {
+  const { apart, together } = (await driveRecording()).seen.record;
+  // A step added by hand between two drags ends the run: the first of them is held as a new step is, not for the 1.2 s that went by.
+  assert.equal(apart.steps[apart.first].label, "A moves the front foot");
+  assert.equal(apart.steps[apart.first].hold, 200);
+  assert.equal(apart.steps[apart.first + 1].label, "A moves the front foot", "the milestone after it");
+  // Done with a drag and nothing else, the pause is the hold: from the last change of one drag to the first of the next.
+  assert.equal(together.steps[together.first].label, "A moves the front foot");
+  near(together.steps[together.first].hold, 1300, 60, "the pause before the next drag");
+  assert.equal(together.steps[together.first + 1].label, "A moves the front foot");
+  assert.equal(together.steps[together.first + 1].hold, 200, "the last milestone is held as a new step is, until another follows");
 });
 
 test("in a browser, the fencers are 3D figures, one alone and two in a pair, or stick figures with a note saying why", { skip, timeout: 120_000 }, async () => {
