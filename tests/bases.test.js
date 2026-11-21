@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { BASES, BASE_CAMERA, BASE_GROUPS, BASE_SECTIONS, BASE_X, basePhrase, basesOf } from "../site/js/bases.js";
+import { BASES, BASE_CAMERA, BASE_GROUPS, BASE_SECTIONS, BASE_X, basePhrase, basesOf, postureScene } from "../site/js/bases.js";
 import { CAMERA_LIMIT } from "../site/js/figure.js";
 import { POSES, POSE_NAMES, PRESETS, SECTIONS } from "../site/js/library.js";
 import { buildTimeline, parsePhrase, phraseToText, poseAt } from "../site/js/phrase.js";
@@ -106,4 +106,23 @@ test("every built-in scene belongs to a section of the page, and the page opens 
   const ids = SECTIONS.map(({ id }) => id);
   for (const { id, section } of PRESETS) assert.ok(ids.includes(section), `${id}: section ${section}`);
   assert.ok(PRESETS.some(({ section }) => section === ids[0]), "the first section has scenes, for the page to open on");
+});
+
+test("a posture opened in the Creator is a scene of one fencer standing as the base postures have him, named for the posture", () => {
+  const shown = basePhrase();
+  for (const [i, { pose }] of BASES.entries()) {
+    const scene = postureScene(pose, 140);
+    assert.equal(scene.name, POSE_NAMES[pose]);
+    assert.equal(scene.camera, 140, "the angle it is given, for the Creator to look from");
+    assert.equal(scene.solo, true);
+    assert.deepEqual(scene.steps, [{ label: POSE_NAMES[pose], hold: 1000, A: { pose, x: BASE_X } }]);
+    // It is a phrase the Creator can read back from its text, and the fencer in it stands as the base postures have him: the
+    // same pose, in the same place, with the same numbers.
+    const timeline = buildTimeline(parsePhrase(phraseToText(scene)));
+    assert.deepEqual(timeline.unknown, []);
+    assert.equal(timeline.steps.length, 1);
+    assert.equal(timeline.solo, true);
+    assert.deepEqual(timeline.steps[0].A, buildTimeline(shown).steps[i].A, pose);
+  }
+  assert.notEqual(postureScene("guard", 0), postureScene("guard", 0), "each call is a scene of its own");
 });

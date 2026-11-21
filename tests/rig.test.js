@@ -12,6 +12,7 @@ import { gripFrame, projector, skeleton } from "../site/js/figure.js";
 import { POSES, PRESETS } from "../site/js/library.js";
 import { buildTimeline, poseAt, resolvePose } from "../site/js/phrase.js";
 import { bladeSection, createFigure, poseRig } from "../site/js/rig.js";
+import { RECORDED_FIRST_DRILL } from "./recorded-drill.js";
 import { RETIRED } from "./retired-scenes.js";
 
 const bufferOf = (bytes) => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
@@ -196,10 +197,11 @@ test("the body moves smoothly: through every scene, no bone turns more than 25 d
 
 // ---------- The drills from the class ----------
 //
-// The class's drills are kept as they were taught, so where each cut lands is held here: the light cut on the inside
-// of B's blade just above his guard, and each riposte edge first on A's glove, on top, on the outside or underneath,
-// with no blade going into an arm on the way. The blades are measured as they are drawn: the edge and the back of each
-// as far either side of its middle as the blade is wide there, and the glove and sleeve as the body is skinned.
+// The class's drills are kept as they were taught, so where each riposte lands is held here: edge first on A's glove, on
+// the outside or underneath, with no blade going into an arm on the way. All three open with the cut as it was recorded in
+// the Creator, as a corrected version of what the page had, and that is held to the recording, with no blade going into an
+// arm in it either. The blades are measured as they are drawn: the edge and the back of each as far either side of its
+// middle as the blade is wide there, and the glove and sleeve as the body is skinned.
 
 // The sword arm's glove and sleeve below the elbow, skinned as the page draws them, on the piste, each point with the
 // way the surface faces there.
@@ -270,37 +272,13 @@ function touch(blade, arm) {
   return { edge, deepest };
 }
 
+// The drills that go on from the cut to a riposte; the first stops with the cut, which is held below.
 const CLASS_DRILLS = {
-  "class-light-cut-top-of-glove": { where: "on top", facing: new Vector3(0, 1, 0) },
   "class-light-cut-side-of-glove": { where: "on the outside", facing: new Vector3(0.4, 0, -0.92).normalize() },
   "class-light-cut-tierce-hungarian-cut": { where: "underneath", facing: new Vector3(0, -1, -0.3).normalize() },
 };
-
-test("the drills from the class: the light cut lands on the inside of B's blade, just above his guard, from A's own side", () => {
-  for (const id of Object.keys(CLASS_DRILLS)) {
-    const { phrase } = PRESETS.find((preset) => preset.id === id);
-    const cut = buildTimeline(phrase).steps.find((step) => step.label.startsWith("A cuts lightly"));
-    const [a, b] = [bladeOf("A", cut.A), bladeOf("B", cut.B)];
-    // The middles of the blades, and how far apart their surfaces are where they come nearest.
-    let near = { gap: Infinity };
-    for (let i = 3; i <= 88; i += 0.5) {
-      for (let j = 3; j <= 40; j += 0.5) {
-        const [p, q] = [a.middle(i), b.middle(j)];
-        const toward = q.clone().sub(p).normalize();
-        const reach = (blade, k, n) => {
-          const e = blade.edge.dot(n);
-          return (e > 0 ? bladeSection(k).edge : -bladeSection(k).back) * Math.abs(e);
-        };
-        const gap = p.distanceTo(q) - reach(a, i, toward) - reach(b, j, toward.clone().negate());
-        if (gap < near.gap) near = { gap, i, j, side: q.z - p.z };
-      }
-    }
-    assert.ok(near.gap > -0.1 && near.gap < 0.6, `${id}: the blades meet, ${near.gap.toFixed(2)} cm apart`);
-    assert.ok(near.j > 8 && near.j < 20, `${id}: just above B's guard, ${near.j} cm out along his blade`);
-    assert.ok(near.i > 45 && near.i < 80, `${id}: with the middle or the foible of A's blade, ${near.i} cm out`);
-    assert.ok(near.side > 0, `${id}: A's blade comes from his own side of the line, onto the inside of B's`);
-  }
-});
+// How long the cut they open with takes (ms), which the recording gives the times of.
+const CUT_MS = 30340;
 
 test("the drills from the class: each riposte lands edge first on A's glove, on top, on the outside or underneath as the class has it, on the foible, and no blade goes into an arm on the way", () => {
   for (const [id, { where, facing }] of Object.entries(CLASS_DRILLS)) {
@@ -317,8 +295,8 @@ test("the drills from the class: each riposte lands edge first on A's glove, on 
     const angle = (edge.n.angleTo(facing) * 180) / Math.PI;
     assert.ok(angle < 30, `${id}: ${where}, the glove facing ${angle.toFixed(0)}° from that`);
     assert.ok(blade.edge.dot(edge.n) < -0.8, `${id}: edge first`);
-    // Every 10 ms, neither blade goes into the other's sword arm.
-    for (let ms = 0; ms <= timeline.duration; ms += 10) {
+    // Every 10 ms from just before the cut ends, neither blade goes into the other's sword arm; the cut is held below.
+    for (let ms = CUT_MS - 200; ms <= timeline.duration; ms += 10) {
       const now = poseAt(timeline, ms);
       for (const [who, other] of [["B", "A"], ["A", "B"]]) {
         const { deepest: d } = touch(bladeOf(who, now[who]), armSurface(other, now[other]));
@@ -326,4 +304,43 @@ test("the drills from the class: each riposte lands edge first on A's glove, on 
       }
     }
   }
+});
+
+// The names the steps of the cut have, for what they do.
+const CUT_LABELS = ["En garde", "B lowers the point", "B lowers the hand", "B raises the hand a little", "A brings his blade down", "A reaches out", "A raises the hand a little", "B lowers his elbow"];
+
+test("every drill opens with the cut as it was recorded in the Creator, step for step with the times they took, under the names the steps have", () => {
+  const unnamed = (steps) => steps.map(({ label, ...rest }) => rest);
+  for (const { id, phrase } of PRESETS) {
+    const cut = phrase.steps.slice(0, 8);
+    assert.deepEqual(unnamed(cut), unnamed(RECORDED_FIRST_DRILL.steps), `${id}: the recording's poses and times`);
+    assert.deepEqual(cut.map(({ label }) => label), CUT_LABELS, `${id}: the names`);
+    assert.equal(phrase.camera, RECORDED_FIRST_DRILL.camera);
+    assert.equal(buildTimeline(phrase).steps[7].end, CUT_MS, `${id}: the cut takes as long as the recording did`);
+  }
+  // The first drill is the cut alone: the riposte to the top of the glove is still to be recorded.
+  const first = PRESETS.find((preset) => preset.id === "class-light-cut-top-of-glove");
+  assert.equal(first.phrase.steps.length, 8);
+  assert.equal(buildTimeline(first.phrase).duration, CUT_MS);
+});
+
+test("in the cut, B holds his blade out level and then lowers the point and the hand while A stands as he was, then A brings his blade down from upright to level, and no blade goes into an arm", () => {
+  const { phrase } = PRESETS.find((preset) => preset.id === "class-light-cut-top-of-glove");
+  const timeline = buildTimeline(phrase);
+  const [start, lowered, , settled, brought] = timeline.steps;
+  assert.deepEqual([start.B.blade, start.B.arm, start.B.yaw], [2, -5, 22]);
+  assert.equal(lowered.B.blade, -20);
+  assert.deepEqual([settled.B.arm, settled.B.fore], [-21, -21]);
+  assert.deepEqual([start.A.blade, settled.A.blade, brought.A.blade], [81, 81, 9]);
+  // Every 40 ms, neither blade goes into the other's sword arm; B's point passes A's glove as it lowers, near, and outside it.
+  let nearest = Infinity;
+  for (let ms = 0; ms <= timeline.duration; ms += 40) {
+    const now = poseAt(timeline, ms);
+    for (const [who, other] of [["B", "A"], ["A", "B"]]) {
+      const { deepest: d } = touch(bladeOf(who, now[who]), armSurface(other, now[other]));
+      assert.ok(d > -0.2, `at ${ms} ms: ${who}'s blade goes ${(-d).toFixed(2)} cm into ${other}'s arm`);
+      nearest = Math.min(nearest, d);
+    }
+  }
+  assert.ok(nearest < 2, `a blade does pass the other's arm close: ${nearest.toFixed(2)} cm`);
 });

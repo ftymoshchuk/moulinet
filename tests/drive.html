@@ -26,11 +26,13 @@
           // page of its own keeps the long run of the rest from going on for longer.
           if (location.search === "?fallback") await driveFallback(win, frame.contentDocument, results.seen);
           else if (location.search === "?record") await driveRecord(win, frame.contentDocument, results.seen);
+          else if (location.search === "?posture") drivePostureDrag(win, frame.contentDocument, results.seen);
           else {
             drive(win, frame.contentDocument, results.seen);
             await drivePostures(win, frame.contentDocument, results.seen);
             driveHandles(win, frame.contentDocument, results.seen);
             drivePlan(win, frame.contentDocument, results.seen);
+            drivePostureCreator(win, frame.contentDocument, results.seen);
             await drive3d(win, frame.contentDocument, results.seen);
             await driveFigures(win, frame.contentDocument, results.seen);
           }
@@ -41,8 +43,9 @@
       });
 
       // The book's photographs of its postures load, at the size the page says. Each posture's are asked for as it is
-      // shown, and all are waited for together: the browser's virtual clock runs on while it waits, and the driver has
-      // only so much of it.
+      // shown, and all are waited for together. What is waited for is the load, which is what the page promises: a
+      // photograph of a posture that was gone on from is no longer on the page, and a browser is in no hurry to decode
+      // one that is not, which took the browser's virtual clock, and the driver's share of it, tens of seconds.
       async function driveFigures(win, doc, seen) {
         const $$ = (selector) => [...doc.querySelectorAll(selector)];
         $$("button").find((b) => b.textContent.trim() === "Book knowledge").click();
@@ -50,9 +53,16 @@
           posture.click();
           return $$("#base-figures img");
         });
+        const loaded = (image) =>
+          image.complete
+            ? Promise.resolve()
+            : new Promise((resolve) => {
+                image.addEventListener("load", resolve, { once: true });
+                image.addEventListener("error", resolve, { once: true });
+              });
         seen.figuresLoaded = await Promise.all(
           asked.map((images) =>
-            Promise.all(images.map((image) => image.decode().then(() => image.naturalWidth === Number(image.getAttribute("width")) && image.naturalHeight === Number(image.getAttribute("height")), () => false))),
+            Promise.all(images.map((image) => loaded(image).then(() => image.naturalWidth === Number(image.getAttribute("width")) && image.naturalHeight === Number(image.getAttribute("height"))))),
           ),
         );
       }
@@ -753,6 +763,194 @@
         plan.far = { before: farBefore, during: farDuring, after: farAfter, sliders: farSliders, back: { before: backBefore, during: backDuring, after: looks() } };
         $$(".step-button")[0].click();
         plan.far.firstStep = looks();
+      }
+
+      // A base posture corrected by dragging: while its numbers are open to change, the figure has dots on the stage and the plan from
+      // above under it, and taking hold of one and moving it changes the posture's own version, as the sliders do. The pointer is a
+      // mouse, whose events are made and sent the way the browser sends them.
+      function drivePostureDrag(win, doc, seen) {
+        const $ = (selector) => doc.querySelector(selector);
+        const $$ = (selector) => [...doc.querySelectorAll(selector)];
+        const button = (name) => $$("button").find((b) => b.textContent.trim() === name || b.getAttribute("aria-label") === name);
+        const input = (el, value) => {
+          el.value = String(value);
+          el.dispatchEvent(new win.Event("input", { bubbles: true }));
+        };
+        const text = (selector) => $(selector).textContent;
+        const visible = (el) => el.getClientRects().length > 0;
+        win.confirm = () => true;
+        seen.posture = {};
+        const out = seen.posture;
+
+        // Where the dots are on each view, across and down its box on the page as the mirror shows it, and what the view looks at.
+        const placed = (dot, box) => {
+          const r = dot.getBoundingClientRect();
+          return { title: dot.title, shown: visible(dot), dragging: dot.classList.contains("is-dragging"), across: (r.left + r.width / 2 - box.left) / box.width, down: (r.top + r.height / 2 - box.top) / box.height };
+        };
+        const kept = () => JSON.parse(win.localStorage.getItem("moulinet.postures") ?? "null")?.postures ?? null;
+        const looks = () => {
+          const stage = $("#stage-frame").getBoundingClientRect();
+          const plan = $("#plan-frame").getBoundingClientRect();
+          return {
+            posture: text("#step-label"),
+            count: text("#step-count"),
+            camera: Number($("#camera").value),
+            closeUp: $("[data-toggle=closeUp]").getAttribute("aria-pressed") === "true",
+            editing: visible($("#posture-panel")),
+            stageShown: visible($("#handles")),
+            planShown: visible($("#plan")),
+            view: $("#stage").getAttribute("viewBox"),
+            planView: $("#plan-view").getAttribute("viewBox"),
+            box: [stage.width, stage.height],
+            planBox: [plan.width, plan.height],
+            dots: $$("#handles .handle").map((d) => placed(d, stage)),
+            planDots: $$("#plan-handles .handle").map((d) => placed(d, plan)),
+            joints: Object.fromEntries(["arm", "fore", "yaw", "blade", "hipX", "x"].map((key) => [key, $(`#posture-joint-${key}`)?.value ?? null])),
+            version: kept(),
+            tag: visible($("#base-version")),
+            marks: $$(".base-button__mine").filter(visible).length,
+            status: text("#posture-status"),
+          };
+        };
+
+        const mouse = { id: 7 };
+        const fire = (target, type, [x, y]) =>
+          target.dispatchEvent(new win.PointerEvent(type, { bubbles: true, cancelable: true, pointerId: mouse.id, pointerType: "mouse", isPrimary: true, button: 0, buttons: type === "pointerup" ? 0 : 1, clientX: x, clientY: y }));
+        const middle = (el) => {
+          const r = el.getBoundingClientRect();
+          return [r.left + r.width / 2, r.top + r.height / 2];
+        };
+        // Takes hold of a dot, moves it by so many pixels in a few steps, looks while it is still held if asked to, and lets go.
+        const drag = (inside, title, by, held = () => {}, steps = 6) => {
+          const el = $$(`${inside} .handle`).find((d) => d.title === title);
+          const [x, y] = middle(el);
+          fire(el, "pointerdown", [x, y]);
+          for (let i = 1; i <= steps; i++) fire(win, "pointermove", [x + (by[0] * i) / steps, y + (by[1] * i) / steps]);
+          held();
+          fire(win, "pointerup", [x + by[0], y + by[1]]);
+        };
+
+        // ---------- The numbers shut, then open ----------
+
+        button("Base postures").click();
+        out.shut = looks();
+        $("#posture-edit").click();
+        out.opened = looks();
+
+        // ---------- A drag on the stage ----------
+
+        // The sword hand taken up the stage: the arm and the forearm go with it, as the posture's own version, which the sliders
+        // say and the page marks.
+        drag("#handles", "Drag to move A's sword hand", [0, -30]);
+        out.hand = looks();
+        // And the point of the blade taken along and then across the plan from above, which turns the blade across the body.
+        drag("#plan-handles", "Drag to move A's blade tip, seen from above", [0, 14]);
+        out.tip = looks();
+
+        // ---------- Putting back ----------
+
+        // A joint put back on its own, with its Reset, and the dots follow the part.
+        $("#posture-joints .joint__reset:not(.is-idle)").click();
+        out.putBack = looks();
+        // Done: the numbers shut, and the dots and the plan go, and what was made stays.
+        $("#posture-done").click();
+        out.done = looks();
+        $("#posture-edit").click();
+        out.again = looks();
+        // The postures' view is made to fit the posture, which the hips taken down make shorter: while they are held it holds still,
+        // so that they stay under the pointer, and it fits the posture when they are let go.
+        drag("#handles", "Drag to move A's hips", [0, 20], () => (out.hipsHeld = looks()));
+        out.hipsDrag = looks();
+
+        // ---------- The camera and the close-up ----------
+
+        // From the other side of the piste the plan is seen from there, as the stage is.
+        input($("#camera"), 180);
+        out.round = looks();
+        input($("#camera"), 25);
+        // A close-up of the hand: the dots in view stay, the view holds still while the hand is taken back and up, as it does in the
+        // Creator, and what is written is in tenths.
+        button("Hand close-up").click();
+        out.closeUp = looks();
+        drag("#handles", "Drag to move A's sword hand", [-24, -18], () => (out.closeHeld = looks()));
+        out.closeDrag = looks();
+        button("Hand close-up").click();
+
+        // ---------- All the posture's changes back, and the other places ----------
+
+        $("#posture-reset").click();
+        out.builtIn = looks();
+        // Book knowledge's postures too, and leaving the postures closes their numbers, and the dots and the plan with them.
+        button("Book knowledge").click();
+        $("#posture-edit").click();
+        out.book = looks();
+        button("Live knowledge").click();
+        out.left = looks();
+        button("Practice library").click();
+        out.library = { stageShown: visible($("#handles")), planShown: visible($("#plan")) };
+      }
+
+      // A base posture opened in the Creator: a button beside Edit this posture puts the posture on show there as a scene of its
+      // own, to correct by dragging its parts, looked at from where the postures were looked at, whatever angle the camera was at.
+      function drivePostureCreator(win, doc, seen) {
+        const $ = (selector) => doc.querySelector(selector);
+        const $$ = (selector) => [...doc.querySelectorAll(selector)];
+        const button = (name) => $$("button").find((b) => b.textContent.trim() === name || b.getAttribute("aria-label") === name);
+        const input = (el, value) => {
+          el.value = String(value);
+          el.dispatchEvent(new win.Event("input", { bubbles: true }));
+        };
+        const text = (selector) => $(selector).textContent;
+        const visible = (el) => el.getClientRects().length > 0;
+        const pressed = (b) => b.getAttribute("aria-pressed") === "true";
+        seen.postureCreator = {};
+        const out = seen.postureCreator;
+        const where = () => ({
+          tabs: $$("[data-tab]").filter(pressed).map((b) => b.dataset.tab),
+          title: text("#step-label"),
+          count: text("#step-count"),
+          floor: $("#floor").getAttribute("d"),
+          camera: $("#camera").value,
+        });
+        const opened = () => ({
+          ...where(),
+          phrase: $("#phrase-text").value,
+          solo: $("#meta-solo").checked,
+          name: $("#meta-name").value,
+          editing: text("#edit-title"),
+          dots: $$("#handles .handle").filter(visible).map((d) => d.title),
+          planDots: $$("#plan-handles .handle").filter(visible).map((d) => d.title),
+          unsaved: text("#save-status"),
+        });
+
+        // The postures of live knowledge, on the fifth, Blade up: the posture's own buttons, side by side.
+        button("Base postures").click();
+        $$(".base-button")[4].click();
+        out.buttons = { edit: text("#posture-edit").trim(), creator: text("#posture-creator").trim(), both: visible($("#posture-edit")) && visible($("#posture-creator")) };
+        out.before = where();
+        // The Creator's scene has changes that are not saved, so it asks first, and "no" leaves everything where it was.
+        win.confirm = () => false;
+        $("#posture-edit").click();
+        const sliders = visible($("#posture-panel"));
+        $("#posture-creator").click();
+        out.declined = { ...where(), sliders, creator: visible($("#phrase-text")) };
+        // "Yes" opens it: the posture, alone, as the Creator's scene, from the angle the camera was at, and the numbers of the
+        // posture, which were open to change, are closed with the postures.
+        win.confirm = () => true;
+        $("#posture-creator").click();
+        out.opened = opened();
+        // Back on the postures it is as it was left, with the numbers shut; the camera is turned to -40 and the posture opened
+        // again, which now has nothing unsaved to ask about, from that angle.
+        button("Base postures").click();
+        out.back = { ...where(), sliders: visible($("#posture-panel")), button: text("#posture-edit").trim() };
+        input($("#camera"), -40);
+        out.turned = where();
+        win.confirm = () => {
+          throw new Error("it asked, with nothing unsaved");
+        };
+        $("#posture-creator").click();
+        out.openedTurned = opened();
+        win.confirm = () => true;
       }
 
       // Recording, in the Creator: each part let go of after a drag makes a milestone, a step after the one the drag began from,

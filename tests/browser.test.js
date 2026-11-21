@@ -13,7 +13,7 @@ import { delimiter, join } from "node:path";
 import { test } from "node:test";
 import { promisify } from "node:util";
 
-import { BASE_BLADE, BASE_CAMERA, BASE_SECTIONS, FIGURE_DIR, FIGURE_NOTE, basePhrase, basesOf } from "../site/js/bases.js";
+import { BASE_BLADE, BASE_CAMERA, BASE_SECTIONS, BASE_X, FIGURE_DIR, FIGURE_NOTE, basePhrase, basesOf, postureScene } from "../site/js/bases.js";
 import { DEFAULT_FRAME, floorPath, frameFrom, frameOf, handFrame, planFloorPath, planFrame } from "../site/js/figure.js";
 import { HANDLES, jointsOf, placeOf, shareOf } from "../site/js/handles.js";
 import { JOINTS, POSE_NAMES, POSES, PRESETS } from "../site/js/library.js";
@@ -123,7 +123,7 @@ test("in a browser, the page opens on the practice library and builds its contro
   assert.match(dom, /<button[^>]*data-mode="library"[^>]*aria-pressed="true"[^>]*>Practice library</);
   assert.equal(count(/class="scene-button"/g), PRESETS.length, "scenes in the library");
   assert.match(dom, /id="scene-title"[^>]*>Light cut on the blade, riposte to the top of the glove</);
-  assert.equal(count(/class="step-button"/g), 6, "step buttons");
+  assert.equal(count(/class="step-button"/g), 8, "step buttons");
   assert.equal(count(/class="pose-button"/g), Object.keys(POSE_NAMES).length, "pose buttons");
   // A section's postures are listed when they are shown, not before.
   assert.equal(count(/class="base-button"/g), 0, "posture buttons");
@@ -135,7 +135,7 @@ test("in a browser, the page opens on the practice library and builds its contro
   assert.equal(count(/<input type="range" id="posture-joint-/g), JOINTS.length - 1, "sliders for a posture's numbers");
   assert.match(dom, /class="panel panel--posture hidden"/);
   // Nothing plays on its own: the page is at the first step, and Play is what it offers.
-  assert.match(dom, /id="step-count"[^>]*>01 \/ 06</);
+  assert.match(dom, /id="step-count"[^>]*>01 \/ 08</);
   assert.match(dom, /id="play-button"[^>]*aria-label="Play"/);
   // The panels of the other modes are there, and out of sight.
   assert.match(dom, /class="panel panel--poses hidden"/);
@@ -160,7 +160,7 @@ const MIRRORED = "matrix(-1, 0, 0, 1, 0, 0)";
 
 test("in a browser, the page opens paused on the first scene, and nothing plays until Play is pressed", { skip, timeout: 120_000 }, async () => {
   const { seen } = await drive();
-  assert.deepEqual(seen.opening, { title: PRESETS[0].phrase.name, play: "Play", pauseHidden: true, playShown: true, count: "01 / 06", time: "0.00 / 3.22 s" });
+  assert.deepEqual(seen.opening, { title: PRESETS[0].phrase.name, play: "Play", pauseHidden: true, playShown: true, count: "01 / 08", time: "0.00 / 30.34 s" });
 });
 
 test("in a browser, the stage is shown in a mirror in every mode, so the fencers are right-handed", { skip, timeout: 120_000 }, async () => {
@@ -205,9 +205,9 @@ test("in a browser, the practice library holds the drills from the class, shows 
   // The drills from the class say what kind of learning they come from, on the card and beside the scene. Choosing one
   // does not play it.
   assert.deepEqual(seen.scenes, [
-    { title: "Light cut on the blade, riposte to the top of the glove", pressed: "true", card: "Pair · 6 steps · 3.2 s", ...LIVE, play: "Play", count: "01 / 06", solo: false, camera: "0", time: "0.00 / 3.22 s", scrubbedTo: "06 / 06" },
-    { title: "Light cut on the blade, riposte to the side of the glove", pressed: "true", card: "Pair · 10 steps · 3.7 s", ...LIVE, play: "Play", count: "01 / 10", solo: false, camera: "0", time: "0.00 / 3.73 s", scrubbedTo: "10 / 10" },
-    { title: "Light cut on the blade, tierce, Hungarian cut under the glove", pressed: "true", card: "Pair · 10 steps · 3.8 s", ...LIVE, play: "Play", count: "01 / 10", solo: false, camera: "0", time: "0.00 / 3.75 s", scrubbedTo: "10 / 10" },
+    { title: "Light cut on the blade, riposte to the top of the glove", pressed: "true", card: "Pair · 8 steps · 30.3 s", ...LIVE, play: "Play", count: "01 / 08", solo: false, camera: "0", time: "0.00 / 30.34 s", scrubbedTo: "08 / 08" },
+    { title: "Light cut on the blade, riposte to the side of the glove", pressed: "true", card: "Pair · 17 steps · 33.2 s", ...LIVE, play: "Play", count: "01 / 17", solo: false, camera: "0", time: "0.00 / 33.21 s", scrubbedTo: "17 / 17" },
+    { title: "Light cut on the blade, tierce, Hungarian cut under the glove", pressed: "true", card: "Pair · 17 steps · 33.2 s", ...LIVE, play: "Play", count: "01 / 17", solo: false, camera: "0", time: "0.00 / 33.23 s", scrubbedTo: "17 / 17" },
   ]);
   // A built-in scene says which class it was learned in, has no link to give, and cannot be deleted.
   assert.deepEqual(seen.builtIn, {
@@ -227,12 +227,12 @@ test("in a browser, the practice library holds the drills from the class, shows 
   assert.deepEqual(seen.libraryShows, { chosen: ["library"], panels: ["stage", "detail", "library"], controls: CONTROLS });
 
   assert.deepEqual(seen.stepped, {
-    count: "03 / 06",
-    label: "B's guard holds; top of A's glove open",
+    count: "03 / 08",
+    label: "B lowers the hand",
     play: "Play",
-    announced: "Step 3 of 6: B's guard holds; top of A's glove open",
-    // A has just come off B's blade and has all four ghosts, a body and a blade each; B holds the guard and has none.
-    ghosts: { A: 8, B: 0 },
+    announced: "Step 3 of 8: B lowers the hand",
+    // B has just moved his hand and has all four ghosts, a body and a blade each; A holds the guard and has none.
+    ghosts: { A: 0, B: 8 },
   });
   // (The close-up of the hand starts off, and is not one of the four; the Creator's dots to drag start on, and are not either.)
   assert.deepEqual(seen.toggledOff, { pressed: ["false", "false", "false", "false", "false", "true", "true", "false"], ghostsHidden: true, trailsHidden: true, inkFilter: null });
@@ -379,24 +379,24 @@ test("in a browser, the Creator edits a copy of a scene the way the page always 
   assert.deepEqual(seen.copied, {
     showing: { chosen: ["creator"], panels: ["stage", "scene", "phrase", "step", "adjust", "poses"], controls: CONTROLS },
     name: "Light cut on the blade, riposte to the top of the glove",
-    note: "A attacks, B defends, bo",
+    note: "Recorded in the Creator,",
     // The copy keeps where the drill comes from.
     source: "Live learning",
     event: "Warsaw advanced sabre, 15 Nov 2026",
     save: "Save to library",
     copyHidden: true,
-    status: "Applied: 6 steps, 3.22 s",
-    count: "01 / 06",
+    status: "Applied: 8 steps, 30.34 s",
+    count: "01 / 08",
     asked: 0,
     // The button that was pressed went away with the mode; focus went to the mode's button.
     focus: "creator",
   });
   // The third step of the drill, with fencer B given a pose of the library: A's part of it is as the drill has it.
-  const third = `    {"label":"B's guard holds; top of A's glove open","ms":140,"hold":60,"A":{"pose":"extend","x":0,"adj":{"arm":-15,"fore":5,"blade":4,"yaw":-4,"hand":-45}},`;
+  const third = `    {"label":"B lowers the hand","ms":5000,"hold":2000,"A":{"pose":"guard","x":0,"adj":{"yaw":1,"blade":81}},`;
   assert.deepEqual(seen.posed, {
     line: `${third}"B":{"pose":"parry3","x":310}},`,
     pressed: ["Parry 3parry3"],
-    editing: "Step 3: B's guard holds; top of A's glove open. Fencer B.",
+    editing: "Step 3: B lowers the hand. Fencer B.",
   });
   assert.deepEqual(seen.adjusted, {
     line: `${third}"B":{"pose":"parry3","x":200,"adj":{"blade":100}}},`,
@@ -430,7 +430,7 @@ test("in a browser, the Creator edits a copy of a scene the way the page always 
   assert.match(seen.broken.status, /^Not applied: /);
   assert.equal(seen.broken.isError, true);
   assert.equal(seen.broken.kept, '{"steps": [', "the text stays as typed");
-  assert.equal(seen.broken.count, "03 / 06", "the last good phrase stays on stage");
+  assert.equal(seen.broken.count, "03 / 08", "the last good phrase stays on stage");
   assert.deepEqual(seen.unknown, {
     status: "Applied. Unknown pose flunge shown as guard",
     isWarning: true,
@@ -1098,6 +1098,197 @@ test("in a browser, the dots stay in the close-up of a hand, those in view and t
   assert.ok(shown(closeUpB).length >= 1 && shown(closeUpB).every((dot) => dot.title.startsWith("Drag to move B")), "B's");
   assert.ok(shown(closeUpB).some((dot) => dot.title === "Drag to move B's sword hand"));
   assertOnTheParts(closeUpB, "the close-up of B's hand");
+});
+
+// ---------- A base posture corrected by dragging ----------
+
+let corrected = null;
+
+/** Runs the page that corrects a posture by dragging, once however many tests read it: each drag draws the 3D figure again. */
+function drivePostureCorrection() {
+  corrected ??= openInBrowser("/drive.html?posture").then(resultsOf);
+  return corrected;
+}
+
+// The parts of the one fencer the postures have a dot for on the stage: all but the one that moves where he stands.
+const POSTURE_SIDE_PARTS = SIDE.filter((part) => !jointsOf(part, "side").includes("x"));
+// Where each dot should be across and down its box on the page, mirror and all, for the posture on show as it is with the person's
+// version of it, looked at from the camera the postures look from: the slider's angle on the postures' side of the piste, or from
+// outside the sword arm in the close-up of the hand, as the Creator's is.
+function postureDotsShouldBe(looks) {
+  const pose = resolvePose({ pose: "guard", x: BASE_X, adj: looks.version?.guard });
+  const view = looks.view.split(" ").map(Number);
+  const planView = looks.planView.split(" ").map(Number);
+  const planCamera = Math.cos((looks.camera * Math.PI) / 180) < 0 ? 180 : 0;
+  const stageCamera = looks.camera + (looks.closeUp ? 180 : 0);
+  const expected = {};
+  for (const part of SIDE) {
+    const [across, down] = shareOf(placeOf(pose, 1, stageCamera, part), view);
+    expected[`Drag to move A's ${part.name}`] = [1 - across, down];
+  }
+  for (const part of PLAN) {
+    const [across, down] = shareOf(placeOf(pose, 1, planCamera, part, "plan"), planView);
+    expected[`Drag to move A's ${part.name}, seen from above`] = [1 - across, down];
+  }
+  return expected;
+}
+function assertPostureDotsOnTheParts(looks, what) {
+  const expected = postureDotsShouldBe(looks);
+  for (const [dots, box] of [[looks.dots, looks.box], [looks.planDots, looks.planBox]]) {
+    const shown = dots.filter((dot) => dot.shown);
+    assert.ok(shown.length > 0, `${what}: no dots`);
+    for (const dot of shown) {
+      const [across, down] = expected[dot.title];
+      assert.ok(Math.abs(dot.across - across) * box[0] < 2.5 && Math.abs(dot.down - down) * box[1] < 2.5, `${what}: ${dot.title} is at ${(dot.across * box[0]).toFixed(1)}, ${(dot.down * box[1]).toFixed(1)} px, not ${(across * box[0]).toFixed(1)}, ${(down * box[1]).toFixed(1)}`);
+    }
+  }
+}
+const shownTitles = (dots) => dots.filter((dot) => dot.shown).map((dot) => dot.title);
+const movedPx = (before, after, title, dots = "dots", box = "box") => {
+  const [a, b] = [before[dots].find((dot) => dot.title === title), after[dots].find((dot) => dot.title === title)];
+  return [(b.across - a.across) * after[box][0], (b.down - a.down) * after[box][1]];
+};
+
+test("in a browser, while a posture's numbers are open its figure has dots on the stage and on the plan from above, on its parts, none for where he stands, and not otherwise", { skip, timeout: 120_000 }, async () => {
+  const { posture } = (await drivePostureCorrection()).seen;
+  const { shut, opened } = posture;
+  assert.deepEqual({ editing: shut.editing, stage: shut.stageShown, plan: shut.planShown }, { editing: false, stage: false, plan: false }, "no dots, no plan, until the numbers are open");
+  assert.deepEqual(shownTitles(shut.dots), []);
+  assert.deepEqual({ editing: opened.editing, stage: opened.stageShown, plan: opened.planShown }, { editing: true, stage: true, plan: true });
+  // The figure's own parts, A's, the ones that move something but where he stands.
+  assert.deepEqual(shownTitles(opened.dots), POSTURE_SIDE_PARTS.map(({ name }) => `Drag to move A's ${name}`));
+  assert.ok(!shownTitles(opened.dots).includes("Drag to move A's back foot"), "a posture has no say in where he stands");
+  assert.deepEqual(shownTitles(opened.planDots), PLAN.map(({ name }) => `Drag to move A's ${name}, seen from above`));
+  assertPostureDotsOnTheParts(opened, "the guard, as built in");
+  assert.equal(opened.version, null, "nothing is made by looking");
+  // The plan looks from the side of the piste the postures do, with the camera at its angle: seen from there it is the box it was.
+  assert.ok(Math.abs(opened.planBox[0] / opened.planBox[1] - 420 / 90) < 0.05);
+});
+
+test("in a browser, taking hold of a part of a posture on the stage or on the plan changes the posture's own version, as the sliders do, and the dots go with the parts", { skip, timeout: 120_000 }, async () => {
+  const { posture } = (await drivePostureCorrection()).seen;
+  const { opened, hand, tip, putBack } = posture;
+  // The sword hand taken 30 px up the stage: the arm and the forearm go with it, kept as the guard's version on this device.
+  const [across, up] = movedPx(opened, hand, "Drag to move A's sword hand");
+  assert.ok(Math.abs(across) < 2.5 && Math.abs(up + 30) < 2.5, `the hand went ${across.toFixed(1)} across and ${up.toFixed(1)} up`);
+  assert.ok(Number(hand.joints.arm) > -52 && Number(hand.joints.fore) > 26, `${JSON.stringify(hand.joints)}`);
+  assert.deepEqual(Object.keys(hand.version.guard).toSorted(), ["arm", "fore"], "the joints the drag moved, and no more");
+  assert.deepEqual({ arm: hand.version.guard.arm, fore: hand.version.guard.fore }, { arm: Number(hand.joints.arm), fore: Number(hand.joints.fore) }, "which the sliders say");
+  assert.ok(Number.isInteger(hand.version.guard.arm) && Number.isInteger(hand.version.guard.fore), "whole numbers, as the sliders have");
+  assert.deepEqual({ tag: hand.tag, marks: hand.marks, status: hand.status }, { tag: true, marks: 1, status: "Saved on this device." });
+  assertPostureDotsOnTheParts(hand, "the hand taken up");
+  // The point of the blade taken 14 px down the plan, toward you, turns the blade across the body, as it does in the Creator.
+  const [tipAlong, tipDeep] = movedPx(hand, tip, "Drag to move A's blade tip, seen from above", "planDots", "planBox");
+  assert.ok(Math.abs(tipAlong) < 2.5 && Math.abs(tipDeep - 14) < 2.5, `the tip went ${tipAlong.toFixed(1)} along and ${tipDeep.toFixed(1)} down`);
+  assert.ok(tip.version.guard.yaw > 0 && tip.version.guard.yaw === Number(tip.joints.yaw), `${JSON.stringify(tip.version)}`);
+  assert.equal(tip.version.guard.arm, hand.version.guard.arm, "the arm is as it was");
+  assertPostureDotsOnTheParts(tip, "the blade turned across, from above");
+  // Where he stands is not a joint of a posture: nothing of it is written.
+  for (const looks of [hand, tip, putBack]) assert.ok(!("x" in looks.version.guard), "no position");
+  // One joint put back with its Reset leaves the others, and the dots follow the part.
+  assert.equal(putBack.joints.arm, "-52");
+  assert.deepEqual(Object.keys(putBack.version.guard).toSorted(), ["fore", "yaw"]);
+  assertPostureDotsOnTheParts(putBack, "the arm put back");
+});
+
+test("in a browser, a posture's dots and plan go with its numbers, show from the other side of the piste and in the close-up of the hand, in tenths, and in the book's postures too", { skip, timeout: 120_000 }, async () => {
+  const { posture } = (await drivePostureCorrection()).seen;
+  const { putBack, done, again, hipsHeld, hipsDrag, round, closeUp, closeHeld, closeDrag, builtIn, book, left, library } = posture;
+  // Done shuts the numbers and takes the dots and the plan with them; what was made stays, and opened again they are back.
+  assert.deepEqual({ editing: done.editing, stage: done.stageShown, plan: done.planShown, tag: done.tag, marks: done.marks }, { editing: false, stage: false, plan: false, tag: true, marks: 1 });
+  assert.deepEqual(done.version, putBack.version);
+  assert.deepEqual({ editing: again.editing, stage: again.stageShown, plan: again.planShown }, { editing: true, stage: true, plan: true });
+  assertPostureDotsOnTheParts(again, "opened again");
+  // The postures' view is made to fit the posture, which the hips taken down make shorter; while they are held it holds still, so
+  // that they stay under the pointer, and it fits the posture when they are let go.
+  const hips = "Drag to move A's hips";
+  assert.equal(hipsHeld.view, again.view, "the view holds still while the hips are held");
+  assert.equal(hipsHeld.dots.find((dot) => dot.title === hips).dragging, true);
+  const [hipsAcross, hipsDown] = movedPx(again, hipsHeld, hips);
+  near(hipsAcross, 0, 3, "the hips stayed across");
+  near(hipsDown, 20, 3, "and went down with the pointer");
+  assertPostureDotsOnTheParts(hipsHeld, "the hips held");
+  assert.notEqual(hipsDrag.view, hipsHeld.view, "the view fits the posture again when they are let go");
+  assertPostureDotsOnTheParts(hipsDrag, "the hips let go");
+  // From the other side of the piste they are on the parts as that side sees them, the plan too.
+  assert.equal(round.camera, 180);
+  assert.notEqual(round.planView, again.planView, "the plan is looked at from the other side");
+  assertPostureDotsOnTheParts(round, "from the other side of the piste");
+  // In the close-up of the hand the dots in view stay, the hand's, and the plan keeps all of them.
+  const hand = "Drag to move A's sword hand";
+  assert.deepEqual(shownTitles(closeUp.dots), [hand]);
+  assert.equal(shownTitles(closeUp.planDots).length, PLAN.length);
+  assertPostureDotsOnTheParts(closeUp, "the close-up of the hand");
+  // Taken hold of and moved 24 px back toward the shoulder and 18 up, the hand goes with the pointer and the view does not move.
+  assert.equal(closeHeld.view, closeUp.view, "the view holds still while the hand is held");
+  assert.equal(closeHeld.dots.find((dot) => dot.title === hand).dragging, true);
+  const [across, up] = movedPx(closeUp, closeHeld, hand);
+  near(across, -24, 3, "the hand went back with the pointer");
+  near(up, -18, 3, "and up");
+  assertPostureDotsOnTheParts(closeHeld, "the hand held in the close-up");
+  // Let go, the view follows the hand again, and what was written is in tenths: a drag of a centimetre or two at this size is a few
+  // degrees, and whole degrees would move the hand in steps of ten pixels.
+  assert.notEqual(closeDrag.view, closeHeld.view, "the view follows the hand when it is let go");
+  assertPostureDotsOnTheParts(closeDrag, "the close-up after the drag");
+  const [was, now] = [closeUp.version.guard, closeDrag.version.guard];
+  const moved = Object.keys(now).filter((key) => now[key] !== was[key]);
+  assert.ok(moved.includes("arm") || moved.includes("fore"), `the arm moved: ${JSON.stringify(was)} to ${JSON.stringify(now)}`);
+  for (const key of moved) assert.ok(Math.abs(now[key] * 10 - Math.round(now[key] * 10)) < 1e-6, `${key} ${now[key]} is in tenths`);
+  assert.ok(moved.some((key) => !Number.isInteger(now[key])), "and not in whole degrees");
+  // All the changes put back at once: the built-in guard, and the dots where it has its parts.
+  assert.deepEqual({ version: builtIn.version, tag: builtIn.tag, marks: builtIn.marks, arm: builtIn.joints.arm, fore: builtIn.joints.fore, yaw: builtIn.joints.yaw }, { version: null, tag: false, marks: 0, arm: "-52", fore: "26", yaw: "0" });
+  assertPostureDotsOnTheParts(builtIn, "back to the built-in guard");
+  // The book's postures have the same, and leaving the postures closes them.
+  assert.deepEqual({ editing: book.editing, stage: book.stageShown, plan: book.planShown, posture: book.posture }, { editing: true, stage: true, plan: true, posture: "Basic stance" });
+  assert.equal(shownTitles(book.planDots).length, PLAN.length);
+  assert.deepEqual({ editing: left.editing, stage: left.stageShown, plan: left.planShown }, { editing: false, stage: false, plan: false }, "the numbers are shut when the postures are left");
+  assert.deepEqual(library, { stageShown: false, planShown: false });
+});
+
+// ---------- A base posture opened in the Creator ----------
+
+test("in a browser, a base posture opens in the Creator as a scene of its own, looked at from where the postures were, after asking if the Creator has unsaved changes", { skip, timeout: 120_000 }, async () => {
+  const { postureCreator: opening } = (await drive()).seen;
+  const blade = basesOf("live")[4];
+  assert.equal(POSE_NAMES[blade.pose], "Blade up");
+  // A button beside Edit this posture, which stays as it was.
+  assert.deepEqual(opening.buttons, { edit: "Edit this posture", creator: "Edit a copy in the Creator", both: true });
+  assert.equal(opening.before.count, "05 / 14");
+  // The Creator's scene had changes that were not saved: told no, nothing moved, and the numbers stayed open.
+  assert.deepEqual({ tabs: opening.declined.tabs, title: opening.declined.title, floor: opening.declined.floor }, { tabs: ["live"], title: "Blade up", floor: opening.before.floor });
+  assert.equal(opening.declined.sliders, true);
+  assert.equal(opening.declined.creator, false);
+  // Told yes: the posture, alone, in the Creator as a scene named for it, one step, in the pose by name where the postures stand.
+  const scene = (camera) => postureScene(blade.pose, camera);
+  assert.deepEqual(JSON.parse(opening.opened.phrase), scene(-155));
+  assert.deepEqual(scene(-155), { name: "Blade up", camera: -155, solo: true, steps: [{ label: "Blade up", hold: 1000, A: { pose: blade.pose, x: BASE_X } }] });
+  assert.deepEqual(opening.opened.tabs, ["creator"]);
+  assert.equal(opening.opened.solo, true, "one fencer only");
+  assert.equal(opening.opened.name, "Blade up");
+  assert.equal(opening.opened.count, "01 / 01");
+  assert.equal(opening.opened.editing, "Step 1: Blade up. Fencer A.");
+  assert.equal(opening.opened.unsaved, "", "a scene that was only opened has nothing unsaved");
+  // The Creator's camera counts from the other side of the piste, so the posture is looked at from the same angle as before: the
+  // floor, which is drawn for the angle, is the one the postures had, though the slider says another number.
+  assert.equal(opening.before.camera, String(BASE_CAMERA));
+  assert.equal(opening.opened.camera, "-155");
+  assert.equal(opening.opened.floor, opening.before.floor);
+  // The dots of the one fencer, on the stage and on the plan, to drag him with. The stage holds the same view as for any scene,
+  // and a blade held up in this posture goes off the top of it, so the point of it has no dot there, as a part off the stage has
+  // none; the plan holds all of him.
+  assert.ok(opening.opened.dots.length >= SIDE.length - 1 && opening.opened.dots.every((title) => title.startsWith("Drag to move A's ")), `${opening.opened.dots}`);
+  assert.ok(opening.opened.dots.includes("Drag to move A's sword hand"));
+  assert.ok(!opening.opened.dots.includes("Drag to move A's blade tip"), "off the top of the stage");
+  assert.deepEqual(opening.opened.planDots, PLAN.map(({ name }) => `Drag to move A's ${name}, seen from above`));
+  // Back on the postures, the numbers are shut, and the posture is where it was.
+  assert.deepEqual({ tabs: opening.back.tabs, title: opening.back.title, sliders: opening.back.sliders, button: opening.back.button }, { tabs: ["live"], title: "Blade up", sliders: false, button: "Edit this posture" });
+  // From another angle round the piste it is looked at from that angle: the slider's -40 is 140 there, past the end of the slider's
+  // range the other way, and the floor is again the one the postures had, and nothing was asked.
+  assert.equal(opening.turned.camera, "-40");
+  assert.equal(opening.openedTurned.camera, "140");
+  assert.equal(opening.openedTurned.floor, opening.turned.floor);
+  assert.notEqual(opening.openedTurned.floor, opening.before.floor);
+  assert.deepEqual(JSON.parse(opening.openedTurned.phrase), scene(140));
 });
 
 // ---------- The plan: the fencers from above ----------

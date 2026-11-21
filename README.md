@@ -27,14 +27,18 @@ it comes from, such as a class taken in person, a video or a book, the event it
 was noted at and a link to a reference, such as a video of the bout. The library
 holds only what was learned live: the three built in are drills from a class, as
 they were taught there. The page opens paused, and so does each scene you pick;
-nothing on it plays until you press Play. In each of the drills the attacker cuts
-lightly across the defender's blade, level, just above the guard, and the
-defender ripostes to the attacker's sword hand: down onto the top of the glove; in
-onto its outside, level, when the attacker raises the point; or, when the attacker
-turns the guard out over that side, which is tierce, round and under the hand and
-up into the underside of the glove, the Hungarian cut. In the pairs the older man
-holds the same guard, standing a little higher, in a shallower bend, so the two do
-not stand as exact mirror images. The drills say where they
+nothing on it plays until you press Play. All three drills open with the same cut,
+a corrected version recorded in the Creator step by step with the times the steps
+took: the defender holds his blade out level and lowers the point and the hand, the
+attacker brings his blade down from upright to level and reaches out, and the
+defender lowers his elbow. The first drill stops there, before the riposte to the
+top of the glove, which is still to be recorded. In the other two the attacker then
+raises the point and the defender ripostes to the attacker's sword hand: round to
+the outside of it and in onto its outside, level; or, when the attacker turns the
+guard out over that side, which is tierce, round and under the hand and up into the
+underside of the glove, the Hungarian cut. Both then come back to where they began,
+the defender lowering his point to level last, so that his blade does not pass
+through the attacker's glove. The drills say where they
 come from: live learning, at Warsaw advanced sabre on 15 November 2026. A scene's
 source shows as a tag on its card. Scenes you save in the Creator are listed
 below them, with whatever you noted, and a link opens in a new tab. They live in
@@ -65,10 +69,32 @@ of it, as printed, with its figure number and page: twelve figures in all, for
 every posture but the stance at ease, which the book does not picture. No scenes
 are made from the book yet, so this section has no practice library.
 
+**Correcting a posture by dragging it.** When a posture is seen to be wrong, put it
+right on the figure. With **Edit this posture** open, the figure has a dot on each
+part that can be moved, and under the stage a plan looks down on it from above,
+with a dot on each part that turns toward or away from you. Take hold of the part
+that is wrong and move it to where it should be: the posture changes, on the stage
+and in every scene that uses it, exactly as it does with the sliders, as your own
+version of it, kept on this device, with the joints the drag moved changed and no
+others, so a slider's **Reset** still puts one of them back and **Reset to
+built-in** all of them. Where the fencer stands is no part of a posture, so the back
+foot, which moves him along the piste, has no dot here. The dots and the plan go
+with the numbers when **Done** shuts them. Beside it, **Edit a copy in the Creator**
+opens the posture on show there as a scene of its own: one fencer,
+one step named for the posture, in the pose by name, so it is drawn with your own
+version of it if you have one. It is looked at from the angle the postures were,
+whatever the camera was turned to, so the figure is as you saw it; the Creator's
+camera counts from the other side of the piste, so its slider says another number
+for the same view. There the parts of the fencer are dragged, on the stage and
+from above, as well as recorded step by step, and the phrase data says the numbers
+that made it, to copy and send on. It asks before it replaces a scene in the
+Creator that has changes that are not saved.
+
 **Changing a posture.** Under a posture's description, **Edit this posture** opens
 its numbers as sliders: the ones the Creator has for a moment, all but where the
-fencer stands. Move one and the posture changes on the stage, and in the Creator
-and in every scene that uses it, since a scene names its postures. What you
+fencer stands. Move one, or take hold of a part on the figure, and the posture
+changes on the stage, and in the Creator and in every scene that uses it, since a
+scene names its postures. What you
 change is your own version of the posture. It is kept in your browser's storage,
 as the joints you moved and nothing else, so it is on this device only: the
 built-in posture stays as it is in the code, and nobody else sees yours. A
@@ -162,6 +188,10 @@ In the Creator there is more:
   values are in tenths, since a degree of the arm is a long way on a stage that
   close. They work with a mouse, a finger or a pen. The sliders stay for the
   position of the hand, which no dot turns, and are the way in for the keyboard.
+  The base postures have them too, while a posture's numbers are open under **Edit
+  this posture**: there a drag changes the posture's own version, as the sliders do,
+  and the fencer's feet are the one part with no dot, since a posture does not say
+  where he stands.
 - **From above:** the stage has height and length but no depth, so under it the
   Creator draws the pair from above, the piste across the page, you at the
   bottom and A on the same side as on the stage, with a dot on each part that
@@ -178,7 +208,9 @@ In the Creator there is more:
   as the stage's does, and grows, wider too, for a pose that reaches far across the
   piste; it holds still while a part is dragged, so that the part stays under the
   pointer, and takes in the whole blade when it is let go. **From above** puts it
-  away, and **Drag dots** puts away its dots with the stage's.
+  away, and **Drag dots** puts away its dots with the stage's. In the base postures it
+  is under the stage while a posture's numbers are open, looking from the side of
+  the piste the stage does, and goes with them.
 - **Record:** to act a movement out instead of building it a step at a time, press
   **Record** and drag the parts of the fencers as you would perform it. Each part
   you let go of is a milestone: a new step after the one you began from, named for
@@ -468,7 +500,7 @@ and on the plan from above (a drag turned into joint values that put the part wh
 it was taken, for every pose, both fencers and every side of the piste, within the
 sliders' ranges, and the mirror they are shown in), the milestones a recording
 makes (how long a drag or a pause took as the times a step takes, and what a
-milestone is called), the base postures of each section, the skeleton and the camera
+milestone is called), the scene a base posture opens as in the Creator, the base postures of each section, the skeleton and the camera
 (the knees and the arms, the hand positions, where the stage looks, with every
 fencer in it at every camera angle all the way round, and every phrase and posture
 at every moment from eight camera angles, checked for broken path data), the
@@ -479,18 +511,20 @@ skeleton has them, from any camera, the sabre in the left hand of both fencers,
 which the stage's mirror makes the right, the wrist bending no further than a wrist
 can and no bone turning over, and the drills from the class landing where the class
 has them: the light cut on the inside of the defender's blade just above his guard,
-and each riposte edge first on the attacker's glove, on top, on the outside or
-underneath, with no blade going into an arm at any moment), and the published files (only relative links to
+and each riposte edge first on the attacker's glove, on the outside or underneath,
+with no blade going into an arm at any moment, and the cut every drill opens with
+held to the recording it was made from), and the published files (only relative links to
 files that exist, no outside requests, every element the scripts need, and the
-licences of what is bundled). Forty-five more run in a real browser: headless
+licences of what is bundled). Forty-nine more run in a real browser: headless
 Chrome or Chromium loads the page, then a driver page works every control of
 every tab and mode, with hostile input among it, and checks the result, down to
 the page opening paused, the stage turned in its mirror, the camera on the side
 of the piste it should be and turning all the way round, two browser tabs saving
 the same scene, a posture's numbers changed, kept, copied and put back, the
 parts of a fencer taken hold of and dragged with the pointer, on the stage and on
-the plan from above, and a recording of them, and the 3D figures
-taking the stage; and once more with
+the plan from above, and a recording of them, a posture put right by dragging its
+parts, a base posture opened in the Creator, and the 3D figures taking the stage;
+and once more with
 WebGL turned off, where the stick figures stand in and the note says why. They
 need Chrome or Chromium on your `PATH`, or `CHROME_BIN` pointing at one, and are
 skipped without it.
