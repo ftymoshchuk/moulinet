@@ -141,6 +141,23 @@ In the Creator there is more:
   **Reset**, which puts that one joint back to what the pose says (hover it to
   see the value it goes back to) and leaves every other adjustment as it is. Where the fencer stands has no Reset of its own: that is a place on the
   piste, not a change to the pose.
+- **Drag dots:** a dot lies on each part of the fencers that can be moved: the
+  feet, the hips, the head, the sword elbow and hand, the point of the blade, and
+  the rear elbow and hand. Take hold of one and move it, instead of moving a
+  slider, and the part follows the pointer, from whichever side of the piste the
+  camera is on; the sliders show what changed. Taking hold of a dot of the other
+  fencer makes that fencer the one you are reshaping. The hand takes the whole arm
+  with it, the elbow and the point of the blade turn only what they are on, the
+  back foot moves the fencer along the piste, the head leans the body and the
+  hips go up, down and along, the feet staying where they are. What is written
+  to the step is whole numbers within the ranges of the sliders, and only the
+  joints the drag moved; a joint taken back to what the pose gives it is no
+  longer an adjustment. The dots show while a step is on the stage, not between
+  two steps, in a close-up or while the data is text that is not a phrase yet,
+  and **Drag dots** puts them away. They work with a mouse, a finger or a pen.
+  The sliders stay for what a drag cannot show, the turn of the shoulders, the
+  back foot and knee, how the arm and the blade turn across the chest and the
+  hand position, and are the way in for the keyboard.
 - **Poses:** twenty-six named poses to put on any step, in the groups the
   sections of the page keep their base postures in.
 - **Phrase data:** the whole scene as text. Edit it in place or paste one in;
@@ -411,7 +428,10 @@ scenes (what they keep and what they leave alone) and the check that a
 reference link is a web address, the postures people make their own versions of
 (what a version changes and what it leaves, which joints and values it can hold,
 the lines of numbers it gives to send on, and how it is kept on the device and
-what is left alone there), the base postures of each section, the skeleton and the camera
+what is left alone there), the parts of a fencer that can be dragged on the stage
+(a drag turned into joint values that put the part where it was taken, for every
+pose, both fencers and every side of the piste, within the sliders' ranges, and the
+mirror the stage is shown in), the base postures of each section, the skeleton and the camera
 (the knees and the arms, the hand positions, where the stage looks, with every
 fencer in it at every camera angle all the way round, and every phrase and posture
 at every moment from eight camera angles, checked for broken path data), the
@@ -425,13 +445,14 @@ has them: the light cut on the inside of the defender's blade just above his gua
 and each riposte edge first on the attacker's glove, on top, on the outside or
 underneath, with no blade going into an arm at any moment), and the published files (only relative links to
 files that exist, no outside requests, every element the scripts need, and the
-licences of what is bundled). Twenty-seven more run in a real browser: headless
+licences of what is bundled). Thirty-five more run in a real browser: headless
 Chrome or Chromium loads the page, then a driver page works every control of
 every tab and mode, with hostile input among it, and checks the result, down to
 the page opening paused, the stage turned in its mirror, the camera on the side
 of the piste it should be and turning all the way round, two browser tabs saving
-the same scene, a posture's numbers changed, kept, copied and put back, and the
-3D figures taking the stage; and once more with
+the same scene, a posture's numbers changed, kept, copied and put back, the
+parts of a fencer taken hold of and dragged with the pointer, and the 3D figures
+taking the stage; and once more with
 WebGL turned off, where the stick figures stand in and the note says why. They
 need Chrome or Chromium on your `PATH`, or `CHROME_BIN` pointing at one, and are
 skipped without it.
@@ -470,6 +491,7 @@ Project layout:
 - `site/js/bases.js`: the base postures, in words, and which section each belongs to
 - `site/js/scenes.js`: reference links, and the scenes saved on this device
 - `site/js/postures.js`: the postures people make their own versions of, laid over the library's numbers and kept on this device
+- `site/js/handles.js`: the parts of a fencer that can be dragged on the stage in the Creator, and the joint values that put one where it is taken
 - `site/js/stage3d.js`: the figures drawn in ink on a canvas over the stage
 - `site/js/rig.js`: the bodies on their bones, posed from a pose's skeleton, and the sabre
 - `site/js/bodies.js`: reads the bodies from `site/models/fencers.bin`

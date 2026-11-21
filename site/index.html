@@ -56,7 +56,7 @@
               </div>
             </div>
 
-            <div class="stage__frame">
+            <div id="stage-frame" class="stage__frame">
               <svg id="stage" class="stage__view" viewBox="-80 -236 420 254" role="img" aria-label="Side view of the fencing phrase, the fencers drawn in ink, animated">
                 <defs>
                   <filter id="ink-texture" x="-10%" y="-10%" width="120%" height="120%">
@@ -84,6 +84,8 @@
               </svg>
               <!-- The fencers, drawn in 3D over the stage, whose floor, ghosts and blade paths show through. -->
               <canvas id="stage-3d" class="stage__3d hidden" aria-hidden="true"></canvas>
+              <!-- In the Creator, a dot on each part of the fencers that can be dragged, over the stage and turned with it. The sliders stay, for what a drag cannot reach and for the keyboard. -->
+              <div id="handles" class="stage__handles hidden" aria-hidden="true"></div>
             </div>
             <p id="stage-note" class="stage__note hidden" role="status"></p>
             <!-- Said in the library and the Creator when some posture is drawn as the person made it, not as built in. -->
@@ -118,6 +120,7 @@
                 <button class="toggle" type="button" data-toggle="ink" aria-pressed="true"><span class="toggle__dot" aria-hidden="true"></span>Ink texture</button>
                 <button class="toggle" type="button" data-toggle="loop" aria-pressed="true" data-modes="library creator"><span class="toggle__dot" aria-hidden="true"></span>Loop</button>
                 <button class="toggle" type="button" data-toggle="closeUp" aria-pressed="false"><span class="toggle__dot" aria-hidden="true"></span>Hand close-up</button>
+                <button class="toggle hidden" type="button" data-toggle="handles" aria-pressed="true" data-modes="creator"><span class="toggle__dot" aria-hidden="true"></span>Drag dots</button>
               </div>
 
               <div class="camera">
@@ -332,6 +335,7 @@
                 <button id="fencer-b" class="fencer-button" type="button" data-fencer="B" aria-label="Edit fencer B" aria-pressed="false">B</button>
               </div>
             </div>
+            <p class="panel__intro">Drag a dot on the stage to move that part of the fencer, or use the sliders, which also reach the turn of the shoulders, the back foot and knee, the hand position, and how the arm and the blade turn across the chest.</p>
             <div id="joints" class="joints"></div>
             <button id="reset-step" class="outline-button" type="button">Reset this step's adjustments</button>
           </section>

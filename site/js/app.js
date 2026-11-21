@@ -9,6 +9,7 @@
 // with a practice library and base postures of its own; the Creator is the third.
 import { BASE_BLADE, BASE_SECTIONS, FIGURE_DIR, FIGURE_NOTE, basePhrase, basesOf } from "./bases.js";
 import { CAMERA_LIMIT, DEFAULT_FRAME, bladePaths, floorPath, frameFrom, frameOf, groundPath, handFrame, stickFigure } from "./figure.js";
+import { HANDLES, placeOf, shareOf, solve, stagePoint } from "./handles.js";
 import { JOINTS, POSE_NAMES, POSES, PRESETS, SECTIONS } from "./library.js";
 import {
   TEXT_KEYS,
@@ -76,6 +77,8 @@ const sectionBases = Object.fromEntries(SECTIONS.map(({ id }) => [id, basesOf(id
 const workspaceEl = document.getElementById("main");
 const stagePanelEl = document.getElementById("stage-panel");
 const stageEl = document.getElementById("stage");
+const frameEl = document.getElementById("stage-frame");
+const handlesEl = document.getElementById("handles");
 const canvas3dEl = document.getElementById("stage-3d");
 const stageNoteEl = document.getElementById("stage-note");
 const versionsNoteEl = document.getElementById("versions-note");
@@ -196,6 +199,8 @@ const state = {
   ink: true,
   // A close-up of the sword hand, from outside the arm.
   closeUp: false,
+  // In the Creator, the dots on the stage that parts of the fencers are dragged by.
+  handles: true,
   camera: 0,
   fencer: "A",
   // The step on show while paused on one; null when the time decides.
@@ -907,6 +912,111 @@ const postureControls = POSTURE_JOINTS.map((joint) =>
   }),
 );
 
+// ---------- Dragging the parts of a fencer ----------
+
+// The dot on each part of each fencer, made once and put where the part is each time the stage is drawn. Taking hold of
+// one makes its fencer the one being edited.
+const dots = ["A", "B"].flatMap((who) =>
+  HANDLES.map((part) => {
+    const el = element("div", `handle handle--${who.toLowerCase()}`);
+    setAttr(el, "title", `Drag to move ${who}'s ${part.name}`);
+    el.addEventListener("pointerdown", (event) => startDrag(event, who, part, el));
+    handlesEl.append(el);
+    return { who, part, el };
+  }),
+);
+
+// What the stage looks at, as it was last drawn, which is what a point of the page is placed against.
+let stageView = DEFAULT_FRAME;
+// The drag in progress: the pointer that began it, whose part it is, and how far the pointer was from the part when it took
+// hold, so that the part does not jump to the pointer.
+let drag = null;
+
+// Whether the dots are on the stage: in the Creator, with a step picked, which the stage then shows as its own pose, and not
+// a moment between two, which is what it shows while a scene plays or is scrubbed, and no text waiting to be made a phrase of.
+function handlesShown() {
+  return state.mode === "creator" && state.handles && !state.closeUp && state.phraseError === "" && state.pin !== null && state.pin < timeline.steps.length;
+}
+
+// Puts each dot on its part of the fencer on the stage, by how far across and down the stage it is, as the stage is drawn.
+function drawHandles(now, camera, view) {
+  const show = handlesShown();
+  handlesEl.classList.toggle("hidden", !show);
+  if (!show) return;
+  const editing = editingFencer();
+  for (const { who, part, el } of dots) {
+    // A scene of one fencer has no dots on the other.
+    const gone = who === "B" && timeline.solo;
+    el.classList.toggle("hidden", gone);
+    if (gone) continue;
+    const [across, down] = shareOf(placeOf(now[who], who === "A" ? 1 : -1, camera, part), view);
+    el.style.left = `${(across * 100).toFixed(2)}%`;
+    el.style.top = `${(down * 100).toFixed(2)}%`;
+    el.classList.toggle("is-other", who !== editing);
+  }
+}
+
+// Where on the stage, in its units, a pointer is. The stage is shown in a mirror, which the page's own coordinates know nothing of.
+function stageAt(event) {
+  const mirrored = new DOMMatrixReadOnly(getComputedStyle(frameEl).transform).a < 0;
+  return stagePoint([event.clientX, event.clientY], frameEl.getBoundingClientRect(), stageView, mirrored);
+}
+
+function startDrag(event, who, part, el) {
+  if (event.pointerType === "mouse" && event.button !== 0) return;
+  if (drag) {
+    // Another finger is not heard. The same pointer pressing again says the last drag never saw it lifted, so that one is over.
+    if (drag.pointer !== event.pointerId) return;
+    stopDrag();
+  }
+  // Not a text selection, and on a touch screen not a scroll.
+  event.preventDefault();
+  state.fencer = who;
+  const pose = timeline.steps[currentIndex()][who];
+  const point = placeOf(pose, who === "A" ? 1 : -1, viewCamera(), part);
+  const grabbed = stageAt(event);
+  drag = { pointer: event.pointerId, who, part, el, offset: [grabbed[0] - point[0], grabbed[1] - point[1]] };
+  el.classList.add("is-dragging");
+  window.addEventListener("pointermove", dragTo);
+  window.addEventListener("pointerup", endDrag);
+  window.addEventListener("pointercancel", endDrag);
+  update();
+}
+
+// Moves the part toward the pointer: the joints that move it take the values that put it nearest, as the camera sees it, and
+// only those that change are written to the step.
+function dragTo(event) {
+  if (!drag || event.pointerId !== drag.pointer) return;
+  // A mouse button let go outside the page leaves no word of it.
+  if (event.pointerType === "mouse" && event.buttons === 0) return endDrag(event);
+  const { who, part, offset } = drag;
+  const pointer = stageAt(event);
+  const pose = timeline.steps[currentIndex()][who];
+  const values = solve(pose, who === "A" ? 1 : -1, viewCamera(), part, [pointer[0] - offset[0], pointer[1] - offset[1]]);
+  const changed = Object.entries(values).filter(([key, value]) => value !== pose[key]);
+  if (changed.length === 0) return;
+  editCurrent((spec) => {
+    const given = resolvePose({ pose: spec.pose });
+    for (const [key, value] of changed) {
+      // A joint taken back to what the pose gives it is no longer an adjustment.
+      if (key !== "x" && value === given[key]) clearJoint(spec, key);
+      else setJoint(spec, key, value);
+    }
+  });
+}
+
+function stopDrag() {
+  drag.el.classList.remove("is-dragging");
+  drag = null;
+  window.removeEventListener("pointermove", dragTo);
+  window.removeEventListener("pointerup", endDrag);
+  window.removeEventListener("pointercancel", endDrag);
+}
+
+function endDrag(event) {
+  if (drag && event.pointerId === drag.pointer) stopDrag();
+}
+
 // The poses, in groups as the sections of the page keep their base postures: each section's postures are its own poses.
 const poseGroups = SECTIONS.map(({ id, name }) => ({ name, keys: sectionBases[id].map(({ pose }) => pose) }));
 const grouped = new Set(poseGroups.flatMap(({ keys }) => keys));
@@ -1222,6 +1332,7 @@ function viewCamera() {
 function drawStage(now) {
   const camera = viewCamera();
   const view = frameFor(now);
+  stageView = view;
   setAttr(stageEl, "viewBox", view.join(" "));
   // The postures stand still, so they have no motion to show.
   const moving = state.mode !== "base";
@@ -1266,6 +1377,7 @@ function drawStage(now) {
     setAttr(trailEls.doneA, "d", polyline(trails.a, done));
     setAttr(trailEls.doneB, "d", polyline(trails.b, done));
   }
+  drawHandles(now, camera, view);
 }
 
 // A link to a reference, which opens in a new tab and tells that page nothing about this one.
