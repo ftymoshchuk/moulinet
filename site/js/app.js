@@ -52,6 +52,7 @@ import {
   versionedPostures,
   versionsInUse,
 } from "./postures.js";
+import { milestoneLabel, moveTime, pauseTime, recordNote } from "./record.js";
 import { STORAGE_KEY, deleteScene, readSaved, referenceUrl, saveScene, sceneSummary } from "./scenes.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -92,6 +93,7 @@ const planPaths = {
 const canvas3dEl = document.getElementById("stage-3d");
 const stageNoteEl = document.getElementById("stage-note");
 const versionsNoteEl = document.getElementById("versions-note");
+const recordNoteEl = document.getElementById("record-note");
 const stepCountEl = document.getElementById("step-count");
 const stepLabelEl = document.getElementById("step-label");
 const timecodeEl = document.getElementById("timecode");
@@ -213,6 +215,9 @@ const state = {
   handles: true,
   // In the Creator, the fencers seen from above, under the stage, with dots of their own.
   plan: true,
+  // In the Creator, recording: each part of a fencer let go of after a drag makes a milestone, a step after the one the drag
+  // began from, which takes as long as the drag did.
+  record: false,
   camera: 0,
   fencer: "A",
   // The step on show while paused on one; null when the time decides.
@@ -954,6 +959,11 @@ const looking = { side: DEFAULT_FRAME, plan: planFrame([], 180) };
 // The drag in progress: the pointer that began it, whose part it is, in which view, the view's box as it was when it took
 // hold, and how far the pointer was from the part then, so that the part does not jump to the pointer.
 let drag = null;
+// The recording in progress: how many milestones it has made, and the last of them, as the step it made, when the drag that
+// made it last changed anything (ms, on the page's clock) and the scene's text as it left it, so that a milestone that follows
+// on from it can tell nothing else has been done to the scene since.
+let recording = { count: 0, last: null };
+let wasRecording = false;
 
 // Whether the dots are on the stage: in the Creator, while the stage shows a step's own pose, which is what changing it
 // changes, and not a moment between two, and no text is waiting to be made a phrase of. A step picked is its own pose; so
@@ -1071,6 +1081,8 @@ function dragTo(event) {
   const values = solve(pose, who === "A" ? 1 : -1, cameraOf(view), part, [pointer[0] - offset[0], pointer[1] - offset[1]], view === "side" && state.closeUp ? 0.1 : 1, view);
   const changed = Object.entries(values).filter(([key, value]) => value !== pose[key]);
   if (changed.length === 0) return;
+  // Recording, the first change a drag makes begins a milestone, which the drag then reshapes.
+  if (state.record && drag.milestone === undefined) beginMilestone();
   editCurrent((spec) => {
     const given = resolvePose({ pose: spec.pose });
     for (const [key, value] of changed) {
@@ -1079,9 +1091,38 @@ function dragTo(event) {
       else setJoint(spec, key, value);
     }
   });
+  drag.movedUntil = performance.now();
+}
+
+// Begins a milestone: a step after the one the drag began from, as that one stands, named for the part. It is the step on
+// show from then on, so the drag reshapes it and the step it began from is left as it was. It follows on from the last
+// milestone if it was begun from that one and the scene is as that one left it, with nothing done to it since.
+function beginMilestone() {
+  const base = currentIndex();
+  const added = insertStep(state.phrase, timeline, base);
+  if (!added) return;
+  const last = recording.last;
+  const followsOn = Boolean(last) && last.index === base && last.text === state.phraseText;
+  const named = setStepField(added.phrase, added.index, "label", milestoneLabel(drag.who, drag.part.name)) ?? added.phrase;
+  Object.assign(drag, { milestone: added.index, base, followsOn, movedFrom: performance.now() });
+  applyEdit(named, added.index);
+}
+
+// Ends the milestone a drag made: the move into it takes as long as the drag did, from its first change to its last, and the
+// step it followed on from, if it did, is held for the pause between the two.
+function finishMilestone() {
+  const { milestone, base, followsOn, movedFrom, movedUntil = movedFrom } = drag;
+  if (milestone === undefined) return;
+  let phrase = setStepField(state.phrase, milestone, "ms", moveTime(movedUntil - movedFrom)) ?? state.phrase;
+  if (followsOn) phrase = setStepField(phrase, base, "hold", pauseTime(movedFrom - recording.last.endedAt)) ?? phrase;
+  const count = recording.count + 1;
+  applyEdit(phrase, milestone);
+  recording = { count, last: { index: milestone, endedAt: movedUntil, text: state.phraseText } };
+  announce(`Milestone ${count}: step ${milestone + 1} of ${timeline.steps.length}`);
 }
 
 function stopDrag() {
+  finishMilestone();
   drag.el.classList.remove("is-dragging");
   drag = null;
   window.removeEventListener("pointermove", dragTo);
@@ -1628,6 +1669,13 @@ function renderVersionsNote() {
   );
 }
 
+// While recording, in the Creator: what to do, and how many milestones there are, or why nothing can be recorded now.
+function renderRecordNote() {
+  const show = state.mode === "creator" && state.record;
+  recordNoteEl.classList.toggle("hidden", !show);
+  if (show) setText(recordNoteEl, recordNote({ ready: handlesShown(), count: recording.count }));
+}
+
 function renderBase(index) {
   renderBaseList();
   const bases = sectionBases[state.section];
@@ -1730,9 +1778,14 @@ function render() {
   const time = Math.min(state.time, timeline.duration);
 
   renderMode();
-  // Nothing is being edited outside the base postures.
+  // Nothing is being edited outside the base postures, and nothing is recorded outside the Creator; a recording that is
+  // turned on starts from no milestones.
   if (state.mode !== "base") workspaceEl.classList.remove("is-editing-posture");
+  if (state.mode !== "creator") state.record = false;
+  if (state.record && !wasRecording) recording = { count: 0, last: null };
+  wasRecording = state.record;
   renderVersionsNote();
+  renderRecordNote();
   drawStage(shown);
   setText(stepCountEl, `${twoDigits(index + 1)} / ${twoDigits(steps.length)}`);
   setText(stepLabelEl, step.label);

@@ -179,6 +179,20 @@ In the Creator there is more:
   piste; it holds still while a part is dragged, so that the part stays under the
   pointer, and takes in the whole blade when it is let go. **From above** puts it
   away, and **Drag dots** puts away its dots with the stage's.
+- **Record:** to act a movement out instead of building it a step at a time, press
+  **Record** and drag the parts of the fencers as you would perform it. Each part
+  you let go of is a milestone: a new step after the one you began from, named for
+  who moved what (A moves the sword hand), with the pose the drag left and, as the
+  move into it, the time the drag took, from the first change it made to the last,
+  in tens of milliseconds and from a tenth of a second to five. A drag that follows
+  on from the last milestone, with nothing else done to the scene in between, holds
+  that milestone for the pause before it, up to two seconds, so that stopping to
+  think does not play back as a hold. The step you began from is left as it was,
+  and a press that moves nothing makes no milestone. A note under the stage says
+  what to do, how many milestones there are, or that the dots are away. A milestone
+  is a step like any other, to rename, retime, take out and play back, and with
+  **Record** off a drag reshapes the step it is on, as before. It is off when the
+  Creator is left.
 - **Poses:** twenty-six named poses to put on any step, in the groups the
   sections of the page keep their base postures in.
 - **Phrase data:** the whole scene as text. Edit it in place or paste one in;
@@ -452,7 +466,9 @@ the lines of numbers it gives to send on, and how it is kept on the device and
 what is left alone there), the parts of a fencer that can be dragged on the stage
 and on the plan from above (a drag turned into joint values that put the part where
 it was taken, for every pose, both fencers and every side of the piste, within the
-sliders' ranges, and the mirror they are shown in), the base postures of each section, the skeleton and the camera
+sliders' ranges, and the mirror they are shown in), the milestones a recording
+makes (how long a drag or a pause took as the times a step takes, and what a
+milestone is called), the base postures of each section, the skeleton and the camera
 (the knees and the arms, the hand positions, where the stage looks, with every
 fencer in it at every camera angle all the way round, and every phrase and posture
 at every moment from eight camera angles, checked for broken path data), the
@@ -466,14 +482,14 @@ has them: the light cut on the inside of the defender's blade just above his gua
 and each riposte edge first on the attacker's glove, on top, on the outside or
 underneath, with no blade going into an arm at any moment), and the published files (only relative links to
 files that exist, no outside requests, every element the scripts need, and the
-licences of what is bundled). Forty-one more run in a real browser: headless
+licences of what is bundled). Forty-five more run in a real browser: headless
 Chrome or Chromium loads the page, then a driver page works every control of
 every tab and mode, with hostile input among it, and checks the result, down to
 the page opening paused, the stage turned in its mirror, the camera on the side
 of the piste it should be and turning all the way round, two browser tabs saving
 the same scene, a posture's numbers changed, kept, copied and put back, the
 parts of a fencer taken hold of and dragged with the pointer, on the stage and on
-the plan from above, and the 3D figures
+the plan from above, and a recording of them, and the 3D figures
 taking the stage; and once more with
 WebGL turned off, where the stick figures stand in and the note says why. They
 need Chrome or Chromium on your `PATH`, or `CHROME_BIN` pointing at one, and are

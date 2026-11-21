@@ -869,6 +869,16 @@ textarea:focus-visible {
   background: var(--accent);
 }
 
+/* Recording: the toggle's dot goes red while it is on, and the note under the stage is marked the same way. */
+.toggle--record[aria-pressed="true"] .toggle__dot {
+  background: var(--error);
+}
+
+.record-note {
+  padding-left: 10px;
+  border-left: 3px solid var(--error);
+}
+
 .camera {
   display: flex;
   align-items: center;
