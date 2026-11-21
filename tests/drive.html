@@ -26,6 +26,7 @@
           else {
             drive(win, frame.contentDocument, results.seen);
             await drivePostures(win, frame.contentDocument, results.seen);
+            driveHandles(win, frame.contentDocument, results.seen);
             await drive3d(win, frame.contentDocument, results.seen);
             await driveFigures(win, frame.contentDocument, results.seen);
           }
@@ -353,6 +354,203 @@
         win.dispatchEvent(new win.StorageEvent("storage", { key: KEY }));
         posture.cleaned = { stored: kept(), marked: marked(), note: !hidden("#versions-note") };
         button("Practice library").click();
+      }
+
+      // The dots the Creator puts on the parts of the fencers, which are taken hold of and dragged with the pointer instead
+      // of moving sliders. The pointer is a mouse here: its events are made and sent the way the browser sends them.
+      function driveHandles(win, doc, seen) {
+        const $ = (selector) => doc.querySelector(selector);
+        const $$ = (selector) => [...doc.querySelectorAll(selector)];
+        const button = (name) => $$("button").find((b) => b.textContent.trim() === name || b.getAttribute("aria-label") === name);
+        const input = (el, value) => {
+          el.value = String(value);
+          el.dispatchEvent(new win.Event("input", { bubbles: true }));
+        };
+        const text = (selector) => $(selector).textContent;
+        const visible = (el) => el.getClientRects().length > 0;
+        const pressed = (b) => b.getAttribute("aria-pressed") === "true";
+        win.confirm = () => true;
+        seen.handles = {};
+        const handles = seen.handles;
+
+        // The dots as the page has them: where each is across and down the stage's box, on the page as the mirror shows it,
+        // and the phrase and the stage's view and camera they are placed by.
+        const frame = $("#stage-frame");
+        const looks = () => {
+          const box = frame.getBoundingClientRect();
+          return {
+            view: $("#stage").getAttribute("viewBox"),
+            box: [box.width, box.height],
+            camera: Number($("#camera").value),
+            phrase: $("#phrase-text").value,
+            step: Number(text("#step-count").split("/")[0]) - 1,
+            editing: text("#edit-title"),
+            shown: visible($("#handles")),
+            dots: $$(".handle").map((dot) => {
+              const r = dot.getBoundingClientRect();
+              return { title: dot.title, shown: visible(dot), other: dot.classList.contains("is-other"), dragging: dot.classList.contains("is-dragging"), across: (r.left + r.width / 2 - box.left) / box.width, down: (r.top + r.height / 2 - box.top) / box.height, size: [r.width, r.height] };
+            }),
+          };
+        };
+        const sliders = (...keys) => Object.fromEntries(keys.map((key) => [key, $(`#joint-${key}`).value]));
+
+        // A pointer, a mouse until it is said to be a finger: it goes down on a dot, moves, and comes up, the moves and the
+        // release reaching the window.
+        const mouse = { id: 7, type: "mouse" };
+        const fire = (target, type, [x, y], more = {}) =>
+          target.dispatchEvent(new win.PointerEvent(type, { bubbles: true, cancelable: true, pointerId: mouse.id, pointerType: mouse.type, isPrimary: true, button: 0, buttons: type === "pointerup" ? 0 : 1, clientX: x, clientY: y, ...more }));
+        const dot = (title) => $$(".handle").find((d) => d.title === title);
+        const middle = (el) => {
+          const r = el.getBoundingClientRect();
+          return [r.left + r.width / 2, r.top + r.height / 2];
+        };
+        // Takes hold of a dot, moves it by `by` on the page in a few steps and lets go. Returns whether the pointer was kept
+        // from the page's own handling, and whether the dot was held while it moved.
+        const dragDot = (title, by, steps = 6) => {
+          const el = dot(title);
+          const [x, y] = middle(el);
+          const down = fire(el, "pointerdown", [x, y]);
+          const held = el.classList.contains("is-dragging");
+          for (let i = 1; i <= steps; i++) fire(win, "pointermove", [x + (by[0] * i) / steps, y + (by[1] * i) / steps]);
+          const stillHeld = el.classList.contains("is-dragging");
+          fire(win, "pointerup", [x + by[0], y + by[1]]);
+          return { defaultPrevented: !down, held, stillHeld, letGo: !el.classList.contains("is-dragging") };
+        };
+
+        // ---------- The dots ----------
+
+        // They are the Creator's, and only there: not in the library or the postures, whose toggle is not shown either.
+        button("Practice library").click();
+        handles.library = { dots: visible($("#handles")), toggle: visible($("[data-toggle=handles]")) };
+        button("Base postures").click();
+        handles.base = { dots: visible($("#handles")), toggle: visible($("[data-toggle=handles]")) };
+        button("Creator").click();
+        button("New scene").click();
+        handles.opening = { ...looks(), toggle: { shown: visible($("[data-toggle=handles]")), pressed: pressed($("[data-toggle=handles]")), label: text("[data-toggle=handles]").trim() } };
+
+        // ---------- Taking hold ----------
+
+        // Taking hold of A's sword hand and moving it up the page takes the arm with it, and the hand stays under the pointer.
+        handles.hand = { ...dragDot("Drag to move A's sword hand", [0, -30]), after: looks(), sliders: sliders("arm", "fore", "blade", "x") };
+        // B's, with A being edited: the fencer taken hold of becomes the one being edited, and the other is left as it was.
+        handles.other = { before: looks().editing, pressedA: pressed($("#fencer-a")), ...dragDot("Drag to move B's sword hand", [0, -24]), after: looks(), pressedB: pressed($("#fencer-b")), sliders: sliders("arm", "fore") };
+        // A back foot taken to the right on the page goes along the piste, which is toward B for A.
+        $("#fencer-a").click();
+        handles.foot = { ...dragDot("Drag to move A's back foot", [40, 0]), after: looks(), sliders: sliders("x", "footF", "hipX") };
+        // The head, which turns the body: taken across and brought back to where it was, the lean is no adjustment.
+        handles.lean = { out: (dragDot("Drag to move A's head", [30, 0]), sliders("lean")), back: (dragDot("Drag to move A's head", [-30, 0]), sliders("lean")), after: looks() };
+        // The hips take the body up and down and along.
+        handles.hips = { ...dragDot("Drag to move A's hips", [-24, -16]), sliders: sliders("hipX", "hipY"), after: looks() };
+
+        // ---------- From other sides ----------
+
+        // The camera turns, and the dots go with the parts, which they are taken by from there.
+        input($("#camera"), 60);
+        handles.turned = { ...looks(), sliders: sliders("footF") };
+        handles.turnedDrag = { ...dragDot("Drag to move A's front foot", [-30, -10]), after: looks(), sliders: sliders("footF", "liftF") };
+        input($("#camera"), -180);
+        handles.round = looks();
+        input($("#camera"), 0);
+
+        // ---------- What is not a drag ----------
+
+        // A button other than the first, and a mouse button that was let go where the page could not see, move nothing.
+        const before = $("#phrase-text").value;
+        const hand = dot("Drag to move A's sword hand");
+        const [hx, hy] = middle(hand);
+        const aside = fire(hand, "pointerdown", [hx, hy], { button: 2, buttons: 2 });
+        fire(win, "pointermove", [hx, hy - 30]);
+        fire(win, "pointerup", [hx, hy - 30], { button: 2 });
+        handles.otherButton = { moved: $("#phrase-text").value !== before, held: hand.classList.contains("is-dragging") };
+        fire(hand, "pointerdown", [hx, hy]);
+        fire(win, "pointermove", [hx, hy - 10]);
+        const before2 = $("#phrase-text").value;
+        fire(win, "pointermove", [hx, hy - 40], { buttons: 0 });
+        const ended = !hand.classList.contains("is-dragging");
+        fire(win, "pointermove", [hx, hy - 60]);
+        handles.letGoOutside = { ended, movedAfter: $("#phrase-text").value !== before2 };
+        // A pointer that is not the one that took hold is not heard.
+        fire(hand, "pointerdown", [hx, hy]);
+        const before3 = $("#phrase-text").value;
+        mouse.id = 8;
+        fire(win, "pointermove", [hx, hy - 50]);
+        fire(win, "pointerup", [hx, hy - 50]);
+        mouse.id = 7;
+        handles.strangerPointer = { moved: $("#phrase-text").value !== before3, stillHeld: hand.classList.contains("is-dragging") };
+        fire(win, "pointerup", [hx, hy]);
+        handles.finished = { held: hand.classList.contains("is-dragging") };
+        // The same pointer pressing again says the drag before never saw it lifted: the new one takes hold where it is, and
+        // the part does not jump to the pointer, which is 6 px off its middle.
+        const foot = dot("Drag to move A's front foot");
+        const [fx, fy] = middle(foot);
+        fire(foot, "pointerdown", [fx, fy]);
+        fire(win, "pointermove", [fx - 20, fy]);
+        const [gx, gy] = middle(foot);
+        fire(foot, "pointerdown", [gx + 6, gy]);
+        const phraseAtPress = $("#phrase-text").value;
+        fire(win, "pointermove", [gx + 6, gy]);
+        handles.pressedAgain = { moved: $("#phrase-text").value !== phraseAtPress, held: foot.classList.contains("is-dragging") };
+        fire(win, "pointerup", [gx + 6, gy]);
+        handles.pressedAgainEnded = { held: foot.classList.contains("is-dragging") };
+
+        // A finger does what a mouse does: there is no button to be the first, and none to be let go of outside the page.
+        mouse.type = "touch";
+        const touchBefore = looks();
+        handles.touch = { ...dragDot("Drag to move A's sword elbow", [0, -12]), before: touchBefore, after: looks() };
+        mouse.type = "mouse";
+
+        // Taken far off the stage, a part goes as far as its sliders allow and nothing is broken.
+        dragDot("Drag to move A's hips", [-4000, -4000], 3);
+        const broken = () => $$("#stage path").filter((path) => /NaN|Infinity|undefined/.test(path.getAttribute("d") ?? "")).length;
+        handles.farOff = { sliders: sliders("hipX", "hipY"), phrase: /NaN|null|Infinity/.test($("#phrase-text").value), paths: broken() };
+        dragDot("Drag to move A's hips", [4000, 4000], 3);
+        handles.farOther = sliders("hipX", "hipY");
+
+        // At a later step the dots are on that step's poses, and a drag changes that step and no other.
+        $("#step-add").click();
+        const added = looks();
+        dragDot("Drag to move B's front foot", [-24, -8]);
+        handles.secondStep = { before: added, after: looks() };
+
+        // ---------- When they are not there ----------
+
+        // Playing hides them, since the stage shows a moment between steps, and so does stopping where it is, which may be
+        // between two. Picking a step brings them back.
+        button("Play").click();
+        handles.playing = { shown: visible($("#handles")), toggle: visible($("[data-toggle=handles]")) };
+        button("Pause").click();
+        handles.paused = { shown: visible($("#handles")) };
+        // So does moving along the timeline, until a step is picked.
+        input($("#timeline"), 0);
+        handles.scrubbed = { shown: visible($("#handles")) };
+        $$(".step-button")[0].click();
+        handles.stepPicked = { shown: visible($("#handles")) };
+        // The close-up of the hand looks at one place only.
+        button("Hand close-up").click();
+        handles.closeUp = { shown: visible($("#handles")) };
+        button("Hand close-up").click();
+        // The toggle puts them away and brings them back.
+        button("Drag dots").click();
+        handles.off = { shown: visible($("#handles")), pressed: pressed($("[data-toggle=handles]")) };
+        button("Drag dots").click();
+        handles.on = { shown: visible($("#handles")), pressed: pressed($("[data-toggle=handles]")) };
+        // Text that is not yet a phrase puts the stage on hold, and the dots with it.
+        const good = $("#phrase-text").value;
+        input($("#phrase-text"), '{"steps": [');
+        handles.onHold = { shown: visible($("#handles")) };
+        input($("#phrase-text"), good);
+        $$(".step-button")[0].click();
+        handles.resumed = { shown: visible($("#handles")) };
+        // One fencer alone has no dots on the other.
+        $("#meta-solo").click();
+        handles.solo = { A: $$(".handle").filter((d) => d.title.startsWith("Drag to move A") && visible(d)).length, B: $$(".handle").filter((d) => d.title.startsWith("Drag to move B") && visible(d)).length };
+        $("#meta-solo").click();
+        handles.pair = { B: $$(".handle").filter((d) => d.title.startsWith("Drag to move B") && visible(d)).length };
+        // Leaving the Creator takes them away.
+        button("Base postures").click();
+        handles.left = { shown: visible($("#handles")) };
+        button("Creator").click();
+        handles.back = { shown: visible($("#handles")) };
       }
 
       function drive(win, doc, seen) {

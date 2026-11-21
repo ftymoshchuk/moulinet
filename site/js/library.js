@@ -272,7 +272,7 @@ export const HAND_POSITIONS = { "-180": "1st", "-135": "1/2", "-90": "2nd", "-45
 // the camera: the camera is on the side of the piste the chest turns to in the
 // postures, and on the other side in the scenes.
 export const JOINTS = [
-  { key: "x", label: "Position on the piste", min: -70, max: 300, unit: " cm" },
+  { key: "x", label: "Position on the piste", min: -70, max: 340, unit: " cm" },
   { key: "footF", label: "Front foot reach", min: 10, max: 135, unit: " cm" },
   { key: "liftF", label: "Front foot lift", min: 0, max: 30, unit: " cm" },
   { key: "hipX", label: "Hips forward", min: 5, max: 90, unit: " cm" },

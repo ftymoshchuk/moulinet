@@ -601,6 +601,58 @@ textarea:focus-visible {
   pointer-events: none;
 }
 
+/* The dots the Creator puts on the parts of the fencers that can be dragged. They lie over the stage, placed by how far
+   across and down it each is, so the mirror the stage is shown in turns them with it. Each is a large target round a
+   small dot, so a finger can take hold of one. The fencer being edited has solid dots, and the other's are rings. */
+.stage__handles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.handle {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  pointer-events: auto;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.handle::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--accent-ink);
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.55);
+  transition: transform 0.12s;
+}
+
+.handle:hover::before,
+.handle.is-dragging::before {
+  transform: scale(1.4);
+}
+
+.handle.is-dragging {
+  cursor: grabbing;
+}
+
+/* The other fencer's: rings, until one is taken hold of, which makes that fencer the one being edited. */
+.handle.is-other::before {
+  background: transparent;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-ink);
+  opacity: 0.8;
+}
+
 .stage__note {
   margin: 8px 0 0;
   color: var(--text-quiet);
