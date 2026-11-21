@@ -269,20 +269,21 @@ test("at each parry the blades meet in three dimensions, not only from the side:
   }
 });
 
-test("in the scenes the older man holds a guard of his own, not the young man's mirrored, on the same feet, and comes back to it", () => {
+test("in the scenes the older man holds the same guard as the young man, 3 cm higher on the same feet, and comes back to it", () => {
   const apart = (p, q) => Math.hypot(...p.map((v, i) => v - q[i]));
   const young = skeleton(resolvePose({ pose: "guard" }));
-  for (const { id, phrase } of SCENES.filter(({ phrase }) => !phrase.solo)) {
+  // The library's scenes: the ones kept as test data have the older man's own hand, as the library had it when they were made.
+  for (const { id, phrase } of PRESETS.filter(({ phrase }) => !phrase.solo)) {
     const guards = buildTimeline(phrase).steps.filter((step) => step.specB.pose === "guard");
     assert.ok(guards.length >= 2, `${id}: he is in guard at the start, and again later`);
     for (const step of guards) {
       const J = skeleton(step.B);
-      // Standing taller, with the sword hand and the point somewhere else.
-      assert.ok(apart(J.hip, young.hip) >= 2, `${id}: his hips are ${apart(J.hip, young.hip)} cm from the young man's`);
-      assert.ok(apart(J.hn, young.hn) >= 5, `${id}: his sword hand is ${apart(J.hn, young.hn)} cm from the young man's`);
-      assert.ok(apart(J.tip, young.tip) >= 5, `${id}: his point is ${apart(J.tip, young.tip)} cm from the young man's`);
-      // No foot is moved, so none slides into his parries.
+      // Standing taller, in a shallower bend, on the same feet.
+      assert.ok(Math.abs(J.hip[1] - young.hip[1] - 3) < 1e-9, `${id}: his hips are 3 cm higher, not ${J.hip[1] - young.hip[1]}`);
       assert.deepEqual([J.ankF, J.ankB], [young.ankF, young.ankB], `${id}: his feet are where the guard has them`);
+      // His sword hand is the guard's: the arm, the forearm, the blade and the hand are the young man's.
+      for (const key of ["arm", "fore", "armYaw", "foreYaw", "blade", "yaw", "hand"]) assert.equal(step.B[key], POSES.guard[key], `${id}: his ${key} is the guard's`);
+      assert.ok(apart(J.hn, young.hn) <= 3.0001 && apart(J.tip, young.tip) <= 3.0001, `${id}: his hand and point are the young man's, 3 cm higher`);
       // It is one guard, whenever he is in it.
       assert.deepEqual({ ...step.B, x: 0 }, { ...guards[0].B, x: 0 }, `${id}: the same guard every time`);
     }

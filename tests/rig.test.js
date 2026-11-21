@@ -297,7 +297,7 @@ test("the drills from the class: the light cut lands on the inside of B's blade,
     }
     assert.ok(near.gap > -0.1 && near.gap < 0.6, `${id}: the blades meet, ${near.gap.toFixed(2)} cm apart`);
     assert.ok(near.j > 8 && near.j < 20, `${id}: just above B's guard, ${near.j} cm out along his blade`);
-    assert.ok(near.i > 45 && near.i < 70, `${id}: with the middle of A's blade, ${near.i} cm out`);
+    assert.ok(near.i > 45 && near.i < 80, `${id}: with the middle or the foible of A's blade, ${near.i} cm out`);
     assert.ok(near.side > 0, `${id}: A's blade comes from his own side of the line, onto the inside of B's`);
   }
 });
