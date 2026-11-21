@@ -206,8 +206,8 @@ test("in a browser, the practice library holds the drills from the class, shows 
   // does not play it.
   assert.deepEqual(seen.scenes, [
     { title: "Light cut on the blade, riposte to the top of the glove", pressed: "true", card: "Pair · 8 steps · 30.3 s", ...LIVE, play: "Play", count: "01 / 08", solo: false, camera: "0", time: "0.00 / 30.34 s", scrubbedTo: "08 / 08" },
-    { title: "Light cut on the blade, riposte to the side of the glove", pressed: "true", card: "Pair · 10 steps · 3.7 s", ...LIVE, play: "Play", count: "01 / 10", solo: false, camera: "0", time: "0.00 / 3.73 s", scrubbedTo: "10 / 10" },
-    { title: "Light cut on the blade, tierce, Hungarian cut under the glove", pressed: "true", card: "Pair · 10 steps · 3.8 s", ...LIVE, play: "Play", count: "01 / 10", solo: false, camera: "0", time: "0.00 / 3.75 s", scrubbedTo: "10 / 10" },
+    { title: "Light cut on the blade, riposte to the side of the glove", pressed: "true", card: "Pair · 17 steps · 33.2 s", ...LIVE, play: "Play", count: "01 / 17", solo: false, camera: "0", time: "0.00 / 33.21 s", scrubbedTo: "17 / 17" },
+    { title: "Light cut on the blade, tierce, Hungarian cut under the glove", pressed: "true", card: "Pair · 17 steps · 33.2 s", ...LIVE, play: "Play", count: "01 / 17", solo: false, camera: "0", time: "0.00 / 33.23 s", scrubbedTo: "17 / 17" },
   ]);
   // A built-in scene says which class it was learned in, has no link to give, and cannot be deleted.
   assert.deepEqual(seen.builtIn, {
@@ -228,9 +228,9 @@ test("in a browser, the practice library holds the drills from the class, shows 
 
   assert.deepEqual(seen.stepped, {
     count: "03 / 08",
-    label: "B moves the sword hand",
+    label: "B lowers the hand",
     play: "Play",
-    announced: "Step 3 of 8: B moves the sword hand",
+    announced: "Step 3 of 8: B lowers the hand",
     // B has just moved his hand and has all four ghosts, a body and a blade each; A holds the guard and has none.
     ghosts: { A: 0, B: 8 },
   });
@@ -392,11 +392,11 @@ test("in a browser, the Creator edits a copy of a scene the way the page always 
     focus: "creator",
   });
   // The third step of the drill, with fencer B given a pose of the library: A's part of it is as the drill has it.
-  const third = `    {"label":"B moves the sword hand","ms":5000,"hold":2000,"A":{"pose":"guard","x":0,"adj":{"yaw":1,"blade":81}},`;
+  const third = `    {"label":"B lowers the hand","ms":5000,"hold":2000,"A":{"pose":"guard","x":0,"adj":{"yaw":1,"blade":81}},`;
   assert.deepEqual(seen.posed, {
     line: `${third}"B":{"pose":"parry3","x":310}},`,
     pressed: ["Parry 3parry3"],
-    editing: "Step 3: B moves the sword hand. Fencer B.",
+    editing: "Step 3: B lowers the hand. Fencer B.",
   });
   assert.deepEqual(seen.adjusted, {
     line: `${third}"B":{"pose":"parry3","x":200,"adj":{"blade":100}}},`,

@@ -1,6 +1,7 @@
 // The first drill of the library, "Light cut on the blade, riposte to the top of the glove", as it was recorded in the Creator and
 // sent as phrase data, as a corrected version of what the page had. It is kept here exactly as it came, so that a test can hold
-// the library to it: the steps and the times they took are the recording's.
+// the library to it: the poses and the times they took are the recording's, though the steps have since been named for what they
+// do instead of what Record called them, and every drill opens with them.
 export const RECORDED_FIRST_DRILL = JSON.parse(String.raw`{
   "camera": 0,
   "steps": [

@@ -269,28 +269,22 @@ test("at each parry the blades meet in three dimensions, not only from the side:
   }
 });
 
-test("in the scenes the older man holds the same guard as the young man, 3 cm higher on the same feet, and comes back to it", () => {
-  const apart = (p, q) => Math.hypot(...p.map((v, i) => v - q[i]));
-  const young = skeleton(resolvePose({ pose: "guard" }));
-  // The library's scenes built from his guard: the ones kept as test data have the older man's own hand, as the library had it
-  // when they were made, and the first drill is kept as it was recorded, with B holding his blade out level across, so it is
-  // left out too.
-  const built = PRESETS.filter(({ id, phrase }) => !phrase.solo && id !== "class-light-cut-top-of-glove");
-  assert.equal(built.length, 2, "the other two drills");
-  for (const { id, phrase } of built) {
-    const guards = buildTimeline(phrase).steps.filter((step) => step.specB.pose === "guard");
-    assert.ok(guards.length >= 2, `${id}: he is in guard at the start, and again later`);
-    for (const step of guards) {
-      const J = skeleton(step.B);
-      // Standing taller, in a shallower bend, on the same feet.
-      assert.ok(Math.abs(J.hip[1] - young.hip[1] - 3) < 1e-9, `${id}: his hips are 3 cm higher, not ${J.hip[1] - young.hip[1]}`);
-      assert.deepEqual([J.ankF, J.ankB], [young.ankF, young.ankB], `${id}: his feet are where the guard has them`);
-      // His sword hand is the guard's: the arm, the forearm, the blade and the hand are the young man's.
-      for (const key of ["arm", "fore", "armYaw", "foreYaw", "blade", "yaw", "hand"]) assert.equal(step.B[key], POSES.guard[key], `${id}: his ${key} is the guard's`);
-      assert.ok(apart(J.hn, young.hn) <= 3.0001 && apart(J.tip, young.tip) <= 3.0001, `${id}: his hand and point are the young man's, 3 cm higher`);
-      // It is one guard, whenever he is in it.
-      assert.deepEqual({ ...step.B, x: 0 }, { ...guards[0].B, x: 0 }, `${id}: the same guard every time`);
-    }
+test("the drills that go on to a riposte end with both fencers where they began, and B stands 3 cm higher than in the guard in every step of his riposte", () => {
+  const riposting = PRESETS.filter(({ id }) => id !== "class-light-cut-top-of-glove");
+  assert.equal(riposting.length, 2, "the other two drills");
+  for (const { id, phrase } of riposting) {
+    const timeline = buildTimeline(phrase);
+    // Both recover to the poses they began in, so that the scene loops without a jump.
+    const [first, last] = [timeline.steps[0], timeline.steps.at(-1)];
+    assert.deepEqual([last.A, last.B], [first.A, first.B], `${id}: both recover to where they began`);
+    assert.deepEqual(timeline.steps.slice(-2).map(({ label }) => label), ["Both recover, B's point up", "B lowers the point to level"]);
+    // His riposte is from a height of his own: his hips 3 cm above the guard's, in a shallower bend, in every step of it, so that
+    // he does not bob within it.
+    const riposte = timeline.steps.filter((step) => step.specB.pose !== "guard");
+    assert.ok(riposte.length >= 5, `${id}: a riposte of ${riposte.length} steps`);
+    for (const step of riposte) assert.equal(step.B.hipY, POSES.guard.hipY + 3, `${id}, ${step.label}: his hips`);
+    // He is in the guard for the opening, and not above it.
+    for (const step of timeline.steps.slice(0, 8)) assert.equal(step.specB.pose, "guard", `${id}, ${step.label}`);
   }
 });
 

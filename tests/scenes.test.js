@@ -59,8 +59,8 @@ test("a link with a name and password in front, one that is too long, or one tha
 test("a scene is described in words: pair or solo, steps, seconds", () => {
   assert.deepEqual(PRESETS.map(({ phrase }) => sceneSummary(phrase)), [
     "Pair · 8 steps · 30.3 s",
-    "Pair · 10 steps · 3.7 s",
-    "Pair · 10 steps · 3.8 s",
+    "Pair · 17 steps · 33.2 s",
+    "Pair · 17 steps · 33.2 s",
   ]);
   // A solo scene, as the Creator can make one, says so.
   assert.equal(sceneSummary({ solo: true, steps: [{ label: "Alone", hold: 500 }, { ms: 200, hold: 500 }] }), "Solo · 2 steps · 1.2 s");

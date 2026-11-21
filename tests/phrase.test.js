@@ -75,8 +75,8 @@ test("the built-in phrases have the lengths the page reports", () => {
   });
   assert.deepEqual(lengths, [
     [8, 30340],
-    [10, 3730],
-    [10, 3750],
+    [17, 33210],
+    [17, 33230],
   ]);
 });
 

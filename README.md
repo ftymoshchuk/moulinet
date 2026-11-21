@@ -27,18 +27,18 @@ it comes from, such as a class taken in person, a video or a book, the event it
 was noted at and a link to a reference, such as a video of the bout. The library
 holds only what was learned live: the three built in are drills from a class, as
 they were taught there. The page opens paused, and so does each scene you pick;
-nothing on it plays until you press Play. The first drill is a corrected version,
-recorded in the Creator step by step with the times the steps took: the defender
-holds his blade out level and lowers the point and the hand, the attacker brings
-his blade down from upright to level and reaches out, and the defender lowers his
-elbow. It stops there, before the riposte to the top of the glove, which is still
-to be recorded. In each of the other two the attacker cuts lightly across the
-defender's blade, level, just above the guard, and the defender ripostes to the
-attacker's sword hand: in onto its outside, level, when the attacker raises the
-point; or, when the attacker turns the guard out over that side, which is tierce,
-round and under the hand and up into the underside of the glove, the Hungarian cut.
-In those two the older man holds the same guard, standing a little higher, in a
-shallower bend, so the two do not stand as exact mirror images. The drills say where they
+nothing on it plays until you press Play. All three drills open with the same cut,
+a corrected version recorded in the Creator step by step with the times the steps
+took: the defender holds his blade out level and lowers the point and the hand, the
+attacker brings his blade down from upright to level and reaches out, and the
+defender lowers his elbow. The first drill stops there, before the riposte to the
+top of the glove, which is still to be recorded. In the other two the attacker then
+raises the point and the defender ripostes to the attacker's sword hand: round to
+the outside of it and in onto its outside, level; or, when the attacker turns the
+guard out over that side, which is tierce, round and under the hand and up into the
+underside of the glove, the Hungarian cut. Both then come back to where they began,
+the defender lowering his point to level last, so that his blade does not pass
+through the attacker's glove. The drills say where they
 come from: live learning, at Warsaw advanced sabre on 15 November 2026. A scene's
 source shows as a tag on its card. Scenes you save in the Creator are listed
 below them, with whatever you noted, and a link opens in a new tab. They live in
@@ -495,8 +495,8 @@ which the stage's mirror makes the right, the wrist bending no further than a wr
 can and no bone turning over, and the drills from the class landing where the class
 has them: the light cut on the inside of the defender's blade just above his guard,
 and each riposte edge first on the attacker's glove, on the outside or underneath,
-with no blade going into an arm at any moment, and the first drill held to the
-recording it was made from), and the published files (only relative links to
+with no blade going into an arm at any moment, and the cut every drill opens with
+held to the recording it was made from), and the published files (only relative links to
 files that exist, no outside requests, every element the scripts need, and the
 licences of what is bundled). Forty-six more run in a real browser: headless
 Chrome or Chromium loads the page, then a driver page works every control of
