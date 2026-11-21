@@ -67,11 +67,12 @@ function linear(a, b) {
 
 /**
  * The values of a part's joints that put it nearest `target`, a point of the stage in its units (cm), for a fencer
- * in `pose` facing `dir`, seen from `camera`. They are whole numbers within the ranges of the sliders, and start from
- * the pose's own, so a part taken a little further goes a little further. Returns `{ joint: value }` for the part's
- * joints, and leaves `pose` alone.
+ * in `pose` facing `dir`, seen from `camera`. They are within the ranges of the sliders, in whole numbers or, with a
+ * finer `unit`, in multiples of it, for a view so close that a whole degree is a long step; and they start from the
+ * pose's own, so a part taken a little further goes a little further. Returns `{ joint: value }` for the part's joints,
+ * and leaves `pose` alone.
  */
-export function solve(pose, dir, camera, handle, target) {
+export function solve(pose, dir, camera, handle, target, unit = 1) {
   const keys = handle.params;
   const start = Object.fromEntries(keys.map((key) => [key, Number(pose[key]) || 0]));
   const values = { ...start };
@@ -98,7 +99,9 @@ export function solve(pose, dir, camera, handle, target) {
     });
     if (moved < 1e-4) break;
   }
-  return Object.fromEntries(keys.map((key) => [key, held(key, Math.round(values[key]), start[key])]));
+  // In multiples of the unit, with none of the arithmetic's own dust on them.
+  const whole = (v) => Number((Math.round(v / unit) * unit).toFixed(6));
+  return Object.fromEntries(keys.map((key) => [key, held(key, whole(values[key]), start[key])]));
 }
 
 // ---------- The stage and the page ----------

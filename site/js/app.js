@@ -928,28 +928,36 @@ const dots = ["A", "B"].flatMap((who) =>
 
 // What the stage looks at, as it was last drawn, which is what a point of the page is placed against.
 let stageView = DEFAULT_FRAME;
-// The drag in progress: the pointer that began it, whose part it is, and how far the pointer was from the part when it took
-// hold, so that the part does not jump to the pointer.
+// The drag in progress: the pointer that began it, whose part it is, the view the stage had when it took hold, and how far
+// the pointer was from the part then, so that the part does not jump to the pointer.
 let drag = null;
 
-// Whether the dots are on the stage: in the Creator, with a step picked, which the stage then shows as its own pose, and not
-// a moment between two, which is what it shows while a scene plays or is scrubbed, and no text waiting to be made a phrase of.
+// Whether the dots are on the stage: in the Creator, while the stage shows a step's own pose, which is what changing it
+// changes, and not a moment between two, and no text is waiting to be made a phrase of. A step picked is its own pose; so
+// is a moment stopped in a step's hold, which is where pasting a phrase, pausing and moving along the timeline can leave
+// the stage. Nothing is dragged while a scene plays.
 function handlesShown() {
-  return state.mode === "creator" && state.handles && !state.closeUp && state.phraseError === "" && state.pin !== null && state.pin < timeline.steps.length;
+  if (state.mode !== "creator" || !state.handles || state.phraseError !== "" || state.playing) return false;
+  if (state.pin !== null) return state.pin < timeline.steps.length;
+  const at = poseAt(timeline, state.time);
+  const step = timeline.steps[at.index];
+  return at.A === step.A && at.B === step.B;
 }
 
 // Puts each dot on its part of the fencer on the stage, by how far across and down the stage it is, as the stage is drawn.
+// A part that is off the stage, as most are in the close-up of a hand, has no dot, and in the close-up only the hand of the
+// fencer being reshaped is looked at, so only that fencer has dots.
 function drawHandles(now, camera, view) {
   const show = handlesShown();
   handlesEl.classList.toggle("hidden", !show);
   if (!show) return;
   const editing = editingFencer();
   for (const { who, part, el } of dots) {
+    const [across, down] = shareOf(placeOf(now[who], who === "A" ? 1 : -1, camera, part), view);
     // A scene of one fencer has no dots on the other.
-    const gone = who === "B" && timeline.solo;
+    const gone = (who === "B" && timeline.solo) || (state.closeUp && who !== editing) || across < -0.01 || across > 1.01 || down < -0.01 || down > 1.01;
     el.classList.toggle("hidden", gone);
     if (gone) continue;
-    const [across, down] = shareOf(placeOf(now[who], who === "A" ? 1 : -1, camera, part), view);
     el.style.left = `${(across * 100).toFixed(2)}%`;
     el.style.top = `${(down * 100).toFixed(2)}%`;
     el.classList.toggle("is-other", who !== editing);
@@ -975,7 +983,7 @@ function startDrag(event, who, part, el) {
   const pose = timeline.steps[currentIndex()][who];
   const point = placeOf(pose, who === "A" ? 1 : -1, viewCamera(), part);
   const grabbed = stageAt(event);
-  drag = { pointer: event.pointerId, who, part, el, offset: [grabbed[0] - point[0], grabbed[1] - point[1]] };
+  drag = { pointer: event.pointerId, who, part, el, frame: stageView, offset: [grabbed[0] - point[0], grabbed[1] - point[1]] };
   el.classList.add("is-dragging");
   window.addEventListener("pointermove", dragTo);
   window.addEventListener("pointerup", endDrag);
@@ -992,7 +1000,8 @@ function dragTo(event) {
   const { who, part, offset } = drag;
   const pointer = stageAt(event);
   const pose = timeline.steps[currentIndex()][who];
-  const values = solve(pose, who === "A" ? 1 : -1, viewCamera(), part, [pointer[0] - offset[0], pointer[1] - offset[1]]);
+  // Whole numbers, except in the close-up of a hand, where a degree of the arm is a long way on the stage, so tenths.
+  const values = solve(pose, who === "A" ? 1 : -1, viewCamera(), part, [pointer[0] - offset[0], pointer[1] - offset[1]], state.closeUp ? 0.1 : 1);
   const changed = Object.entries(values).filter(([key, value]) => value !== pose[key]);
   if (changed.length === 0) return;
   editCurrent((spec) => {
@@ -1011,6 +1020,8 @@ function stopDrag() {
   window.removeEventListener("pointermove", dragTo);
   window.removeEventListener("pointerup", endDrag);
   window.removeEventListener("pointercancel", endDrag);
+  // A close-up held still for the drag goes back to following the hand.
+  update();
 }
 
 function endDrag(event) {
@@ -1289,11 +1300,14 @@ function polyline(points, count) {
 // fencer and most of the blade in.
 //
 // A close-up looks at a sword hand instead, and follows it as it moves: the hand
-// of the fencer being reshaped in the Creator, and A's elsewhere.
+// of the fencer being reshaped in the Creator, and A's elsewhere. While a part is
+// dragged in it the view holds still, so that the part stays under the pointer, and
+// goes back to following the hand when the pointer is let go.
 //
 // The box is worked out once for the camera at 0, and goes round with the camera.
 function frameFor(now) {
   if (state.closeUp) {
+    if (drag) return drag.frame;
     const who = state.mode === "creator" ? editingFencer() : "A";
     return handFrame(now[who], who === "A" ? 1 : -1, viewCamera());
   }
