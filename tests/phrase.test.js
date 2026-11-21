@@ -74,7 +74,7 @@ test("the built-in phrases have the lengths the page reports", () => {
     return [timeline.steps.length, timeline.duration];
   });
   assert.deepEqual(lengths, [
-    [6, 3220],
+    [8, 30340],
     [10, 3730],
     [10, 3750],
   ]);

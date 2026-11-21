@@ -106,13 +106,15 @@ test("the scenes are drawn with the versions: they use the postures by name", ()
   assert.equal(buildTimeline(PRESETS[0].phrase).steps[0].A.rArm, POSES.guard.rArm);
   useVersions({ guard: { rArm: -100, hipX: 45, hipY: 70 } });
   const { A, B } = buildTimeline(PRESETS[0].phrase).steps[0];
+  assert.equal(B.hipY, 70, "the first drill's B has no height of his own");
   assert.equal(A.rArm, -100);
   assert.equal(B.rArm, -100);
   assert.equal(A.hipX, 45);
   assert.equal(A.hipY, 70);
-  // A scene's own adjustments still win: the older fencer's guard stands his own height.
-  assert.equal(first.B.adj.hipY, 80);
-  assert.equal(B.hipY, 80);
+  // A scene's own adjustments still win: in the drills built from the older fencer's guard he stands his own height.
+  const second = PRESETS[1].phrase.steps[0];
+  assert.equal(second.B.adj.hipY, 80);
+  assert.equal(buildTimeline(PRESETS[1].phrase).steps[0].B.hipY, 80);
   useVersions({});
   assert.equal(buildTimeline(PRESETS[0].phrase).steps[0].A.rArm, POSES.guard.rArm, "and taking them out puts it all back");
 });

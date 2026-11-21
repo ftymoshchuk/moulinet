@@ -123,7 +123,7 @@ test("in a browser, the page opens on the practice library and builds its contro
   assert.match(dom, /<button[^>]*data-mode="library"[^>]*aria-pressed="true"[^>]*>Practice library</);
   assert.equal(count(/class="scene-button"/g), PRESETS.length, "scenes in the library");
   assert.match(dom, /id="scene-title"[^>]*>Light cut on the blade, riposte to the top of the glove</);
-  assert.equal(count(/class="step-button"/g), 6, "step buttons");
+  assert.equal(count(/class="step-button"/g), 8, "step buttons");
   assert.equal(count(/class="pose-button"/g), Object.keys(POSE_NAMES).length, "pose buttons");
   // A section's postures are listed when they are shown, not before.
   assert.equal(count(/class="base-button"/g), 0, "posture buttons");
@@ -135,7 +135,7 @@ test("in a browser, the page opens on the practice library and builds its contro
   assert.equal(count(/<input type="range" id="posture-joint-/g), JOINTS.length - 1, "sliders for a posture's numbers");
   assert.match(dom, /class="panel panel--posture hidden"/);
   // Nothing plays on its own: the page is at the first step, and Play is what it offers.
-  assert.match(dom, /id="step-count"[^>]*>01 \/ 06</);
+  assert.match(dom, /id="step-count"[^>]*>01 \/ 08</);
   assert.match(dom, /id="play-button"[^>]*aria-label="Play"/);
   // The panels of the other modes are there, and out of sight.
   assert.match(dom, /class="panel panel--poses hidden"/);
@@ -160,7 +160,7 @@ const MIRRORED = "matrix(-1, 0, 0, 1, 0, 0)";
 
 test("in a browser, the page opens paused on the first scene, and nothing plays until Play is pressed", { skip, timeout: 120_000 }, async () => {
   const { seen } = await drive();
-  assert.deepEqual(seen.opening, { title: PRESETS[0].phrase.name, play: "Play", pauseHidden: true, playShown: true, count: "01 / 06", time: "0.00 / 3.22 s" });
+  assert.deepEqual(seen.opening, { title: PRESETS[0].phrase.name, play: "Play", pauseHidden: true, playShown: true, count: "01 / 08", time: "0.00 / 30.34 s" });
 });
 
 test("in a browser, the stage is shown in a mirror in every mode, so the fencers are right-handed", { skip, timeout: 120_000 }, async () => {
@@ -205,7 +205,7 @@ test("in a browser, the practice library holds the drills from the class, shows 
   // The drills from the class say what kind of learning they come from, on the card and beside the scene. Choosing one
   // does not play it.
   assert.deepEqual(seen.scenes, [
-    { title: "Light cut on the blade, riposte to the top of the glove", pressed: "true", card: "Pair · 6 steps · 3.2 s", ...LIVE, play: "Play", count: "01 / 06", solo: false, camera: "0", time: "0.00 / 3.22 s", scrubbedTo: "06 / 06" },
+    { title: "Light cut on the blade, riposte to the top of the glove", pressed: "true", card: "Pair · 8 steps · 30.3 s", ...LIVE, play: "Play", count: "01 / 08", solo: false, camera: "0", time: "0.00 / 30.34 s", scrubbedTo: "08 / 08" },
     { title: "Light cut on the blade, riposte to the side of the glove", pressed: "true", card: "Pair · 10 steps · 3.7 s", ...LIVE, play: "Play", count: "01 / 10", solo: false, camera: "0", time: "0.00 / 3.73 s", scrubbedTo: "10 / 10" },
     { title: "Light cut on the blade, tierce, Hungarian cut under the glove", pressed: "true", card: "Pair · 10 steps · 3.8 s", ...LIVE, play: "Play", count: "01 / 10", solo: false, camera: "0", time: "0.00 / 3.75 s", scrubbedTo: "10 / 10" },
   ]);
@@ -227,12 +227,12 @@ test("in a browser, the practice library holds the drills from the class, shows 
   assert.deepEqual(seen.libraryShows, { chosen: ["library"], panels: ["stage", "detail", "library"], controls: CONTROLS });
 
   assert.deepEqual(seen.stepped, {
-    count: "03 / 06",
-    label: "B's guard holds; top of A's glove open",
+    count: "03 / 08",
+    label: "B moves the sword hand",
     play: "Play",
-    announced: "Step 3 of 6: B's guard holds; top of A's glove open",
-    // A has just come off B's blade and has all four ghosts, a body and a blade each; B holds the guard and has none.
-    ghosts: { A: 8, B: 0 },
+    announced: "Step 3 of 8: B moves the sword hand",
+    // B has just moved his hand and has all four ghosts, a body and a blade each; A holds the guard and has none.
+    ghosts: { A: 0, B: 8 },
   });
   // (The close-up of the hand starts off, and is not one of the four; the Creator's dots to drag start on, and are not either.)
   assert.deepEqual(seen.toggledOff, { pressed: ["false", "false", "false", "false", "false", "true", "true", "false"], ghostsHidden: true, trailsHidden: true, inkFilter: null });
@@ -379,24 +379,24 @@ test("in a browser, the Creator edits a copy of a scene the way the page always 
   assert.deepEqual(seen.copied, {
     showing: { chosen: ["creator"], panels: ["stage", "scene", "phrase", "step", "adjust", "poses"], controls: CONTROLS },
     name: "Light cut on the blade, riposte to the top of the glove",
-    note: "A attacks, B defends, bo",
+    note: "Recorded in the Creator,",
     // The copy keeps where the drill comes from.
     source: "Live learning",
     event: "Warsaw advanced sabre, 15 Nov 2026",
     save: "Save to library",
     copyHidden: true,
-    status: "Applied: 6 steps, 3.22 s",
-    count: "01 / 06",
+    status: "Applied: 8 steps, 30.34 s",
+    count: "01 / 08",
     asked: 0,
     // The button that was pressed went away with the mode; focus went to the mode's button.
     focus: "creator",
   });
   // The third step of the drill, with fencer B given a pose of the library: A's part of it is as the drill has it.
-  const third = `    {"label":"B's guard holds; top of A's glove open","ms":140,"hold":60,"A":{"pose":"extend","x":0,"adj":{"arm":-15,"fore":5,"blade":4,"yaw":-4,"hand":-45}},`;
+  const third = `    {"label":"B moves the sword hand","ms":5000,"hold":2000,"A":{"pose":"guard","x":0,"adj":{"yaw":1,"blade":81}},`;
   assert.deepEqual(seen.posed, {
     line: `${third}"B":{"pose":"parry3","x":310}},`,
     pressed: ["Parry 3parry3"],
-    editing: "Step 3: B's guard holds; top of A's glove open. Fencer B.",
+    editing: "Step 3: B moves the sword hand. Fencer B.",
   });
   assert.deepEqual(seen.adjusted, {
     line: `${third}"B":{"pose":"parry3","x":200,"adj":{"blade":100}}},`,
@@ -430,7 +430,7 @@ test("in a browser, the Creator edits a copy of a scene the way the page always 
   assert.match(seen.broken.status, /^Not applied: /);
   assert.equal(seen.broken.isError, true);
   assert.equal(seen.broken.kept, '{"steps": [', "the text stays as typed");
-  assert.equal(seen.broken.count, "03 / 06", "the last good phrase stays on stage");
+  assert.equal(seen.broken.count, "03 / 08", "the last good phrase stays on stage");
   assert.deepEqual(seen.unknown, {
     status: "Applied. Unknown pose flunge shown as guard",
     isWarning: true,

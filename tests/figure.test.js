@@ -272,8 +272,12 @@ test("at each parry the blades meet in three dimensions, not only from the side:
 test("in the scenes the older man holds the same guard as the young man, 3 cm higher on the same feet, and comes back to it", () => {
   const apart = (p, q) => Math.hypot(...p.map((v, i) => v - q[i]));
   const young = skeleton(resolvePose({ pose: "guard" }));
-  // The library's scenes: the ones kept as test data have the older man's own hand, as the library had it when they were made.
-  for (const { id, phrase } of PRESETS.filter(({ phrase }) => !phrase.solo)) {
+  // The library's scenes built from his guard: the ones kept as test data have the older man's own hand, as the library had it
+  // when they were made, and the first drill is kept as it was recorded, with B holding his blade out level across, so it is
+  // left out too.
+  const built = PRESETS.filter(({ id, phrase }) => !phrase.solo && id !== "class-light-cut-top-of-glove");
+  assert.equal(built.length, 2, "the other two drills");
+  for (const { id, phrase } of built) {
     const guards = buildTimeline(phrase).steps.filter((step) => step.specB.pose === "guard");
     assert.ok(guards.length >= 2, `${id}: he is in guard at the start, and again later`);
     for (const step of guards) {

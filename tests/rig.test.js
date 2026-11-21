@@ -12,6 +12,7 @@ import { gripFrame, projector, skeleton } from "../site/js/figure.js";
 import { POSES, PRESETS } from "../site/js/library.js";
 import { buildTimeline, poseAt, resolvePose } from "../site/js/phrase.js";
 import { bladeSection, createFigure, poseRig } from "../site/js/rig.js";
+import { RECORDED_FIRST_DRILL } from "./recorded-drill.js";
 import { RETIRED } from "./retired-scenes.js";
 
 const bufferOf = (bytes) => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
@@ -197,9 +198,11 @@ test("the body moves smoothly: through every scene, no bone turns more than 25 d
 // ---------- The drills from the class ----------
 //
 // The class's drills are kept as they were taught, so where each cut lands is held here: the light cut on the inside
-// of B's blade just above his guard, and each riposte edge first on A's glove, on top, on the outside or underneath,
-// with no blade going into an arm on the way. The blades are measured as they are drawn: the edge and the back of each
-// as far either side of its middle as the blade is wide there, and the glove and sleeve as the body is skinned.
+// of B's blade just above his guard, and each riposte edge first on A's glove, on the outside or underneath, with no blade
+// going into an arm on the way. The first drill is the exception: it is kept as it was recorded, as a corrected version,
+// and is held to the recording, with no blade going into an arm on the way. The blades are measured as they are drawn: the
+// edge and the back of each as far either side of its middle as the blade is wide there, and the glove and sleeve as the
+// body is skinned.
 
 // The sword arm's glove and sleeve below the elbow, skinned as the page draws them, on the piste, each point with the
 // way the surface faces there.
@@ -270,8 +273,8 @@ function touch(blade, arm) {
   return { edge, deepest };
 }
 
+// The drills built from the class's light cut and a riposte; the first is not (see below).
 const CLASS_DRILLS = {
-  "class-light-cut-top-of-glove": { where: "on top", facing: new Vector3(0, 1, 0) },
   "class-light-cut-side-of-glove": { where: "on the outside", facing: new Vector3(0.4, 0, -0.92).normalize() },
   "class-light-cut-tierce-hungarian-cut": { where: "underneath", facing: new Vector3(0, -1, -0.3).normalize() },
 };
@@ -326,4 +329,31 @@ test("the drills from the class: each riposte lands edge first on A's glove, on 
       }
     }
   }
+});
+
+test("the first drill is kept as it was recorded in the Creator, step for step with the times they took, and in it no blade goes into an arm", () => {
+  const { phrase } = PRESETS.find((preset) => preset.id === "class-light-cut-top-of-glove");
+  assert.deepEqual(phrase.steps, RECORDED_FIRST_DRILL.steps);
+  assert.equal(phrase.camera, RECORDED_FIRST_DRILL.camera);
+  const timeline = buildTimeline(phrase);
+  assert.equal(timeline.steps.length, 8);
+  assert.equal(timeline.duration, 30340);
+  // B holds his blade out level and then lowers the point and the hand, while A stands as he was; then A brings his blade down
+  // from upright to level, and B's elbow drops last.
+  const [start, lowered, , settled, brought] = timeline.steps;
+  assert.deepEqual([start.B.blade, start.B.arm, start.B.yaw], [2, -5, 22]);
+  assert.equal(lowered.B.blade, -20);
+  assert.deepEqual([settled.B.arm, settled.B.fore], [-21, -21]);
+  assert.deepEqual([start.A.blade, settled.A.blade, brought.A.blade], [81, 81, 9]);
+  // Every 40 ms, neither blade goes into the other's sword arm; B's point passes A's glove as it lowers, near, and outside it.
+  let nearest = Infinity;
+  for (let ms = 0; ms <= timeline.duration; ms += 40) {
+    const now = poseAt(timeline, ms);
+    for (const [who, other] of [["B", "A"], ["A", "B"]]) {
+      const { deepest: d } = touch(bladeOf(who, now[who]), armSurface(other, now[other]));
+      assert.ok(d > -0.2, `at ${ms} ms: ${who}'s blade goes ${(-d).toFixed(2)} cm into ${other}'s arm`);
+      nearest = Math.min(nearest, d);
+    }
+  }
+  assert.ok(nearest < 2, `a blade does pass the other's arm close: ${nearest.toFixed(2)} cm`);
 });

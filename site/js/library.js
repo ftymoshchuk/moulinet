@@ -129,15 +129,20 @@ const OLDER_GUARD = { hipY: 80 };
 const olderGuard = (x) => ({ pose: "guard", x, adj: { ...OLDER_GUARD } });
 
 // The drills from a class, as they were taught there: A attacks and B defends.
-// From the guard, A cuts lightly across B's blade, level, landing just above B's
-// guard; B's guard holds and A's blade comes off it, A keeping the arm out. Then B
-// ripostes to A's sword hand. With A's blade forward and the hand in the 2/3, the
-// top of the glove is open, and B cuts down onto it. With A's point raised, the
-// bell over the fist covers the top, and the hand in the 3/4 shows B the outside
-// of the glove: B goes round to the outside of the hand and cuts in onto it,
-// level. Or, as B comes round, A turns the guard out over that side, the hand
-// where it was, which is tierce, and B goes on under the hand and cuts up into
-// the underside of the glove: the Hungarian cut.
+//
+// The first is kept as it was recorded in the Creator, as a corrected version of
+// what the page had: every step says both fencers in full, as a recording does, and
+// the steps are named for what moved in them, with the times they took. It stops
+// where the recording does, before B's riposte to the top of the glove.
+//
+// The other two are built from the pieces below. From the guard, A cuts lightly
+// across B's blade, level, landing just above B's guard; B's guard holds and A's
+// blade comes off it, A keeping the arm out. Then B ripostes to A's sword hand.
+// With A's point raised, the bell over the fist covers the top, and the hand in the
+// 3/4 shows B the outside of the glove: B goes round to the outside of the hand and
+// cuts in onto it, level. Or, as B comes round, A turns the guard out over that
+// side, the hand where it was, which is tierce, and B goes on under the hand and
+// cuts up into the underside of the glove: the Hungarian cut.
 //
 // A's light cut comes across from his own side, so it lands on the inside of B's
 // blade, the hand in the 3/4 so the edge leads. B's sword arm lies in a plane of
@@ -156,9 +161,8 @@ const lightCut = () => ({
   ease: "snap",
   A: extendTo(0, { arm: -15, fore: 5, blade: 7, yaw: 16.3, hand: 45 }),
 });
-// A's blade comes off B's, the arm held out: the blade forward and the hand in the 2/3, so the top of the glove is
-// open; or the point raised and the hand kept in the 3/4, so its outside is.
-const topOpen = () => ({ label: "B's guard holds; top of A's glove open", ms: 140, hold: 60, A: extendTo(0, { arm: -15, fore: 5, blade: 4, yaw: -4, hand: -45 }) });
+// A's blade comes off B's, the arm held out, the point raised and the hand kept in the 3/4, so the outside of the glove is
+// open.
 const pointUp = () => ({ label: "B's guard holds; A raises the point, side open", ms: 160, hold: 80, A: extendTo(0, { arm: -15, fore: 5, blade: 75, yaw: -5, hand: 45 }) });
 // B's riposte, from his own height in the guard so he does not bob.
 const olderTo = (pose, adj) => ({ pose, x: 310, adj: { hipY: 80, ...adj } });
@@ -202,15 +206,17 @@ export const PRESETS = [
       name: "Light cut on the blade, riposte to the top of the glove",
       source: LIVE,
       event: CLASS,
-      note: "A attacks, B defends, both in guard. A cuts lightly across B's blade, level, just above the guard; B's guard holds and A's blade comes off, A keeping the arm out with the top of the glove open. B lifts the point and cuts down onto the top of A's glove.",
+      note: "Recorded in the Creator, step by step, as a corrected version of this drill. Both in guard: B holds his blade out level toward A, then lowers the point and the hand. A brings his blade down from upright to level and reaches out. B lowers his elbow. The riposte to the top of the glove is still to be recorded.",
       camera: 0,
       steps: [
-        { label: "En garde", hold: 600, A: { pose: "guard", x: 0 }, B: olderGuard(310) },
-        lightCut(),
-        topOpen(),
-        { label: "B lifts the point", ms: 110, B: olderTo("prep", { lean: 4, turn: 62, arm: -5, fore: 30, blade: 62, yaw: 8, hand: 0 }) },
-        { label: "B cuts down onto the top of A's glove", ms: 150, hold: 700, ease: "snap", B: olderTo("extend", { lean: 9, turn: 62, arm: -13, fore: 20, blade: -5, yaw: 21, hand: 0 }) },
-        bothRecover(),
+        { label: "En garde", hold: 600, A: { pose: "guard", x: 0, adj: { yaw: 1, blade: 81 } }, B: { pose: "guard", x: 310, adj: { blade: 2, arm: -5, fore: -5, yaw: 22 } } },
+        { label: "B moves the blade tip", ms: 1610, hold: 2000, A: { pose: "guard", x: 0, adj: { yaw: 1, blade: 81 } }, B: { pose: "guard", x: 310, adj: { blade: -20, arm: -5, fore: -5, yaw: 22 } } },
+        { label: "B moves the sword hand", ms: 5000, hold: 2000, A: { pose: "guard", x: 0, adj: { yaw: 1, blade: 81 } }, B: { pose: "guard", x: 310, adj: { blade: -20, arm: -24, fore: -24, yaw: 22 } } },
+        { label: "B moves the sword hand", ms: 2590, hold: 2000, A: { pose: "guard", x: 0, adj: { yaw: 1, blade: 81 } }, B: { pose: "guard", x: 310, adj: { blade: -20, arm: -21, fore: -21, yaw: 22 } } },
+        { label: "A moves the blade tip", ms: 2270, hold: 1610, A: { pose: "guard", x: 0, adj: { yaw: 1, blade: 9 } }, B: { pose: "guard", x: 310, adj: { blade: -20, arm: -21, fore: -21, yaw: 22 } } },
+        { label: "A moves the sword hand", ms: 3020, hold: 2000, A: { pose: "guard", x: 0, adj: { yaw: 1, blade: 9, arm: -18, fore: -18 } }, B: { pose: "guard", x: 310, adj: { blade: -20, arm: -21, fore: -21, yaw: 22 } } },
+        { label: "A moves the sword hand", ms: 1310, hold: 2000, A: { pose: "guard", x: 0, adj: { yaw: 1, blade: 9, arm: -17, fore: -17 } }, B: { pose: "guard", x: 310, adj: { blade: -20, arm: -21, fore: -21, yaw: 22 } } },
+        { label: "B moves the sword elbow", ms: 2130, hold: 200, A: { pose: "guard", x: 0, adj: { yaw: 1, blade: 9, arm: -17, fore: -17 } }, B: { pose: "guard", x: 310, adj: { blade: -20, arm: -24, fore: -21, yaw: 22 } } },
       ],
     },
   },

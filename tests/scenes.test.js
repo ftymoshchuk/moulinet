@@ -58,7 +58,7 @@ test("a link with a name and password in front, one that is too long, or one tha
 
 test("a scene is described in words: pair or solo, steps, seconds", () => {
   assert.deepEqual(PRESETS.map(({ phrase }) => sceneSummary(phrase)), [
-    "Pair · 6 steps · 3.2 s",
+    "Pair · 8 steps · 30.3 s",
     "Pair · 10 steps · 3.7 s",
     "Pair · 10 steps · 3.8 s",
   ]);
