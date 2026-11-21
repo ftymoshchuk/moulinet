@@ -69,6 +69,17 @@ of it, as printed, with its figure number and page: twelve figures in all, for
 every posture but the stance at ease, which the book does not picture. No scenes
 are made from the book yet, so this section has no practice library.
 
+**Correcting a posture by dragging it.** Beside **Edit this posture**, **Edit a copy
+in the Creator** opens the posture on show there as a scene of its own: one fencer,
+one step named for the posture, in the pose by name, so it is drawn with your own
+version of it if you have one. It is looked at from the angle the postures were,
+whatever the camera was turned to, so the figure is as you saw it; the Creator's
+camera counts from the other side of the piste, so its slider says another number
+for the same view. There the parts of the fencer are dragged, on the stage and
+from above, to put right what was observed, and the phrase data says the numbers
+that made it, to copy and send on. It asks before it replaces a scene in the
+Creator that has changes that are not saved.
+
 **Changing a posture.** Under a posture's description, **Edit this posture** opens
 its numbers as sliders: the ones the Creator has for a moment, all but where the
 fencer stands. Move one and the posture changes on the stage, and in the Creator
@@ -472,7 +483,7 @@ and on the plan from above (a drag turned into joint values that put the part wh
 it was taken, for every pose, both fencers and every side of the piste, within the
 sliders' ranges, and the mirror they are shown in), the milestones a recording
 makes (how long a drag or a pause took as the times a step takes, and what a
-milestone is called), the base postures of each section, the skeleton and the camera
+milestone is called), the scene a base posture opens as in the Creator, the base postures of each section, the skeleton and the camera
 (the knees and the arms, the hand positions, where the stage looks, with every
 fencer in it at every camera angle all the way round, and every phrase and posture
 at every moment from eight camera angles, checked for broken path data), the
@@ -487,14 +498,14 @@ and each riposte edge first on the attacker's glove, on the outside or underneat
 with no blade going into an arm at any moment, and the first drill held to the
 recording it was made from), and the published files (only relative links to
 files that exist, no outside requests, every element the scripts need, and the
-licences of what is bundled). Forty-five more run in a real browser: headless
+licences of what is bundled). Forty-six more run in a real browser: headless
 Chrome or Chromium loads the page, then a driver page works every control of
 every tab and mode, with hostile input among it, and checks the result, down to
 the page opening paused, the stage turned in its mirror, the camera on the side
 of the piste it should be and turning all the way round, two browser tabs saving
 the same scene, a posture's numbers changed, kept, copied and put back, the
 parts of a fencer taken hold of and dragged with the pointer, on the stage and on
-the plan from above, and a recording of them, and the 3D figures
+the plan from above, and a recording of them, a base posture opened in the Creator, and the 3D figures
 taking the stage; and once more with
 WebGL turned off, where the stick figures stand in and the note says why. They
 need Chrome or Chromium on your `PATH`, or `CHROME_BIN` pointing at one, and are

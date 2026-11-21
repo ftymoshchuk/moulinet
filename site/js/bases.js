@@ -384,6 +384,15 @@ export function basesOf(section) {
 }
 
 /**
+ * A scene of one fencer standing in the posture `pose`, as the base postures show him, to open in the Creator and correct
+ * there by dragging his parts: one step named for the posture, in the pose by name, so it is drawn with the person's own
+ * version of the posture if they have one. `camera` is the angle the Creator is to look from (see `sceneCamera` in app.js).
+ */
+export function postureScene(pose, camera) {
+  return { name: POSE_NAMES[pose], camera, solo: true, steps: [{ label: POSE_NAMES[pose], hold: 1000, A: { pose, x: BASE_X } }] };
+}
+
+/**
  * The base postures as a phrase for one fencer, a step for each, so the stage can
  * show them one at a time: those of `section`, or all of them with none given.
  */

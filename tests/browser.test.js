@@ -13,7 +13,7 @@ import { delimiter, join } from "node:path";
 import { test } from "node:test";
 import { promisify } from "node:util";
 
-import { BASE_BLADE, BASE_CAMERA, BASE_SECTIONS, FIGURE_DIR, FIGURE_NOTE, basePhrase, basesOf } from "../site/js/bases.js";
+import { BASE_BLADE, BASE_CAMERA, BASE_SECTIONS, BASE_X, FIGURE_DIR, FIGURE_NOTE, basePhrase, basesOf, postureScene } from "../site/js/bases.js";
 import { DEFAULT_FRAME, floorPath, frameFrom, frameOf, handFrame, planFloorPath, planFrame } from "../site/js/figure.js";
 import { HANDLES, jointsOf, placeOf, shareOf } from "../site/js/handles.js";
 import { JOINTS, POSE_NAMES, POSES, PRESETS } from "../site/js/library.js";
@@ -1098,6 +1098,52 @@ test("in a browser, the dots stay in the close-up of a hand, those in view and t
   assert.ok(shown(closeUpB).length >= 1 && shown(closeUpB).every((dot) => dot.title.startsWith("Drag to move B")), "B's");
   assert.ok(shown(closeUpB).some((dot) => dot.title === "Drag to move B's sword hand"));
   assertOnTheParts(closeUpB, "the close-up of B's hand");
+});
+
+// ---------- A base posture opened in the Creator ----------
+
+test("in a browser, a base posture opens in the Creator as a scene of its own, looked at from where the postures were, after asking if the Creator has unsaved changes", { skip, timeout: 120_000 }, async () => {
+  const { postureCreator: opening } = (await drive()).seen;
+  const blade = basesOf("live")[4];
+  assert.equal(POSE_NAMES[blade.pose], "Blade up");
+  // A button beside Edit this posture, which stays as it was.
+  assert.deepEqual(opening.buttons, { edit: "Edit this posture", creator: "Edit a copy in the Creator", both: true });
+  assert.equal(opening.before.count, "05 / 14");
+  // The Creator's scene had changes that were not saved: told no, nothing moved, and the numbers stayed open.
+  assert.deepEqual({ tabs: opening.declined.tabs, title: opening.declined.title, floor: opening.declined.floor }, { tabs: ["live"], title: "Blade up", floor: opening.before.floor });
+  assert.equal(opening.declined.sliders, true);
+  assert.equal(opening.declined.creator, false);
+  // Told yes: the posture, alone, in the Creator as a scene named for it, one step, in the pose by name where the postures stand.
+  const scene = (camera) => postureScene(blade.pose, camera);
+  assert.deepEqual(JSON.parse(opening.opened.phrase), scene(-155));
+  assert.deepEqual(scene(-155), { name: "Blade up", camera: -155, solo: true, steps: [{ label: "Blade up", hold: 1000, A: { pose: blade.pose, x: BASE_X } }] });
+  assert.deepEqual(opening.opened.tabs, ["creator"]);
+  assert.equal(opening.opened.solo, true, "one fencer only");
+  assert.equal(opening.opened.name, "Blade up");
+  assert.equal(opening.opened.count, "01 / 01");
+  assert.equal(opening.opened.editing, "Step 1: Blade up. Fencer A.");
+  assert.equal(opening.opened.unsaved, "", "a scene that was only opened has nothing unsaved");
+  // The Creator's camera counts from the other side of the piste, so the posture is looked at from the same angle as before: the
+  // floor, which is drawn for the angle, is the one the postures had, though the slider says another number.
+  assert.equal(opening.before.camera, String(BASE_CAMERA));
+  assert.equal(opening.opened.camera, "-155");
+  assert.equal(opening.opened.floor, opening.before.floor);
+  // The dots of the one fencer, on the stage and on the plan, to drag him with. The stage holds the same view as for any scene,
+  // and a blade held up in this posture goes off the top of it, so the point of it has no dot there, as a part off the stage has
+  // none; the plan holds all of him.
+  assert.ok(opening.opened.dots.length >= SIDE.length - 1 && opening.opened.dots.every((title) => title.startsWith("Drag to move A's ")), `${opening.opened.dots}`);
+  assert.ok(opening.opened.dots.includes("Drag to move A's sword hand"));
+  assert.ok(!opening.opened.dots.includes("Drag to move A's blade tip"), "off the top of the stage");
+  assert.deepEqual(opening.opened.planDots, PLAN.map(({ name }) => `Drag to move A's ${name}, seen from above`));
+  // Back on the postures, the numbers are shut, and the posture is where it was.
+  assert.deepEqual({ tabs: opening.back.tabs, title: opening.back.title, sliders: opening.back.sliders, button: opening.back.button }, { tabs: ["live"], title: "Blade up", sliders: false, button: "Edit this posture" });
+  // From another angle round the piste it is looked at from that angle: the slider's -40 is 140 there, past the end of the slider's
+  // range the other way, and the floor is again the one the postures had, and nothing was asked.
+  assert.equal(opening.turned.camera, "-40");
+  assert.equal(opening.openedTurned.camera, "140");
+  assert.equal(opening.openedTurned.floor, opening.turned.floor);
+  assert.notEqual(opening.openedTurned.floor, opening.before.floor);
+  assert.deepEqual(JSON.parse(opening.openedTurned.phrase), scene(140));
 });
 
 // ---------- The plan: the fencers from above ----------

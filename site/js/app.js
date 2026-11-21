@@ -7,7 +7,7 @@
 //
 // The page has three tabs. Live knowledge and Book knowledge are sections, each
 // with a practice library and base postures of its own; the Creator is the third.
-import { BASE_BLADE, BASE_SECTIONS, FIGURE_DIR, FIGURE_NOTE, basePhrase, basesOf } from "./bases.js";
+import { BASE_BLADE, BASE_SECTIONS, FIGURE_DIR, FIGURE_NOTE, basePhrase, basesOf, postureScene } from "./bases.js";
 import { CAMERA_LIMIT, DEFAULT_FRAME, bladePaths, floorPath, frameFrom, frameOf, groundPath, handFrame, planFigure, planFloorPath, planFrame, stickFigure } from "./figure.js";
 import { HANDLES, jointsOf, placeOf, shareOf, solve, stagePoint } from "./handles.js";
 import { JOINTS, POSE_NAMES, POSES, PRESETS, SECTIONS } from "./library.js";
@@ -148,6 +148,7 @@ const baseFiguresEl = document.getElementById("base-figures");
 
 // A posture's numbers, to change for this device.
 const postureEditButton = document.getElementById("posture-edit");
+const postureCreatorButton = document.getElementById("posture-creator");
 const posturePanelEl = document.getElementById("posture-panel");
 const postureTargetEl = document.getElementById("posture-target");
 const postureDoneButton = document.getElementById("posture-done");
@@ -737,6 +738,14 @@ function openPosture(open) {
   announce(open ? `Editing the numbers of ${postureName(currentPosture())}.` : "Done editing.");
 }
 
+// Opens the posture on show in the Creator as a scene of its own, a copy to correct by dragging its parts, from the side and
+// from above, which is looked at from the side of the piste the postures were looked at from, at the angle the person had
+// turned the camera to.
+function editPostureInCreator() {
+  if (!confirmReplace()) return;
+  openInCreator(postureScene(currentPosture(), sceneCamera(state.camera)), null);
+}
+
 // ---------- Clock ----------
 
 let frame = 0;
@@ -1309,6 +1318,7 @@ sceneEditButton.addEventListener("click", editSelectedScene);
 sceneDeleteButton.addEventListener("click", deleteSelectedScene);
 
 postureEditButton.addEventListener("click", () => openPosture(!state.editPosture));
+postureCreatorButton.addEventListener("click", editPostureInCreator);
 postureDoneButton.addEventListener("click", () => openPosture(false));
 postureResetButton.addEventListener("click", putPostureBackToBuiltIn);
 postureCopyButton.addEventListener("click", copyNumbers);
@@ -1436,6 +1446,12 @@ function frameFor(now) {
 // left with his chest toward you, as the book's fencer does in its photographs.
 const SCENE_SIDE = 180;
 const POSTURE_SIDE = 0;
+// The camera angle for a scene in the Creator that looks from where the postures' camera slider, at `postureCamera`, looks from.
+// A scene's own is counted from the side the scenes are looked at from, and is held to the slider's range, so past either end is
+// the same view from the other way round.
+function sceneCamera(postureCamera) {
+  return ((((postureCamera + POSTURE_SIDE - SCENE_SIDE + 180) % 360) + 360) % 360) - 180;
+}
 function sideOf() {
   return state.mode === "base" ? POSTURE_SIDE : SCENE_SIDE;
 }

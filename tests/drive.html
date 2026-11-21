@@ -31,6 +31,7 @@
             await drivePostures(win, frame.contentDocument, results.seen);
             driveHandles(win, frame.contentDocument, results.seen);
             drivePlan(win, frame.contentDocument, results.seen);
+            drivePostureCreator(win, frame.contentDocument, results.seen);
             await drive3d(win, frame.contentDocument, results.seen);
             await driveFigures(win, frame.contentDocument, results.seen);
           }
@@ -41,8 +42,9 @@
       });
 
       // The book's photographs of its postures load, at the size the page says. Each posture's are asked for as it is
-      // shown, and all are waited for together: the browser's virtual clock runs on while it waits, and the driver has
-      // only so much of it.
+      // shown, and all are waited for together. What is waited for is the load, which is what the page promises: a
+      // photograph of a posture that was gone on from is no longer on the page, and a browser is in no hurry to decode
+      // one that is not, which took the browser's virtual clock, and the driver's share of it, tens of seconds.
       async function driveFigures(win, doc, seen) {
         const $$ = (selector) => [...doc.querySelectorAll(selector)];
         $$("button").find((b) => b.textContent.trim() === "Book knowledge").click();
@@ -50,9 +52,16 @@
           posture.click();
           return $$("#base-figures img");
         });
+        const loaded = (image) =>
+          image.complete
+            ? Promise.resolve()
+            : new Promise((resolve) => {
+                image.addEventListener("load", resolve, { once: true });
+                image.addEventListener("error", resolve, { once: true });
+              });
         seen.figuresLoaded = await Promise.all(
           asked.map((images) =>
-            Promise.all(images.map((image) => image.decode().then(() => image.naturalWidth === Number(image.getAttribute("width")) && image.naturalHeight === Number(image.getAttribute("height")), () => false))),
+            Promise.all(images.map((image) => loaded(image).then(() => image.naturalWidth === Number(image.getAttribute("width")) && image.naturalHeight === Number(image.getAttribute("height"))))),
           ),
         );
       }
@@ -753,6 +762,69 @@
         plan.far = { before: farBefore, during: farDuring, after: farAfter, sliders: farSliders, back: { before: backBefore, during: backDuring, after: looks() } };
         $$(".step-button")[0].click();
         plan.far.firstStep = looks();
+      }
+
+      // A base posture opened in the Creator: a button beside Edit this posture puts the posture on show there as a scene of its
+      // own, to correct by dragging its parts, looked at from where the postures were looked at, whatever angle the camera was at.
+      function drivePostureCreator(win, doc, seen) {
+        const $ = (selector) => doc.querySelector(selector);
+        const $$ = (selector) => [...doc.querySelectorAll(selector)];
+        const button = (name) => $$("button").find((b) => b.textContent.trim() === name || b.getAttribute("aria-label") === name);
+        const input = (el, value) => {
+          el.value = String(value);
+          el.dispatchEvent(new win.Event("input", { bubbles: true }));
+        };
+        const text = (selector) => $(selector).textContent;
+        const visible = (el) => el.getClientRects().length > 0;
+        const pressed = (b) => b.getAttribute("aria-pressed") === "true";
+        seen.postureCreator = {};
+        const out = seen.postureCreator;
+        const where = () => ({
+          tabs: $$("[data-tab]").filter(pressed).map((b) => b.dataset.tab),
+          title: text("#step-label"),
+          count: text("#step-count"),
+          floor: $("#floor").getAttribute("d"),
+          camera: $("#camera").value,
+        });
+        const opened = () => ({
+          ...where(),
+          phrase: $("#phrase-text").value,
+          solo: $("#meta-solo").checked,
+          name: $("#meta-name").value,
+          editing: text("#edit-title"),
+          dots: $$("#handles .handle").filter(visible).map((d) => d.title),
+          planDots: $$("#plan-handles .handle").filter(visible).map((d) => d.title),
+          unsaved: text("#save-status"),
+        });
+
+        // The postures of live knowledge, on the fifth, Blade up: the posture's own buttons, side by side.
+        button("Base postures").click();
+        $$(".base-button")[4].click();
+        out.buttons = { edit: text("#posture-edit").trim(), creator: text("#posture-creator").trim(), both: visible($("#posture-edit")) && visible($("#posture-creator")) };
+        out.before = where();
+        // The Creator's scene has changes that are not saved, so it asks first, and "no" leaves everything where it was.
+        win.confirm = () => false;
+        $("#posture-edit").click();
+        const sliders = visible($("#posture-panel"));
+        $("#posture-creator").click();
+        out.declined = { ...where(), sliders, creator: visible($("#phrase-text")) };
+        // "Yes" opens it: the posture, alone, as the Creator's scene, from the angle the camera was at, and the numbers of the
+        // posture, which were open to change, are closed with the postures.
+        win.confirm = () => true;
+        $("#posture-creator").click();
+        out.opened = opened();
+        // Back on the postures it is as it was left, with the numbers shut; the camera is turned to -40 and the posture opened
+        // again, which now has nothing unsaved to ask about, from that angle.
+        button("Base postures").click();
+        out.back = { ...where(), sliders: visible($("#posture-panel")), button: text("#posture-edit").trim() };
+        input($("#camera"), -40);
+        out.turned = where();
+        win.confirm = () => {
+          throw new Error("it asked, with nothing unsaved");
+        };
+        $("#posture-creator").click();
+        out.openedTurned = opened();
+        win.confirm = () => true;
       }
 
       // Recording, in the Creator: each part let go of after a drag makes a milestone, a step after the one the drag began from,
