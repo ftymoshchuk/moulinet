@@ -27,6 +27,7 @@
             drive(win, frame.contentDocument, results.seen);
             await drivePostures(win, frame.contentDocument, results.seen);
             driveHandles(win, frame.contentDocument, results.seen);
+            drivePlan(win, frame.contentDocument, results.seen);
             await drive3d(win, frame.contentDocument, results.seen);
             await driveFigures(win, frame.contentDocument, results.seen);
           }
@@ -387,7 +388,7 @@
             closeUp: pressed($("[data-toggle=closeUp]")),
             editing: text("#edit-title"),
             shown: visible($("#handles")),
-            dots: $$(".handle").map((dot) => {
+            dots: $$("#handles .handle").map((dot) => {
               const r = dot.getBoundingClientRect();
               return { title: dot.title, shown: visible(dot), other: dot.classList.contains("is-other"), dragging: dot.classList.contains("is-dragging"), across: (r.left + r.width / 2 - box.left) / box.width, down: (r.top + r.height / 2 - box.top) / box.height, size: [r.width, r.height] };
             }),
@@ -570,14 +571,185 @@
         $$(".step-button")[0].click();
         // One fencer alone has no dots on the other.
         $("#meta-solo").click();
-        handles.solo = { A: $$(".handle").filter((d) => d.title.startsWith("Drag to move A") && visible(d)).length, B: $$(".handle").filter((d) => d.title.startsWith("Drag to move B") && visible(d)).length };
+        handles.solo = { A: $$("#handles .handle").filter((d) => d.title.startsWith("Drag to move A") && visible(d)).length, B: $$("#handles .handle").filter((d) => d.title.startsWith("Drag to move B") && visible(d)).length };
         $("#meta-solo").click();
-        handles.pair = { B: $$(".handle").filter((d) => d.title.startsWith("Drag to move B") && visible(d)).length };
+        handles.pair = { B: $$("#handles .handle").filter((d) => d.title.startsWith("Drag to move B") && visible(d)).length };
         // Leaving the Creator takes them away.
         button("Base postures").click();
         handles.left = { shown: visible($("#handles")) };
         button("Creator").click();
         handles.back = { shown: visible($("#handles")) };
+      }
+
+      // The plan under the stage in the Creator: the fencers seen from above, with a dot on each part that turns toward or away
+      // from the camera, which are taken hold of and dragged as the stage's are. The pointer's events are made the way the
+      // browser sends them.
+      function drivePlan(win, doc, seen) {
+        const $ = (selector) => doc.querySelector(selector);
+        const $$ = (selector) => [...doc.querySelectorAll(selector)];
+        const button = (name) => $$("button").find((b) => b.textContent.trim() === name || b.getAttribute("aria-label") === name);
+        const input = (el, value) => {
+          el.value = String(value);
+          el.dispatchEvent(new win.Event("input", { bubbles: true }));
+        };
+        const text = (selector) => $(selector).textContent;
+        const visible = (el) => el.getClientRects().length > 0;
+        const pressed = (b) => b.getAttribute("aria-pressed") === "true";
+        win.confirm = () => true;
+        seen.plan = {};
+        const plan = seen.plan;
+
+        // The plan as the page has it: where each dot is across and down its box on the page, the view it is drawn with, what it
+        // draws, and where the stage has A's sword hand, to tell which side of the piste the two look from.
+        const frame = $("#plan-frame");
+        const stageFrame = $("#stage-frame");
+        const placed = (dot, box) => {
+          const r = dot.getBoundingClientRect();
+          return { title: dot.title, shown: visible(dot), other: dot.classList.contains("is-other"), dragging: dot.classList.contains("is-dragging"), across: (r.left + r.width / 2 - box.left) / box.width, down: (r.top + r.height / 2 - box.top) / box.height, size: [r.width, r.height] };
+        };
+        const looks = () => {
+          const box = frame.getBoundingClientRect();
+          const stageBox = stageFrame.getBoundingClientRect();
+          const hand = $$("#handles .handle").find((d) => d.title === "Drag to move A's sword hand");
+          return {
+            view: $("#plan-view").getAttribute("viewBox"),
+            box: [box.width, box.height],
+            mirror: win.getComputedStyle(frame).transform,
+            camera: Number($("#camera").value),
+            phrase: $("#phrase-text").value,
+            step: Number(text("#step-count").split("/")[0]) - 1,
+            editing: text("#edit-title"),
+            shown: visible($("#plan")),
+            dotsShown: visible($("#plan-handles")),
+            floor: $("#plan-floor").getAttribute("d"),
+            drawn: Object.fromEntries(["a", "b"].flatMap((who) => ["shoes", "body", "blade"].map((what) => [`${what}-${who}`, $(`#plan-${what}-${who}`).getAttribute("d")]))),
+            stageHand: hand ? placed(hand, stageBox).across : null,
+            dots: $$("#plan-handles .handle").map((dot) => placed(dot, box)),
+          };
+        };
+        const sliders = (...keys) => Object.fromEntries(keys.map((key) => [key, $(`#joint-${key}`).value]));
+
+        const mouse = { id: 7, type: "mouse" };
+        const fire = (target, type, [x, y], more = {}) =>
+          target.dispatchEvent(new win.PointerEvent(type, { bubbles: true, cancelable: true, pointerId: mouse.id, pointerType: mouse.type, isPrimary: true, button: 0, buttons: type === "pointerup" ? 0 : 1, clientX: x, clientY: y, ...more }));
+        const dot = (title) => $$("#plan-handles .handle").find((d) => d.title === title);
+        const middle = (el) => {
+          const r = el.getBoundingClientRect();
+          return [r.left + r.width / 2, r.top + r.height / 2];
+        };
+        const dragDot = (title, by, steps = 6) => {
+          const el = dot(title);
+          const [x, y] = middle(el);
+          const down = fire(el, "pointerdown", [x, y]);
+          const held = el.classList.contains("is-dragging");
+          for (let i = 1; i <= steps; i++) fire(win, "pointermove", [x + (by[0] * i) / steps, y + (by[1] * i) / steps]);
+          const stillHeld = el.classList.contains("is-dragging");
+          fire(win, "pointerup", [x + by[0], y + by[1]]);
+          return { defaultPrevented: !down, held, stillHeld, letGo: !el.classList.contains("is-dragging") };
+        };
+        const above = (who, part) => `Drag to move ${who}'s ${part}, seen from above`;
+
+        // ---------- Where it is ----------
+
+        // It is the Creator's, and only there: not in the library or the postures, whose toggle is not shown either.
+        button("Practice library").click();
+        plan.library = { plan: visible($("#plan")), toggle: visible($("[data-toggle=plan]")) };
+        button("Base postures").click();
+        plan.base = { plan: visible($("#plan")), toggle: visible($("[data-toggle=plan]")) };
+        button("Creator").click();
+        button("New scene").click();
+        plan.opening = { ...looks(), toggle: { shown: visible($("[data-toggle=plan]")), pressed: pressed($("[data-toggle=plan]")), label: text("[data-toggle=plan]").trim() } };
+
+        // ---------- Taking hold ----------
+
+        // A's blade tip taken down the plan, toward the camera, turns the blade across the body and nothing else of the arm.
+        plan.tip = { ...dragDot(above("A", "blade tip"), [0, 20]), after: looks(), sliders: sliders("blade", "yaw", "arm", "fore", "armYaw", "foreYaw") };
+        // The hand taken up the plan, away: it goes out of the arm's plane, with the arm and the forearm. B's, so that the fencer
+        // taken hold of becomes the one being edited.
+        plan.other = { before: looks().editing, ...dragDot(above("B", "sword hand"), [0, -18]), after: looks(), sliders: sliders("arm", "fore", "armYaw", "foreYaw") };
+        // The sword shoulder, the back knee and the back foot's toe, which turn and have nowhere else to go.
+        $("#fencer-a").click();
+        plan.shoulder = { ...dragDot(above("A", "sword shoulder"), [0, -8]), after: looks(), sliders: sliders("turn") };
+        plan.knee = { ...dragDot(above("A", "back knee"), [0, 12]), after: looks(), sliders: sliders("kneeOut") };
+        plan.toe = { ...dragDot(above("A", "back toe"), [-8, 0]), after: looks(), sliders: sliders("toeBack", "x") };
+
+        // ---------- The camera ----------
+
+        // The plan does not turn with the camera: it is read with the piste across it. From the other side of the piste it is
+        // seen from the other side, A on the same side of it as the stage has him.
+        const aside = looks();
+        input($("#camera"), 60);
+        plan.turned = looks();
+        input($("#camera"), 180);
+        plan.otherSide = looks();
+        input($("#camera"), 0);
+        plan.aside = aside;
+        plan.back = looks();
+        // Turned, the plan is read as it was, so a drag on it goes where the pointer goes all the same.
+        input($("#camera"), 60);
+        const turnedBefore = looks();
+        plan.turnedDrag = { ...dragDot(above("A", "blade tip"), [0, 10]), before: turnedBefore, after: looks(), sliders: sliders("yaw", "blade") };
+        input($("#camera"), 0);
+
+        // ---------- When they are not there ----------
+
+        // Playing hides the dots and leaves the plan, which shows the fencers move.
+        button("Play").click();
+        plan.playing = { plan: visible($("#plan")), dots: visible($("#plan-handles")) };
+        button("Pause").click();
+        // The toggle puts the plan away and brings it back.
+        button("From above").click();
+        plan.off = { plan: visible($("#plan")), pressed: pressed($("[data-toggle=plan]")), stageDots: visible($("#handles")) };
+        button("From above").click();
+        plan.on = { plan: visible($("#plan")), pressed: pressed($("[data-toggle=plan]")), dots: visible($("#plan-handles")) };
+        // The dots of the stage put away leave the plan to look at.
+        button("Drag dots").click();
+        plan.dotsOff = { plan: visible($("#plan")), dots: visible($("#plan-handles")), stageDots: visible($("#handles")) };
+        button("Drag dots").click();
+        // One fencer alone has no dots on the other, nor a figure of him.
+        $("#meta-solo").click();
+        const count = (who) => $$("#plan-handles .handle").filter((d) => d.title.startsWith(`Drag to move ${who}`) && visible(d)).length;
+        plan.solo = { A: count("A"), B: count("B"), figureB: visible($("#plan-body-b")), figureA: visible($("#plan-body-a")) };
+        $("#meta-solo").click();
+        plan.pair = { B: count("B"), figureB: visible($("#plan-body-b")) };
+        // Text that is not yet a phrase puts the stage on hold, and the dots with it.
+        const good = $("#phrase-text").value;
+        input($("#phrase-text"), '{"steps": [');
+        plan.onHold = { plan: visible($("#plan")), dots: visible($("#plan-handles")) };
+        input($("#phrase-text"), good);
+        // Leaving the Creator takes the plan away.
+        button("Base postures").click();
+        plan.left = { plan: visible($("#plan")) };
+        button("Creator").click();
+        plan.returned = { plan: visible($("#plan")), dots: visible($("#plan-handles")) };
+
+        // ---------- A far reach in a later step ----------
+
+        // A second step with A's tip taken far down the plan: it goes as far as its slider lets it, the plan holds its view still
+        // while it does, so that the tip stays under the pointer, and when it is let go the plan takes in the reach of the whole
+        // scene, the first step looked at through the same box, and a part taken hold of in the box it grew to follows the pointer.
+        $("#reset-step").click();
+        $("#step-add").click();
+        const farTitle = above("A", "blade tip");
+        const farBefore = looks();
+        const farTip = dot(farTitle);
+        const [tx, ty] = middle(farTip);
+        fire(farTip, "pointerdown", [tx, ty]);
+        for (let i = 1; i <= 5; i++) fire(win, "pointermove", [tx, ty + 40 * i]);
+        const farDuring = looks();
+        fire(win, "pointerup", [tx, ty + 200]);
+        const farAfter = looks();
+        const farSliders = sliders("yaw", "blade");
+        const backBefore = looks();
+        const backTip = dot(farTitle);
+        const [bx, by] = middle(backTip);
+        fire(backTip, "pointerdown", [bx, by]);
+        for (let i = 1; i <= 5; i++) fire(win, "pointermove", [bx, by - 6 * i]);
+        const backDuring = looks();
+        fire(win, "pointerup", [bx, by - 30]);
+        plan.far = { before: farBefore, during: farDuring, after: farAfter, sliders: farSliders, back: { before: backBefore, during: backDuring, after: looks() } };
+        $$(".step-button")[0].click();
+        plan.far.firstStep = looks();
       }
 
       function drive(win, doc, seen) {

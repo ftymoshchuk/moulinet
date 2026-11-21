@@ -6,29 +6,53 @@
 // put it nearest there, as the camera sees it, so it works from any side of the piste. The
 // joints are the ones the sliders have, within the ranges of the sliders, and what a drag
 // does not move is left as it is.
-import { projector, skeleton } from "./figure.js";
+//
+// The stage shows a fencer from the side, which has height and length but no depth. Beside it
+// the plan shows the same fencer from above, which has length and depth but no height, and
+// that is where the joints that turn a part toward or away from the camera are dragged: the
+// shoulders, the arm and forearm across the chest, the blade across the body, the back knee
+// and the back foot. A part is a dot in one view or the other or both, each with the joints
+// that move it there.
+import { SHOE, footDirections, projector, skeleton, topProjector } from "./figure.js";
 import { JOINTS } from "./library.js";
 
 /**
- * The parts, each with a name for what it is, the point of the skeleton it follows and the
- * joints of the pose that move it. A part that follows an arm's end moves the arm as a
- * whole (the hand has both of its joints, so it goes where it is taken, bending the elbow
- * as it must); one that follows a joint in the middle only turns what is up to it (the
- * elbow turns the upper arm). Joints a drag cannot show, such as how far an arm is turned
- * toward the camera, how the hand is turned about the blade or how the shoulders are
- * turned, stay with the sliders.
+ * The parts, each with a name for what it is, the point of the skeleton it follows and, for each view of it that has the
+ * part (`side`, the stage, and `plan`, from above), the joints of the pose that move it there. A part that follows an
+ * arm's end moves the arm as a whole (the hand has both of its joints, so it goes where it is taken, bending the elbow
+ * as it must); one that follows a joint in the middle only turns what is up to it (the elbow turns the upper arm). A
+ * part has no dot in a view that cannot move it: the feet and the hips go along the piste, which the stage shows and
+ * the plan only repeats, and the knee is turned out of the stage's plane, so it is dragged from above. Joints a drag
+ * cannot show, such as how the hand is turned about the blade, stay with the sliders.
+ *
+ * From above, a joint that is also on the stage is still one of its part's: the part goes where it is taken along the
+ * piste with the joints of the stage, as it does there, and across it with the ones the stage cannot show.
  */
 export const HANDLES = [
-  { id: "backFoot", name: "back foot", at: (J) => J.ankB, params: ["x"] },
-  { id: "frontFoot", name: "front foot", at: (J) => J.ankF, params: ["footF", "liftF"] },
-  { id: "hips", name: "hips", at: (J) => J.hip, params: ["hipX", "hipY"] },
-  { id: "head", name: "head", at: (J) => J.hd, params: ["lean"] },
-  { id: "swordElbow", name: "sword elbow", at: (J) => J.el, params: ["arm"] },
-  { id: "swordHand", name: "sword hand", at: (J) => J.hn, params: ["arm", "fore"] },
-  { id: "bladeTip", name: "blade tip", at: (J) => J.tip, params: ["blade"] },
-  { id: "rearElbow", name: "rear elbow", at: (J) => J.re, params: ["rArm"] },
-  { id: "rearHand", name: "rear hand", at: (J) => J.rh, params: ["rArm", "rFore"] },
+  { id: "backFoot", name: "back foot", at: (J) => J.ankB, side: ["x"] },
+  { id: "frontFoot", name: "front foot", at: (J) => J.ankF, side: ["footF", "liftF"] },
+  { id: "hips", name: "hips", at: (J) => J.hip, side: ["hipX", "hipY"] },
+  { id: "head", name: "head", at: (J) => J.hd, side: ["lean"] },
+  { id: "swordShoulder", name: "sword shoulder", at: (J) => J.sh, plan: ["turn"] },
+  { id: "swordElbow", name: "sword elbow", at: (J) => J.el, side: ["arm"], plan: ["arm", "armYaw"] },
+  { id: "swordHand", name: "sword hand", at: (J) => J.hn, side: ["arm", "fore"], plan: ["arm", "fore", "armYaw", "foreYaw"] },
+  { id: "bladeTip", name: "blade tip", at: (J) => J.tip, side: ["blade"], plan: ["blade", "yaw"] },
+  { id: "rearElbow", name: "rear elbow", at: (J) => J.re, side: ["rArm"] },
+  { id: "rearHand", name: "rear hand", at: (J) => J.rh, side: ["rArm", "rFore"] },
+  { id: "backKnee", name: "back knee", at: (J) => J.kB, plan: ["kneeOut"] },
+  { id: "backToe", name: "back toe", at: (J) => backToe(J), plan: ["toeBack"] },
 ];
+
+// The toe of the back foot, which points across the piste, turned back by the pose's `toeBack`.
+function backToe(J) {
+  const along = footDirections(J).back;
+  return [J.ankB[0] + along[0] * SHOE.toe, J.ankB[1], along[1] * SHOE.toe];
+}
+
+/** The joints that move a part in a view of it, "side" or "plan": none if the view has no dot for it. */
+export function jointsOf(handle, view = "side") {
+  return handle[view] ?? [];
+}
 
 const LIMITS = new Map(JOINTS.map(({ key, min, max }) => [key, { min, max }]));
 // Joints that go all the way round, so that past one end is the other.
@@ -44,9 +68,13 @@ const ROUNDS = 14;
 // The search stops when the point is this near (cm).
 const NEAR = 0.02;
 
-/** Where on the stage a part of a fencer is: the point of the skeleton it follows, placed on the piste and turned for the camera. */
-export function placeOf(pose, dir, camera, handle) {
-  return projector(pose, dir, camera)(handle.at(skeleton(pose)));
+/**
+ * Where on the stage a part of a fencer is: the point of the skeleton it follows, placed on the piste and turned for the
+ * camera; or, in the plan (`view` "plan"), seen from above, along the piste the same way and down the page toward the camera.
+ */
+export function placeOf(pose, dir, camera, handle, view = "side") {
+  const project = view === "plan" ? topProjector : projector;
+  return project(pose, dir, camera)(handle.at(skeleton(pose)));
 }
 
 // A value held to the range of its slider, or turned round past the end of one that goes all the way round. A value that
@@ -58,25 +86,41 @@ function held(key, value, start) {
   return Math.min(Math.max(max, start), Math.max(Math.min(min, start), value));
 }
 
-// The solution of a linear system of one or two unknowns.
+// The solution of a linear system of any number of unknowns, by elimination from the largest of each column. The systems
+// here are held back (see DAMPING), which makes each of their columns count for something, so none is singular.
 function linear(a, b) {
-  if (b.length === 1) return [b[0] / a[0][0]];
-  const det = a[0][0] * a[1][1] - a[0][1] * a[1][0];
-  return [(b[0] * a[1][1] - a[0][1] * b[1]) / det, (a[0][0] * b[1] - b[0] * a[1][0]) / det];
+  const n = b.length;
+  const rows = a.map((row, i) => [...row, b[i]]);
+  for (let col = 0; col < n; col++) {
+    let pivot = col;
+    for (let r = col + 1; r < n; r++) if (Math.abs(rows[r][col]) > Math.abs(rows[pivot][col])) pivot = r;
+    [rows[col], rows[pivot]] = [rows[pivot], rows[col]];
+    for (let r = col + 1; r < n; r++) {
+      const k = rows[r][col] / rows[col][col];
+      for (let c = col; c <= n; c++) rows[r][c] -= k * rows[col][c];
+    }
+  }
+  const x = new Array(n).fill(0);
+  for (let r = n - 1; r >= 0; r--) {
+    let sum = rows[r][n];
+    for (let c = r + 1; c < n; c++) sum -= rows[r][c] * x[c];
+    x[r] = sum / rows[r][r];
+  }
+  return x;
 }
 
 /**
  * The values of a part's joints that put it nearest `target`, a point of the stage in its units (cm), for a fencer
- * in `pose` facing `dir`, seen from `camera`. They are within the ranges of the sliders, in whole numbers or, with a
- * finer `unit`, in multiples of it, for a view so close that a whole degree is a long step; and they start from the
- * pose's own, so a part taken a little further goes a little further. Returns `{ joint: value }` for the part's joints,
- * and leaves `pose` alone.
+ * in `pose` facing `dir`, seen from `camera`; or, with `view` "plan", a point of the plan, seen from above. They are
+ * within the ranges of the sliders, in whole numbers or, with a finer `unit`, in multiples of it, for a view so close that
+ * a whole degree is a long step; and they start from the pose's own, so a part taken a little further goes a little
+ * further. Returns `{ joint: value }` for the part's joints in that view, and leaves `pose` alone.
  */
-export function solve(pose, dir, camera, handle, target, unit = 1) {
-  const keys = handle.params;
+export function solve(pose, dir, camera, handle, target, unit = 1, view = "side") {
+  const keys = jointsOf(handle, view);
   const start = Object.fromEntries(keys.map((key) => [key, Number(pose[key]) || 0]));
   const values = { ...start };
-  const place = (v) => placeOf({ ...pose, ...v }, dir, camera, handle);
+  const place = (v) => placeOf({ ...pose, ...v }, dir, camera, handle, view);
   for (let round = 0; round < ROUNDS; round++) {
     const here = place(values);
     const miss = [target[0] - here[0], target[1] - here[1]];

@@ -653,6 +653,64 @@ textarea:focus-visible {
   opacity: 0.8;
 }
 
+/* The plan, under the stage in the Creator: the fencers seen from above, the piste across the page and you at the bottom, for
+   the depth that the stage cannot show. It is drawn in the stage's own mirror, so A is on the same side, and its dots are
+   the same dots, a little closer together. The fencers are in the colours of their blade paths. */
+.plan {
+  margin-top: 10px;
+}
+
+.plan__ink {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.plan__body {
+  stroke-width: 1.6;
+}
+
+.plan__blade {
+  stroke-width: 1.1;
+}
+
+.plan__shoes {
+  stroke-width: 0.8;
+  fill-opacity: 0.25;
+}
+
+.plan__body--a,
+.plan__blade--a,
+.plan__shoes--a {
+  stroke: var(--trail-a);
+}
+
+.plan__shoes--a {
+  fill: var(--trail-a);
+}
+
+.plan__body--b,
+.plan__blade--b,
+.plan__shoes--b {
+  stroke: var(--trail-b);
+}
+
+.plan__shoes--b {
+  fill: var(--trail-b);
+}
+
+.plan__label {
+  margin: 0 0 4px 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.handle--plan {
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+}
+
 .stage__note {
   margin: 8px 0 0;
   color: var(--text-quiet);

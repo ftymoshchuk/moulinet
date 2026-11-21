@@ -33,8 +33,8 @@ defender ripostes to the attacker's sword hand: down onto the top of the glove; 
 onto its outside, level, when the attacker raises the point; or, when the attacker
 turns the guard out over that side, which is tierce, round and under the hand and
 up into the underside of the glove, the Hungarian cut. In the pairs the older man
-holds a guard of his own, standing a little higher and holding the sword hand his
-own way, so the two do not stand as mirror images. The drills say where they
+holds the same guard, standing a little higher, in a shallower bend, so the two do
+not stand as exact mirror images. The drills say where they
 come from: live learning, at Warsaw advanced sabre on 15 November 2026. A scene's
 source shows as a tag on its card. Scenes you save in the Creator are listed
 below them, with whatever you noted, and a link opens in a new tab. They live in
@@ -160,10 +160,25 @@ In the Creator there is more:
   in view stay, those of the fencer whose hand it is, and the view holds still
   while one is dragged, and follows the hand again when it is let go; there the
   values are in tenths, since a degree of the arm is a long way on a stage that
-  close. They work with a mouse, a finger or a pen. The sliders stay for what a
-  drag cannot show, the turn of the shoulders, the back foot and knee, how the
-  arm and the blade turn across the chest and the hand position, and are the way
-  in for the keyboard.
+  close. They work with a mouse, a finger or a pen. The sliders stay for the
+  position of the hand, which no dot turns, and are the way in for the keyboard.
+- **From above:** the stage has height and length but no depth, so under it the
+  Creator draws the pair from above, the piste across the page, you at the
+  bottom and A on the same side as on the stage, with a dot on each part that
+  turns toward or away from you: the sword shoulder, which turns the shoulders,
+  the elbow and hand, which turn the arm and the forearm out of their plane
+  across the chest, the point of the blade, which turns it across the body, and
+  the knee and the toe of the foot behind. They are dragged as the stage's dots
+  are, and what a drag writes is the same joints the sliders have: the plan only
+  gives the depth a place to be taken. A hand taken across the plan goes where the
+  pointer goes, along the piste as well, so the arm may give a degree to keep it
+  under it. The plan does not turn with the camera, a plan being easiest to read
+  with the piste across it, but looks from the side of the piste the stage does,
+  so that A is on the same side of both. Its box holds every pose of the scene,
+  as the stage's does, and grows, wider too, for a pose that reaches far across the
+  piste; it holds still while a part is dragged, so that the part stays under the
+  pointer, and takes in the whole blade when it is let go. **From above** puts it
+  away, and **Drag dots** puts away its dots with the stage's.
 - **Poses:** twenty-six named poses to put on any step, in the groups the
   sections of the page keep their base postures in.
 - **Phrase data:** the whole scene as text. Edit it in place or paste one in;
@@ -435,9 +450,9 @@ reference link is a web address, the postures people make their own versions of
 (what a version changes and what it leaves, which joints and values it can hold,
 the lines of numbers it gives to send on, and how it is kept on the device and
 what is left alone there), the parts of a fencer that can be dragged on the stage
-(a drag turned into joint values that put the part where it was taken, for every
-pose, both fencers and every side of the piste, within the sliders' ranges, and the
-mirror the stage is shown in), the base postures of each section, the skeleton and the camera
+and on the plan from above (a drag turned into joint values that put the part where
+it was taken, for every pose, both fencers and every side of the piste, within the
+sliders' ranges, and the mirror they are shown in), the base postures of each section, the skeleton and the camera
 (the knees and the arms, the hand positions, where the stage looks, with every
 fencer in it at every camera angle all the way round, and every phrase and posture
 at every moment from eight camera angles, checked for broken path data), the
@@ -451,13 +466,14 @@ has them: the light cut on the inside of the defender's blade just above his gua
 and each riposte edge first on the attacker's glove, on top, on the outside or
 underneath, with no blade going into an arm at any moment), and the published files (only relative links to
 files that exist, no outside requests, every element the scripts need, and the
-licences of what is bundled). Thirty-five more run in a real browser: headless
+licences of what is bundled). Forty-one more run in a real browser: headless
 Chrome or Chromium loads the page, then a driver page works every control of
 every tab and mode, with hostile input among it, and checks the result, down to
 the page opening paused, the stage turned in its mirror, the camera on the side
 of the piste it should be and turning all the way round, two browser tabs saving
 the same scene, a posture's numbers changed, kept, copied and put back, the
-parts of a fencer taken hold of and dragged with the pointer, and the 3D figures
+parts of a fencer taken hold of and dragged with the pointer, on the stage and on
+the plan from above, and the 3D figures
 taking the stage; and once more with
 WebGL turned off, where the stick figures stand in and the note says why. They
 need Chrome or Chromium on your `PATH`, or `CHROME_BIN` pointing at one, and are

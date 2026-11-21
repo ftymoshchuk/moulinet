@@ -121,13 +121,11 @@ export const POSE_NAMES = {
   septime: "Septime",
 };
 
-// The older man's own guard, so the pair do not stand as mirror images in the
-// scenes: he stands 3 cm higher, in a shallower bend, and holds his sword hand his
-// own way, the upper arm a little higher, the forearm lower and the blade lower
-// than the guard of the class has it. Only joints that every other pose he takes
-// sets for itself are changed, so none of it carries into his parries and ripostes,
-// and no foot moves.
-const OLDER_GUARD = { hipY: 80, arm: -42, fore: 10, blade: 38 };
+// The older man's guard is the guard of the class, as the younger man's is, with
+// his sword hand the guard's, so a change to the guard's hand is his too. He stands
+// 3 cm higher, in a shallower bend, which every pose he takes after it keeps (see
+// `olderTo`), so that he does not bob; no foot moves.
+const OLDER_GUARD = { hipY: 80 };
 const olderGuard = (x) => ({ pose: "guard", x, adj: { ...OLDER_GUARD } });
 
 // The drills from a class, as they were taught there: A attacks and B defends.
@@ -156,7 +154,7 @@ const lightCut = () => ({
   ms: 240,
   hold: 300,
   ease: "snap",
-  A: extendTo(0, { arm: -15, fore: 5, blade: 4, yaw: 21, hand: 45 }),
+  A: extendTo(0, { arm: -15, fore: 5, blade: 7, yaw: 16.3, hand: 45 }),
 });
 // A's blade comes off B's, the arm held out: the blade forward and the hand in the 2/3, so the top of the glove is
 // open; or the point raised and the hand kept in the 3/4, so its outside is.

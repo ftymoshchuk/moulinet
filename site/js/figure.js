@@ -184,10 +184,26 @@ export function bladeTip(p, dir, camera) {
   return fmt(projector(p, dir, camera)(skeleton(p).tip));
 }
 
-/** A quick line drawing of a pose: the motion ghosts. */
-export function stickFigure(p, dir, camera) {
+/**
+ * Places body points on the floor, seen from above, in the stage's own units: across the page the way the stage
+ * places them (`projector`'s x) and down the page toward the camera, so what the stage shows nearer is lower. Seen
+ * from above a body has no height, so the third of its three directions is the one the stage cannot show.
+ */
+export function topProjector(p, dir, camera) {
+  const c = Math.cos(camera * RAD);
+  const s = Math.sin(camera * RAD);
+  return (q) => {
+    // Along the piste from the pivot, and across it toward the side the camera was at 0.
+    const along = p.x + dir * q[0] - PIVOT;
+    const across = dir * (q[2] || 0);
+    return [along * c + across * s + PIVOT, across * c - along * s];
+  };
+}
+
+// The lines of a fencer, as `W` places the points of the skeleton: the legs, the hips, the torso, the shoulders and arms,
+// and a circle for the head, and the blade on its own.
+function lines(p, W) {
   const J = skeleton(p);
-  const W = projector(p, dir, camera);
   const S = (q) => fmt(W(q));
   const h = W(J.hd);
   return {
@@ -200,8 +216,50 @@ export function stickFigure(p, dir, camera) {
   };
 }
 
+/** A quick line drawing of a pose: the motion ghosts. */
+export function stickFigure(p, dir, camera) {
+  return lines(p, projector(p, dir, camera));
+}
+
 // The shoe of each foot, from the ankle, back to the heel and on to the toe, and half as wide (cm).
-const SHOE = { heel: 7, toe: 21, half: 5 };
+export const SHOE = { heel: 7, toe: 21, half: 5 };
+
+// Which way each foot points on the floor, as [along the piste, across it]: the front foot at the opponent, the back foot
+// across the piste and turned back from there by `toeBack`.
+export function footDirections(p) {
+  const tb = (p.toeBack ?? 0) * RAD;
+  return { front: [1, 0], back: [-Math.sin(tb), Math.cos(tb)] };
+}
+
+/**
+ * A fencer seen from above, the same lines the stage draws as sticks (`body`, `blade`) and a shoe under each foot
+ * (`shoes`), which are what shows how the feet are turned and, with the shoulders, the knee and the arm, the depth
+ * that the stage cannot.
+ */
+export function planFigure(p, dir, camera) {
+  const J = skeleton(p);
+  const T = topProjector(p, dir, camera);
+  const feet = footDirections(p);
+  let shoes = "";
+  for (const [ankle, along] of [[J.ankF, feet.front], [J.ankB, feet.back]]) {
+    const corner = ([length, across]) => fmt(T([ankle[0] + along[0] * length - along[1] * across, 0, along[1] * length + along[0] * across]));
+    shoes += `M${[[-SHOE.heel, -SHOE.half], [SHOE.toe, -SHOE.half], [SHOE.toe, SHOE.half], [-SHOE.heel, SHOE.half]].map(corner).join("L")}Z`;
+  }
+  return { ...lines(p, T), shoes };
+}
+
+/** The piste seen from above: its centre line, with a tick every 50 cm and a longer one at the centre. */
+export function planFloorPath(camera) {
+  const c = Math.cos(camera * RAD);
+  const s = Math.sin(camera * RAD);
+  const at = (x, z) => `${((x - PIVOT) * c + z * s + PIVOT).toFixed(1)} ${(z * c - (x - PIVOT) * s).toFixed(1)}`;
+  let d = `M${at(-600, 0)}L${at(900, 0)}`;
+  for (let x = -550; x <= 850; x += 50) {
+    const tick = x === 100 ? 6 : 3;
+    d += `M${at(x, -tick)}L${at(x, tick)}`;
+  }
+  return d;
+}
 
 // A stroke of the pen along the floor from x0 to x1, y below it, `width` thick in the middle and tapering to points.
 function floorStroke(x0, x1, y, width) {
@@ -217,9 +275,9 @@ function floorStroke(x0, x1, y, width) {
 export function groundPath(p, dir, camera) {
   const J = skeleton(p);
   const W = projector(p, dir, camera);
-  const tb = (p.toeBack ?? 0) * RAD;
+  const feet = footDirections(p);
   let d = "";
-  for (const [ankle, along] of [[J.ankF, [1, 0]], [J.ankB, [-Math.sin(tb), Math.cos(tb)]]]) {
+  for (const [ankle, along] of [[J.ankF, feet.front], [J.ankB, feet.back]]) {
     const lift = ankle[1] - 8;
     if (lift > 5) continue;
     // The corners of the sole, on the floor, across the page.
@@ -281,6 +339,32 @@ const FRAME_SHAPE = DEFAULT_FRAME[2] / DEFAULT_FRAME[3];
 export function frameFrom([x, y, w, h], camera = 0) {
   const middle = PIVOT + (x + w / 2 - PIVOT) * Math.cos(camera * RAD);
   return [Math.round((middle - w / 2) * 10) / 10, y, w, h];
+}
+
+// The plan's box, unless something reaches further across the piste: as wide as the stage's, and a good deal less tall,
+// with this much room beyond the farthest part (cm).
+const PLAN_SIZE = [DEFAULT_FRAME[2], 90];
+const PLAN_MARGIN = 14;
+
+/**
+ * Where the plan looks, from above, so that everything of the fencers is in it. `fencers` are the poses to hold, each
+ * with the `dir` of its fencer: the box is the stage's across the page, the piste along its middle, and it is no taller
+ * than it must be to hold the farthest any of the poses reaches across the piste, which it takes in by growing, wider
+ * too, in the shape it has; so the poses that reach little all give the same box, which never moves as they are shaped.
+ */
+export function planFrame(fencers, camera = 180) {
+  const [x, , w] = frameFrom(DEFAULT_FRAME, camera);
+  let reach = 0;
+  for (const [p, dir] of fencers) {
+    const J = skeleton(p);
+    const T = topProjector(p, dir, camera);
+    const toe = footDirections(p).back;
+    const points = [J.hipF, J.hipB, J.kF, J.kB, J.sh, J.rs, J.el, J.hn, J.re, J.rh, J.tip, [J.ankB[0] + toe[0] * SHOE.toe, 0, toe[1] * SHOE.toe]];
+    for (const q of points) reach = Math.max(reach, Math.abs(T(q)[1]));
+  }
+  const grow = Math.max(1, (2 * (reach + PLAN_MARGIN)) / PLAN_SIZE[1]);
+  const [pw, ph] = [PLAN_SIZE[0] * grow, PLAN_SIZE[1] * grow];
+  return [x + w / 2 - pw / 2, -ph / 2, pw, ph].map((v) => Math.round(v * 10) / 10);
 }
 
 /**

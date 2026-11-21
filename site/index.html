@@ -87,6 +87,24 @@
               <!-- In the Creator, a dot on each part of the fencers that can be dragged, over the stage and turned with it. The sliders stay, for what a drag cannot reach and for the keyboard. -->
               <div id="handles" class="stage__handles hidden" aria-hidden="true"></div>
             </div>
+            <!-- In the Creator, the fencers from above, for what the stage cannot show: how far each part is toward or away from you. It is the stage's floor seen from over it, the piste across the page and you at the bottom, shown in a mirror as the stage is, with a dot on each part that turns that way. -->
+            <div id="plan" class="plan hidden">
+              <p class="plan__label mono" aria-hidden="true">From above · you at the bottom</p>
+              <div id="plan-frame" class="stage__frame">
+                <svg id="plan-view" class="stage__view plan__view" viewBox="-110 -45 420 90" role="img" aria-label="The fencers seen from above, the piste across the page and you at the bottom">
+                  <path id="plan-floor" class="floor" />
+                  <g class="plan__ink">
+                    <path id="plan-shoes-b" class="plan__shoes plan__shoes--b fencer-b" />
+                    <path id="plan-shoes-a" class="plan__shoes plan__shoes--a" />
+                    <path id="plan-body-b" class="plan__body plan__body--b fencer-b" />
+                    <path id="plan-body-a" class="plan__body plan__body--a" />
+                    <path id="plan-blade-b" class="plan__blade plan__blade--b fencer-b" />
+                    <path id="plan-blade-a" class="plan__blade plan__blade--a" />
+                  </g>
+                </svg>
+                <div id="plan-handles" class="stage__handles" aria-hidden="true"></div>
+              </div>
+            </div>
             <p id="stage-note" class="stage__note hidden" role="status"></p>
             <!-- Said in the library and the Creator when some posture is drawn as the person made it, not as built in. -->
             <p id="versions-note" class="stage__note hidden"></p>
@@ -121,6 +139,7 @@
                 <button class="toggle" type="button" data-toggle="loop" aria-pressed="true" data-modes="library creator"><span class="toggle__dot" aria-hidden="true"></span>Loop</button>
                 <button class="toggle" type="button" data-toggle="closeUp" aria-pressed="false"><span class="toggle__dot" aria-hidden="true"></span>Hand close-up</button>
                 <button class="toggle hidden" type="button" data-toggle="handles" aria-pressed="true" data-modes="creator"><span class="toggle__dot" aria-hidden="true"></span>Drag dots</button>
+                <button class="toggle hidden" type="button" data-toggle="plan" aria-pressed="true" data-modes="creator"><span class="toggle__dot" aria-hidden="true"></span>From above</button>
               </div>
 
               <div class="camera">
@@ -335,7 +354,7 @@
                 <button id="fencer-b" class="fencer-button" type="button" data-fencer="B" aria-label="Edit fencer B" aria-pressed="false">B</button>
               </div>
             </div>
-            <p class="panel__intro">Drag a dot on the stage to move that part of the fencer, or use the sliders, which also reach the turn of the shoulders, the back foot and knee, the hand position, and how the arm and the blade turn across the chest.</p>
+            <p class="panel__intro">Drag a dot on the stage to move that part of the fencer along the piste and up, and a dot on the plan under it, which looks down from above, to move it toward or away from you. The sliders reach the same joints, and the position of the hand, which only they turn.</p>
             <div id="joints" class="joints"></div>
             <button id="reset-step" class="outline-button" type="button">Reset this step's adjustments</button>
           </section>
