@@ -15,8 +15,9 @@ import { promisify } from "node:util";
 
 import { BASE_BLADE, BASE_CAMERA, BASE_SECTIONS, FIGURE_DIR, FIGURE_NOTE, basePhrase, basesOf } from "../site/js/bases.js";
 import { DEFAULT_FRAME, floorPath, frameFrom, frameOf, handFrame } from "../site/js/figure.js";
-import { JOINTS, POSE_NAMES, PRESETS } from "../site/js/library.js";
+import { JOINTS, POSE_NAMES, POSES, PRESETS } from "../site/js/library.js";
 import { buildTimeline, resolvePose } from "../site/js/phrase.js";
+import { POSTURE_JOINTS, numbersText } from "../site/js/postures.js";
 import { siteHandler } from "../scripts/serve.js";
 
 const run = promisify(execFile);
@@ -123,6 +124,9 @@ test("in a browser, the page opens on the practice library and builds its contro
   assert.match(dom, /<canvas id="stage-3d" class="stage__3d[^"]*" aria-hidden="true"/);
   assert.equal(count(/class="stick( fencer-b)?"/g), 2, "a stick figure for each fencer");
   assert.equal(count(/<input type="range" id="joint-/g), JOINTS.length, "joint sliders");
+  // A posture's numbers have sliders of their own for every joint but where the fencer stands, in a panel that starts closed.
+  assert.equal(count(/<input type="range" id="posture-joint-/g), JOINTS.length - 1, "sliders for a posture's numbers");
+  assert.match(dom, /class="panel panel--posture hidden"/);
   // Nothing plays on its own: the page is at the first step, and Play is what it offers.
   assert.match(dom, /id="step-count"[^>]*>01 \/ 06</);
   assert.match(dom, /id="play-button"[^>]*aria-label="Play"/);
@@ -391,7 +395,30 @@ test("in a browser, the Creator edits a copy of a scene the way the page always 
     line: `${third}"B":{"pose":"parry3","x":200,"adj":{"blade":100}}},`,
     said: "100°",
   });
+  // One joint at a time. Parry 3 gives the blade 95° and the hips 78 cm. A joint that has been moved says so and offers to go
+  // back, and says to what; one that has not keeps the place of its button, but does not show it; the position has no pose to
+  // go back to, so no button.
+  const idle = (said, title, label) => ({ said, adjusted: false, reset: { shown: false, title, label } });
+  const moved = (said, title, label) => ({ said, adjusted: true, reset: { shown: true, title, label } });
+  const blade = (said, was) => (was ? moved : idle)(said, "Back to the pose: 95°", "Reset blade angle to the pose");
+  const hips = (said, was) => (was ? moved : idle)(said, "Back to the pose: 78 cm", "Reset hip height to the pose");
+  assert.deepEqual(seen.joints.moved, {
+    blade: blade("100°", true),
+    hipY: hips("70 cm", true),
+    lean: idle("-3°", "Back to the pose: -3°", "Reset torso lean to the pose"),
+    x: { said: "200 cm", adjusted: false, reset: null },
+  });
+  // Putting one back leaves the other where it was, and the focus on the slider it belonged to.
+  assert.deepEqual(seen.joints.putBack, {
+    line: `${third}"B":{"pose":"parry3","x":200,"adj":{"hipY":70}}},`,
+    blade: blade("95°", false),
+    hipY: hips("70 cm", true),
+    slider: "95",
+    focus: "joint-blade",
+  });
+  assert.deepEqual(seen.joints.allBack, { line: `${third}"B":{"pose":"parry3","x":200}},`, hipY: hips("78 cm", false) }, "the last one takes the adjustments with it");
   assert.equal(seen.reset, `${third}"B":{"pose":"parry3","x":200}},`);
+  assert.deepEqual(seen.joints.resetAll, { blade: blade("95°", false), hipY: hips("78 cm", false) }, "resetting the step puts back what is left");
 
   assert.match(seen.broken.status, /^Not applied: /);
   assert.equal(seen.broken.isError, true);
@@ -556,9 +583,9 @@ test("in a browser, scenes are saved on this device, listed in the library with 
 
 test("in a browser, text that is not a phrase yet keeps the fields still, and what was typed is not lost", { skip, timeout: 120_000 }, async () => {
   const { seen } = await drive();
-  // The controls that edit a scene: twelve fields and buttons for the scene and its step, a slider for each joint and a
-  // button for each pose.
-  const EDITORS = 13 + JOINTS.length + Object.keys(POSE_NAMES).length;
+  // The controls that edit a scene: twelve fields and buttons for the scene and its step, a slider for each joint, a Reset
+  // for each joint but the position, and a button for each pose.
+  const EDITORS = 13 + JOINTS.length + (JOINTS.length - 1) + Object.keys(POSE_NAMES).length;
   // A new scene: every control that edits it is on, but for the move time of its first step and removing its only one.
   assert.deepEqual(seen.fieldsOn, { total: EDITORS, off: 2 });
   assert.match(seen.onHold.status, /^Not applied: .+\. The fields are on hold until it is\.$/);
@@ -630,6 +657,191 @@ test("in a browser, the camera angle is a change that is not saved, and removing
   assert.deepEqual(seen.cameraUnsaved, { opened: false, turned: true, declined: { asked: 1, name: "Camera" }, backAgain: false });
   assert.deepEqual(seen.cameraSaved, { camera: 10, unsaved: false }, "the new angle is the one that is kept");
   assert.deepEqual(seen.removeFocus, { count: "01 / 01", removeOff: true, focus: "step-name" });
+});
+
+// ---------- The numbers of a posture ----------
+
+const GUARD = POSE_NAMES.guard;
+const STORED = (postures) => ({ version: 1, postures });
+// What the row of a slider says: its value, whether it has been moved, and so has a Reset to press, what Reset goes back to,
+// and where the slider is.
+const said = (value, slider, { moved = false, back = value } = {}) => ({ value, moved, idle: !moved, hint: `Back to: ${back}`, slider });
+// What the note under the stage says in the library and the Creator, of one posture and of two.
+const NOTE_ONE = "Your own version of Guard (tierce) is in use here, not the built-in one. It is on this device only. To go back to the built-in one, use Edit this posture, in the base postures.";
+const NOTE_TWO = "Your own versions of Guard (tierce) and Parry 3 are in use here, not the built-in ones. They are on this device only. To go back to the built-in ones, use Edit this posture, in the base postures.";
+
+test("in a browser, a posture's numbers stay closed until Edit this posture opens them, with a slider for every joint but where the fencer stands", { skip, timeout: 120_000 }, async () => {
+  const { seen } = await drive();
+  const { posture } = seen;
+  assert.equal(POSTURE_JOINTS.length, JOINTS.length - 1);
+  assert.ok(!POSTURE_JOINTS.some(({ key }) => key === "x"), "where the fencer stands is not a joint of a posture");
+  assert.deepEqual(posture.closed, { open: false, button: "Edit this posture", expanded: "false", target: GUARD, tag: false, marked: [], status: "", stage: false, note: false, stored: null });
+  // Opened, the panel comes up beside the postures with the first slider ready, and the stage is kept in view beside it.
+  assert.deepEqual(posture.open, {
+    open: true,
+    button: "Done editing",
+    expanded: "true",
+    target: GUARD,
+    tag: false,
+    marked: [],
+    status: "",
+    panels: ["stage", "detail", "posture", "bases"],
+    title: GUARD,
+    guardNote: true,
+    sliders: POSTURE_JOINTS.map(({ key, min, max, step }) => [`posture-joint-${key}`, String(min), String(max), String(step ?? 1), String(POSES.guard[key])]),
+    labels: POSTURE_JOINTS.map(({ key, label }) => [`posture-joint-${key}`, label]),
+    resets: POSTURE_JOINTS.length,
+    idle: POSTURE_JOINTS.length,
+    moved: 0,
+    resetOff: true,
+    copyOff: true,
+    focus: `posture-joint-${POSTURE_JOINTS[0].key}`,
+    stage: true,
+    pinned: "sticky",
+    announced: `Editing the numbers of ${GUARD}.`,
+    boxOpen: false,
+    numbers: "",
+    sliderIds: 0,
+  });
+  assert.deepEqual(posture.guard, { hip: said("77 cm", "77"), arm: said("-24°", "-24"), hand: said("-45° (2/3)", "-45") }, "the sliders show the posture as built in, with nothing to put back");
+  assert.deepEqual(posture.closedAgain, { open: false, button: "Edit this posture", expanded: "false", target: GUARD, tag: false, marked: [], status: "", stage: false, focus: "posture-edit" }, "the same button closes it, and keeps the focus");
+});
+
+test("in a browser, moving a slider makes the person's own version of the posture, kept as it moves, with a Reset of its own, and drawn on the stage", { skip, timeout: 120_000 }, async () => {
+  const { posture } = (await drive()).seen;
+  const guard = { footF: 100, hipY: 68, arm: -70 };
+  assert.deepEqual(posture.moved, {
+    open: true,
+    button: "Done editing",
+    expanded: "true",
+    target: GUARD,
+    tag: true,
+    marked: [0],
+    status: "Saved on this device.",
+    arm: said("-70°", "-70", { moved: true, back: "-24°" }),
+    hipY: said("68 cm", "68", { moved: true, back: "77 cm" }),
+    footF: said("100 cm", "100", { moved: true, back: "84 cm" }),
+    blade: said("34°", "34"),
+    kept: STORED({ guard }),
+    feetFollow: true,
+    resetOff: false,
+    copyOff: false,
+    moved: 3,
+    visibleResets: 3,
+    numbers: numbersText({ guard }),
+    stage: true,
+  });
+  // Another posture, while the numbers are open: the panel goes with it. One that takes its arm from the guard has the guard's,
+  // as changed, and no version of its own until it is given one; put back, its arm goes back to the guard's.
+  assert.deepEqual(posture.advance, {
+    open: true,
+    button: "Done editing",
+    expanded: "true",
+    target: POSE_NAMES.advLand,
+    tag: false,
+    marked: [0],
+    status: "",
+    title: POSE_NAMES.advLand,
+    guardNote: false,
+    arm: said("-70°", "-70"),
+    footF: said("114 cm", "114"),
+    hipY: said("79 cm", "79"),
+    resetOff: true,
+  });
+  assert.deepEqual(posture.advanceOwn, { arm: said("-10°", "-10", { moved: true, back: "-70°" }), kept: STORED({ guard, advLand: { arm: -10 } }), marked: [0, 2] });
+  assert.deepEqual(posture.advanceBack, { arm: said("-70°", "-70"), kept: STORED({ guard }), marked: [0], focus: "posture-joint-arm" }, "the slider keeps the focus when its Reset goes");
+  // One joint of the guard is put back on its own and the others stay; a joint moved back to what the posture has is not a version.
+  assert.deepEqual(posture.armBack, { arm: said("-24°", "-24"), kept: STORED({ guard: { footF: 100, hipY: 68 } }), focus: "posture-joint-arm", hipY: said("68 cm", "68", { moved: true, back: "77 cm" }) });
+  assert.deepEqual(posture.hipBack, { hipY: said("77 cm", "77"), kept: STORED({ guard: { footF: 100 } }) });
+});
+
+test("in a browser, a version is used wherever the page uses the posture, and the library and the Creator say so", { skip, timeout: 120_000 }, async () => {
+  const { posture } = (await drive()).seen;
+  // The Creator has the guard as the person made it: its slider shows it and says what it goes back to, and it is no adjustment.
+  assert.deepEqual(posture.creator, {
+    open: false,
+    stage: false,
+    foot: { value: "100", text: "100 cm", adjusted: false, hint: "Back to the pose: 100 cm" },
+    hip: "66 cm",
+    note: NOTE_ONE,
+    noteInStage: true,
+  });
+  assert.deepEqual(posture.library, { note: NOTE_ONE, showing: ["stage", "detail", "library"] });
+  assert.deepEqual(posture.libraryScene, { title: PRESETS[0].phrase.name, note: true });
+  assert.deepEqual(posture.libraryTwo, { note: NOTE_TWO });
+  // Among the postures themselves it is marked on the posture and on its button, not in a note.
+  assert.deepEqual(posture.back, { open: false, button: "Edit this posture", expanded: "false", target: GUARD, tag: true, marked: [0], status: "", note: false, stage: false });
+});
+
+test("in a browser, all of a posture's changes are put back at once, after asking", { skip, timeout: 120_000 }, async () => {
+  const { posture } = (await drive()).seen;
+  assert.deepEqual(posture.reopened, { open: true, button: "Done editing", expanded: "true", target: GUARD, tag: true, marked: [0], status: "", moved: 2 });
+  assert.deepEqual(
+    posture.declined,
+    { asked: `Put the built-in numbers back on ${GUARD}? Your changes to it are lost.`, kept: STORED({ guard: { footF: 100, hipY: 66 } }), moved: 2 },
+    "it asks first, and a no changes nothing",
+  );
+  assert.deepEqual(posture.reset, {
+    open: true,
+    button: "Done editing",
+    expanded: "true",
+    target: GUARD,
+    tag: false,
+    marked: [],
+    status: "Back to the built-in numbers.",
+    kept: null,
+    moved: 0,
+    focus: "posture-joint-footF",
+    resetOff: true,
+    copyOff: true,
+    numbers: "",
+    footF: said("84 cm", "84"),
+    asked: 2,
+    feetBack: true,
+  });
+});
+
+test("in a browser, the numbers of the person's versions are copied to send on, or left selected where the browser will not copy", { skip, timeout: 120_000 }, async () => {
+  const { posture } = (await drive()).seen;
+  const numbers = numbersText({ guard: { arm: -30 }, parry3: { blade: 100 } });
+  // All the versions' at once, whichever posture is on show.
+  assert.deepEqual(posture.wontCopy, {
+    status: "This browser would not copy them, so they are selected below: copy them yourself.",
+    warns: true,
+    boxOpen: true,
+    selected: [0, numbers.length, numbers.length],
+    focus: "posture-numbers",
+    numbers,
+  });
+  assert.deepEqual(posture.copied, { copied: [numbers], same: true, status: "Copied the numbers of 2 postures: Guard (tierce) and Parry 3.", warns: false });
+});
+
+test("in a browser, a version the browser will not keep still shows, and versions from another tab or a newer page are handled as scenes are", { skip, timeout: 120_000 }, async () => {
+  const { posture } = (await drive()).seen;
+  const kept = { guard: { arm: -30 }, parry3: { blade: 100 } };
+  assert.deepEqual(posture.full, { status: "This browser would not keep your version, so it lasts only until you leave the page.", isError: true, yaw: said("40°", "40", { moved: true, back: "0°" }), kept: STORED(kept) }, "shown, and not kept");
+  assert.deepEqual(posture.saveAgain, { status: "Saved on this device.", isError: false, kept: STORED({ guard: kept.guard, parry3: { blade: 100, yaw: 41 } }) }, "and kept again once the browser will");
+  // What another tab made comes here, and replaces what this tab had; what it took back goes.
+  assert.deepEqual(posture.elsewhere, { marked: [11], tag: false, kept: STORED({ parry5: { yaw: 50 } }) });
+  assert.deepEqual(posture.elsewhereParry5, { marked: [11], tag: true, yaw: said("50°", "50", { moved: true, back: "70°" }) });
+  assert.deepEqual(posture.elsewhereGone, { marked: [], tag: false, yaw: said("70°", "70") });
+  assert.deepEqual(posture.newer, {
+    marked: [11],
+    tag: true,
+    yaw: said("20°", "20", { moved: true, back: "70°" }),
+    status: "The versions on this device were saved by a newer version of this page, so this one leaves them alone. Yours lasts only until you leave the page. Reload the page to update it.",
+    isError: true,
+    untouched: true,
+  });
+});
+
+test("in a browser, the numbers close when the postures are left, the book's postures can be changed too, and nothing is left on the device", { skip, timeout: 120_000 }, async () => {
+  const { posture } = (await drive()).seen;
+  assert.deepEqual(posture.leftOpen, { open: false, button: "Edit this posture", stage: false });
+  assert.deepEqual(posture.bookClosed, { open: false, button: "Edit this posture", stage: false });
+  assert.deepEqual(posture.book, { open: true, target: POSE_NAMES.tierce, sliders: POSTURE_JOINTS.length, guardNote: false, stage: true });
+  assert.deepEqual(posture.done, { open: false, button: "Edit this posture", expanded: "false", stage: false, focus: "posture-edit" }, "Done closes them and leaves the focus on the button that opened them");
+  assert.deepEqual(posture.cleaned, { stored: null, marked: [], note: false });
 });
 
 test("in a browser, the fencers are 3D figures, one alone and two in a pair, or stick figures with a note saying why", { skip, timeout: 120_000 }, async () => {

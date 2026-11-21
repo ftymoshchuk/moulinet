@@ -25,6 +25,7 @@
           if (location.search === "?fallback") await driveFallback(win, frame.contentDocument, results.seen);
           else {
             drive(win, frame.contentDocument, results.seen);
+            await drivePostures(win, frame.contentDocument, results.seen);
             await drive3d(win, frame.contentDocument, results.seen);
             await driveFigures(win, frame.contentDocument, results.seen);
           }
@@ -105,6 +106,253 @@
         seen.fallback = await settled(win, doc);
         // The stick figures stand in the same frame as the 3D ones, so the stage is shown in a mirror here as well.
         seen.fallbackMirror = win.getComputedStyle(doc.querySelector(".stage__frame")).transform;
+      }
+
+      // The numbers of a posture, which the base postures let a person change. What they change is their own version of
+      // the posture: kept on this device, and drawn wherever the page uses the posture.
+      async function drivePostures(win, doc, seen) {
+        const $ = (selector) => doc.querySelector(selector);
+        const $$ = (selector) => [...doc.querySelectorAll(selector)];
+        const button = (name) => $$("button").find((b) => b.textContent.trim() === name || b.getAttribute("aria-label") === name);
+        const input = (el, value) => {
+          el.value = String(value);
+          el.dispatchEvent(new win.Event("input", { bubbles: true }));
+        };
+        const text = (selector) => $(selector).textContent;
+        const visible = (el) => el.getClientRects().length > 0;
+        const hidden = (selector) => $(selector).classList.contains("hidden");
+        const tick = () => new Promise((resolve) => win.setTimeout(resolve, 0));
+        const panelName = (el) => [...el.classList].find((name) => name.startsWith("panel--")).slice(7);
+
+        // What the page keeps of them, and what another tab would do to it, which the page is told of the way a tab is.
+        const KEY = "moulinet.postures";
+        const kept = () => JSON.parse(win.localStorage.getItem(KEY) ?? "null");
+        const keep = (store) => {
+          win.localStorage.setItem(KEY, typeof store === "string" ? store : JSON.stringify(store));
+          win.dispatchEvent(new win.StorageEvent("storage", { key: KEY }));
+        };
+        const asked = [];
+        let answer = true;
+        win.confirm = (message) => {
+          asked.push(message);
+          return answer;
+        };
+
+        // A slider of the numbers, and what its row says.
+        const slider = (key) => $(`#posture-joint-${key}`);
+        const row = (key) => slider(key).closest(".joint");
+        const said = (key) => {
+          const value = row(key).querySelector(".joint__value");
+          const reset = row(key).querySelector(".joint__reset");
+          return { value: value.textContent, moved: value.classList.contains("is-adjusted"), idle: reset.classList.contains("is-idle"), hint: reset.title, slider: slider(key).value };
+        };
+        // The posture buttons that say they are the person's own, by their place in the list.
+        const marked = () => $$(".base-button").flatMap((b, i) => (b.querySelector(".base-button__mine").classList.contains("hidden") ? [] : [i]));
+        const looks = () => ({
+          open: visible($("#posture-panel")),
+          button: text("#posture-edit"),
+          expanded: $("#posture-edit").getAttribute("aria-expanded"),
+          target: text("#base-name"),
+          tag: !hidden("#base-version"),
+          marked: marked(),
+          status: visible($("#posture-panel")) ? text("#posture-status") : "",
+        });
+        const goTo = (index) => $$(".base-button")[index].click();
+        const reset = (key) => row(key).querySelector(".joint__reset").click();
+
+        win.localStorage.removeItem(KEY);
+        seen.posture = {};
+        const posture = seen.posture;
+
+        // ---------- Opening the numbers ----------
+
+        // They are closed at first, and the posture is as built in.
+        button("Base postures").click();
+        goTo(0);
+        posture.closed = { ...looks(), stage: $("#main").classList.contains("is-editing-posture"), note: !hidden("#versions-note"), stored: kept() };
+
+        // Pressing the button opens them, with the first slider ready, and pressing it again closes them.
+        $("#posture-edit").focus();
+        $("#posture-edit").click();
+        posture.open = {
+          ...looks(),
+          panels: $$("main section.panel").filter(visible).map(panelName),
+          title: text("#posture-target"),
+          guardNote: !hidden("#posture-guard"),
+          sliders: $$("#posture-joints input").map((el) => [el.id, el.min, el.max, el.step, el.value]),
+          labels: $$("#posture-joints label").map((el) => [el.htmlFor, el.textContent]),
+          resets: $$("#posture-joints .joint__reset").length,
+          idle: $$("#posture-joints .joint__reset.is-idle").length,
+          moved: $$("#posture-joints .is-adjusted").length,
+          resetOff: $("#posture-reset").disabled,
+          copyOff: $("#posture-copy").disabled,
+          focus: doc.activeElement?.id,
+          stage: $("#main").classList.contains("is-editing-posture"),
+          pinned: win.getComputedStyle($("#stage-panel")).position,
+          announced: text("#announcer"),
+          boxOpen: $("#posture-details").open,
+          numbers: $("#posture-numbers").value,
+          sliderIds: $$("#posture-joints input").map((el) => el.id).filter((id) => !id.startsWith("posture-joint-")).length,
+        };
+        posture.guard = { hip: said("hipY"), arm: said("arm"), hand: said("hand") };
+        $("#posture-edit").click();
+        posture.closedAgain = { ...looks(), stage: $("#main").classList.contains("is-editing-posture"), focus: doc.activeElement?.id };
+        $("#posture-edit").click();
+
+        // ---------- Changing them ----------
+
+        // Moving sliders makes a version of the posture, kept as they move and drawn on the stage: the marks on the floor
+        // round the feet follow the front foot, which the 3D figures do not show in the page.
+        const feet = $("#ground-a").getAttribute("d");
+        input(slider("arm"), -70);
+        input(slider("hipY"), 68);
+        input(slider("footF"), 100);
+        posture.moved = {
+          ...looks(),
+          arm: said("arm"),
+          hipY: said("hipY"),
+          footF: said("footF"),
+          blade: said("blade"),
+          kept: kept(),
+          feetFollow: $("#ground-a").getAttribute("d") !== feet,
+          resetOff: $("#posture-reset").disabled,
+          copyOff: $("#posture-copy").disabled,
+          moved: $$("#posture-joints .is-adjusted").length,
+          visibleResets: $$("#posture-joints .joint__reset:not(.is-idle)").length,
+          numbers: $("#posture-numbers").value,
+          stage: $("#main").classList.contains("is-editing-posture"),
+        };
+
+        // Another posture, while they are open: the panel follows to it. One that takes its arm from the guard shows the
+        // guard's, as changed, but has no version of its own, until it is given one.
+        goTo(2);
+        posture.advance = { ...looks(), title: text("#posture-target"), guardNote: !hidden("#posture-guard"), arm: said("arm"), footF: said("footF"), hipY: said("hipY"), resetOff: $("#posture-reset").disabled };
+        input(slider("arm"), -10);
+        posture.advanceOwn = { arm: said("arm"), kept: kept(), marked: marked() };
+        reset("arm");
+        posture.advanceBack = { arm: said("arm"), kept: kept(), marked: marked(), focus: doc.activeElement?.id };
+
+        // Back on the guard, one joint is put back on its own, and keeps the focus on its slider.
+        goTo(0);
+        reset("arm");
+        posture.armBack = { arm: said("arm"), kept: kept(), focus: doc.activeElement?.id, hipY: said("hipY") };
+        // A slider moved back to where the posture has the joint is no longer a version.
+        input(slider("hipY"), 77);
+        posture.hipBack = { hipY: said("hipY"), kept: kept() };
+        input(slider("hipY"), 66);
+
+        // ---------- Used across the page ----------
+
+        // The Creator has the posture as the person made it: its slider shows the foot, and says what it goes back to.
+        button("Creator").click();
+        posture.creator = {
+          open: visible($("#posture-panel")),
+          stage: $("#main").classList.contains("is-editing-posture"),
+          foot: { value: $("#joint-footF").value, text: $("#joint-footF").closest(".joint").querySelector(".joint__value").textContent, adjusted: $("#joint-footF").closest(".joint").querySelector(".joint__value").classList.contains("is-adjusted"), hint: $("#joint-footF").closest(".joint").querySelector(".joint__reset").title },
+          hip: $("#joint-hipY").closest(".joint").querySelector(".joint__value").textContent,
+          note: !hidden("#versions-note") ? text("#versions-note") : "",
+          noteInStage: !!$("#stage-panel #versions-note"),
+        };
+        button("Practice library").click();
+        posture.library = { note: !hidden("#versions-note") ? text("#versions-note") : "", showing: $$("main section.panel").filter(visible).map(panelName) };
+        $$(".scene-button")[0].click();
+        posture.libraryScene = { title: text("#scene-title"), note: !hidden("#versions-note") };
+        // With two postures made over, the note says so in the plural, and with none it goes.
+        keep({ version: 1, postures: { guard: { footF: 100, hipY: 66 }, parry3: { blade: 100 } } });
+        posture.libraryTwo = { note: text("#versions-note") };
+        keep({ version: 1, postures: { guard: { footF: 100, hipY: 66 } } });
+        button("Base postures").click();
+        posture.back = { ...looks(), note: !hidden("#versions-note"), stage: $("#main").classList.contains("is-editing-posture") };
+
+        // ---------- Going back to the built-in numbers ----------
+
+        // All of a posture's changes at once ask first, and a "no" changes nothing.
+        $("#posture-edit").click();
+        posture.reopened = { ...looks(), moved: $$("#posture-joints .is-adjusted").length };
+        $("#posture-reset").focus();
+        answer = false;
+        $("#posture-reset").click();
+        posture.declined = { asked: asked.at(-1), kept: kept(), moved: $$("#posture-joints .is-adjusted").length };
+        answer = true;
+        $("#posture-reset").click();
+        posture.reset = { ...looks(), kept: kept(), moved: $$("#posture-joints .is-adjusted").length, focus: doc.activeElement?.id, resetOff: $("#posture-reset").disabled, copyOff: $("#posture-copy").disabled, numbers: $("#posture-numbers").value, footF: said("footF"), asked: asked.length, feetBack: $("#ground-a").getAttribute("d") === feet };
+
+        // ---------- Sending them on ----------
+
+        // The numbers are copied for sending on, all the versions' at once. Where the browser will not copy, they are left
+        // selected for the person to copy.
+        input(slider("arm"), -30);
+        goTo(8);
+        input(slider("blade"), 100);
+        const send = $("#posture-numbers").value;
+        Object.defineProperty(win.navigator, "clipboard", { value: undefined, configurable: true });
+        $("#posture-copy").click();
+        await tick();
+        posture.wontCopy = {
+          status: text("#posture-status"),
+          warns: $("#posture-status").classList.contains("phrase-status--warn"),
+          boxOpen: $("#posture-details").open,
+          selected: [$("#posture-numbers").selectionStart, $("#posture-numbers").selectionEnd, $("#posture-numbers").value.length],
+          focus: doc.activeElement?.id,
+          numbers: $("#posture-numbers").value,
+        };
+        const copied = [];
+        Object.defineProperty(win.navigator, "clipboard", { value: { writeText: async (words) => void copied.push(words) }, configurable: true });
+        $("#posture-copy").click();
+        await tick();
+        posture.copied = { copied, same: copied[0] === send, status: text("#posture-status"), warns: $("#posture-status").classList.contains("phrase-status--warn") };
+        delete win.navigator.clipboard;
+
+        // ---------- What goes wrong ----------
+
+        // A browser that will not keep the version still shows it, and says so.
+        const setItem = win.Storage.prototype.setItem;
+        win.Storage.prototype.setItem = () => {
+          throw new win.DOMException("full", "QuotaExceededError");
+        };
+        input(slider("yaw"), 40);
+        posture.full = { status: text("#posture-status"), isError: $("#posture-status").classList.contains("phrase-status--error"), yaw: said("yaw"), kept: kept() };
+        win.Storage.prototype.setItem = setItem;
+        input(slider("yaw"), 41);
+        posture.saveAgain = { status: text("#posture-status"), isError: $("#posture-status").classList.contains("phrase-status--error"), kept: kept() };
+
+        // Versions made in another tab come here, and go when that tab takes them back.
+        keep({ version: 1, postures: { parry5: { yaw: 50 } } });
+        posture.elsewhere = { marked: marked(), tag: !hidden("#base-version"), kept: kept() };
+        goTo(11);
+        posture.elsewhereParry5 = { marked: marked(), tag: !hidden("#base-version"), yaw: said("yaw") };
+        keep({ version: 1, postures: {} });
+        posture.elsewhereGone = { marked: marked(), tag: !hidden("#base-version"), yaw: said("yaw") };
+
+        // Versions saved by a newer page are not shown and not written over.
+        const future = JSON.stringify({ version: 2, postures: { parry5: { yaw: 50 } } });
+        keep(future);
+        input(slider("yaw"), 20);
+        posture.newer = { marked: marked(), tag: !hidden("#base-version"), yaw: said("yaw"), status: text("#posture-status"), isError: $("#posture-status").classList.contains("phrase-status--error"), untouched: win.localStorage.getItem(KEY) === future };
+
+        // ---------- Leaving ----------
+
+        // The numbers close when the postures are left, and the Done button closes them and keeps the focus where it was.
+        button("Creator").click();
+        button("Base postures").click();
+        posture.leftOpen = { open: visible($("#posture-panel")), button: text("#posture-edit"), stage: $("#main").classList.contains("is-editing-posture") };
+        $("#posture-edit").click();
+        button("Book knowledge").click();
+        goTo(2);
+        posture.bookClosed = { open: visible($("#posture-panel")), button: text("#posture-edit"), stage: $("#main").classList.contains("is-editing-posture") };
+        // The book's postures can be edited too, with the same sliders.
+        $("#posture-edit").click();
+        posture.book = { open: visible($("#posture-panel")), target: text("#posture-target"), sliders: $$("#posture-joints input").length, guardNote: !hidden("#posture-guard"), stage: $("#main").classList.contains("is-editing-posture") };
+        $("#posture-done").focus();
+        $("#posture-done").click();
+        posture.done = { open: visible($("#posture-panel")), button: text("#posture-edit"), expanded: $("#posture-edit").getAttribute("aria-expanded"), stage: $("#main").classList.contains("is-editing-posture"), focus: doc.activeElement?.id };
+        button("Live knowledge").click();
+
+        // Nothing is left of it on the device.
+        win.localStorage.removeItem(KEY);
+        win.dispatchEvent(new win.StorageEvent("storage", { key: KEY }));
+        posture.cleaned = { stored: kept(), marked: marked(), note: !hidden("#versions-note") };
+        button("Practice library").click();
       }
 
       function drive(win, doc, seen) {
@@ -460,8 +708,31 @@
         input($("#joint-blade"), 100);
         input($("#joint-x"), 200);
         seen.adjusted = { line: stepLine(2), said: $("#joint-blade").getAttribute("aria-valuetext") };
+
+        // One joint at a time: a slider that has been moved says so, offers to go back to what the pose gives it, and says
+        // what that is; putting it back leaves the others as they were. The position has no pose to go back to.
+        input($("#joint-hipY"), 70);
+        const row = (key) => $(`#joint-${key}`).closest(".joint");
+        const joint = (key) => {
+          const reset = row(key).querySelector(".joint__reset");
+          return {
+            said: $(`#joint-${key}`).getAttribute("aria-valuetext"),
+            adjusted: row(key).querySelector(".joint__value").classList.contains("is-adjusted"),
+            // Not shown is not drawn, but it keeps its place: "visibility" says which.
+            reset: reset ? { shown: win.getComputedStyle(reset).visibility !== "hidden", title: reset.getAttribute("title"), label: reset.getAttribute("aria-label") } : null,
+          };
+        };
+        seen.joints = { moved: { blade: joint("blade"), hipY: joint("hipY"), lean: joint("lean"), x: joint("x") } };
+        row("blade").querySelector(".joint__reset").click();
+        seen.joints.putBack = { line: stepLine(2), blade: joint("blade"), hipY: joint("hipY"), slider: $("#joint-blade").value, focus: doc.activeElement?.id };
+        row("hipY").querySelector(".joint__reset").click();
+        seen.joints.allBack = { line: stepLine(2), hipY: joint("hipY") };
+        // Moved again, and put back all at once.
+        input($("#joint-blade"), 100);
+        input($("#joint-hipY"), 70);
         button("Reset this step's adjustments").click();
         seen.reset = stepLine(2);
+        seen.joints.resetAll = { blade: joint("blade"), hipY: joint("hipY") };
         checkPaths();
 
         // Phrase text: broken, then with a pose the library lacks, then solo.
@@ -766,7 +1037,7 @@
         button("Creator").click();
         answer = true;
         button("New scene").click();
-        const editorSelector = "#meta-name, #meta-source, #meta-event, #meta-reference, #meta-note, #meta-solo, #step-name, #step-ms, #step-hold, #step-ease, #step-add, #step-remove, #reset-step, #joints input, .pose-button";
+        const editorSelector = "#meta-name, #meta-source, #meta-event, #meta-reference, #meta-note, #meta-solo, #step-name, #step-ms, #step-hold, #step-ease, #step-add, #step-remove, #reset-step, #joints input, #joints button, .pose-button";
         const editors = () => ({ total: $$(editorSelector).length, off: $$(editorSelector).filter((el) => el.disabled).map((el) => el.id || el.textContent.slice(0, 12)).length });
         input($("#meta-name"), "Kept name");
         seen.fieldsOn = editors();

@@ -2,7 +2,8 @@
 //
 // One stage serves three modes. The practice library plays a scene and says
 // where it was noted. The base postures show one fencer in one posture at a
-// time, in words as well as lines. The Creator makes new scenes.
+// time, in words as well as lines, and let a person change a posture's numbers
+// for their own device. The Creator makes new scenes.
 //
 // The page has three tabs. Live knowledge and Book knowledge are sections, each
 // with a practice library and base postures of its own; the Creator is the third.
@@ -14,6 +15,7 @@ import {
   TEXT_LIMITS,
   buildTimeline,
   clearAdjustments,
+  clearJoint,
   clip,
   clone,
   editSpec,
@@ -24,6 +26,7 @@ import {
   phraseToText,
   poseAt,
   removeStep,
+  resolvePose,
   samePose,
   setJoint,
   setMeta,
@@ -31,6 +34,23 @@ import {
   setSolo,
   setStepField,
 } from "./phrase.js";
+import {
+  POSTURES_KEY,
+  POSTURE_JOINTS,
+  givenBy,
+  hasVersion,
+  moveJoint,
+  numbersOf,
+  numbersText,
+  putJointBack,
+  putPostureBack,
+  readVersions,
+  saveVersions,
+  useVersions,
+  versionOf,
+  versionedPostures,
+  versionsInUse,
+} from "./postures.js";
 import { STORAGE_KEY, deleteScene, readSaved, referenceUrl, saveScene, sceneSummary } from "./scenes.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -53,10 +73,12 @@ const modePanels = [...document.querySelectorAll("[data-modes]")].map((el) => ({
 // The base postures of each section, in the order they are shown.
 const sectionBases = Object.fromEntries(SECTIONS.map(({ id }) => [id, basesOf(id)]));
 
+const workspaceEl = document.getElementById("main");
 const stagePanelEl = document.getElementById("stage-panel");
 const stageEl = document.getElementById("stage");
 const canvas3dEl = document.getElementById("stage-3d");
 const stageNoteEl = document.getElementById("stage-note");
+const versionsNoteEl = document.getElementById("versions-note");
 const stepCountEl = document.getElementById("step-count");
 const stepLabelEl = document.getElementById("step-label");
 const timecodeEl = document.getElementById("timecode");
@@ -105,8 +127,22 @@ const baseGroupEl = document.getElementById("base-group");
 const baseTextEl = document.getElementById("base-text");
 const basePointsEl = document.getElementById("base-points");
 const baseKeyEl = document.getElementById("base-key");
+const baseVersionEl = document.getElementById("base-version");
 const figuresPanelEl = document.getElementById("figures-panel");
 const baseFiguresEl = document.getElementById("base-figures");
+
+// A posture's numbers, to change for this device.
+const postureEditButton = document.getElementById("posture-edit");
+const posturePanelEl = document.getElementById("posture-panel");
+const postureTargetEl = document.getElementById("posture-target");
+const postureDoneButton = document.getElementById("posture-done");
+const postureGuardEl = document.getElementById("posture-guard");
+const postureJointsEl = document.getElementById("posture-joints");
+const postureResetButton = document.getElementById("posture-reset");
+const postureCopyButton = document.getElementById("posture-copy");
+const postureStatusEl = document.getElementById("posture-status");
+const postureDetailsEl = document.getElementById("posture-details");
+const postureNumbersEl = document.getElementById("posture-numbers");
 
 // The Creator.
 const metaInputs = {
@@ -174,6 +210,10 @@ const state = {
   baselineCamera: 0,
   saveMessage: "",
   saveTone: "",
+  // Whether the numbers of the posture on show are open to change, and what keeping the person's version of it last said.
+  editPosture: false,
+  postureMessage: "",
+  postureTone: "",
 };
 // state.phrase laid out in time, and its blade paths for one camera angle.
 let timeline = buildTimeline(null);
@@ -310,6 +350,7 @@ function showBase(index) {
     fencer: "A",
     phraseText: "",
     phraseError: "",
+    postureMessage: "",
   });
   update();
 }
@@ -336,6 +377,8 @@ function leaveMode() {
   if (state.mode === "base") {
     state.base = currentIndex();
     views[state.section] = { mode: "base", base: state.base };
+    // The numbers of a posture are open to change only while the postures are on show.
+    state.editPosture = false;
   } else if (state.mode === "library") {
     views[state.section] = { ...views[state.section], mode: "library" };
   } else if (state.mode === "creator") {
@@ -398,7 +441,7 @@ function openInCreator(phrase, editing) {
 function jumpTo(index) {
   const step = timeline.steps[index];
   if (!step) return;
-  Object.assign(state, { pin: index, playing: false, time: step.holdStart });
+  Object.assign(state, { pin: index, playing: false, time: step.holdStart, postureMessage: "" });
   update();
   announce(`${state.mode === "base" ? "Posture" : "Step"} ${index + 1} of ${timeline.steps.length}: ${step.label}`);
 }
@@ -594,6 +637,84 @@ function deleteSelectedScene() {
   announce(`Deleted ${sceneName(scene.phrase)}.`);
 }
 
+// ---------- The person's versions of the postures ----------
+
+// What the page says when a version could not be kept.
+const POSTURE_ERRORS = {
+  storage: "This browser would not keep your version, so it lasts only until you leave the page.",
+  newer: "The versions on this device were saved by a newer version of this page, so this one leaves them alone. Yours lasts only until you leave the page. Reload the page to update it.",
+};
+
+function postureName(name) {
+  return POSE_NAMES[name] || name;
+}
+
+// Names in a sentence: "Guard (tierce) and Parry 3".
+const andList = new Intl.ListFormat("en", { type: "conjunction" });
+
+// The posture on show among the base postures, by the name of its pose.
+function currentPosture() {
+  return sectionBases[state.section][currentIndex()].pose;
+}
+
+// Puts `versions` in force and keeps them on this device, then works every pose out again with them: the postures, the
+// scene on show and the Creator's scene all use the postures by name. A version the browser would not keep still holds
+// until the page is left.
+function changeVersions(versions, said) {
+  useVersions(versions);
+  const result = saveVersions(getStorage(), versionsInUse());
+  Object.assign(state, result.error ? { postureMessage: POSTURE_ERRORS[result.error], postureTone: "error" } : { postureMessage: said, postureTone: "" });
+  usePhrase(state.phrase);
+  update();
+}
+
+function moveJointOfPosture(key, value) {
+  const next = moveJoint(versionsInUse(), currentPosture(), key, value);
+  if (next) changeVersions(next, "Saved on this device.");
+}
+
+function putJointOfPostureBack(key) {
+  changeVersions(putJointBack(versionsInUse(), currentPosture(), key), "Saved on this device.");
+}
+
+// All of the posture's changes at once, which asks first: they may be a lot of careful work.
+function putPostureBackToBuiltIn() {
+  const name = currentPosture();
+  if (!hasVersion(name) || !window.confirm(`Put the built-in numbers back on ${postureName(name)}? Your changes to it are lost.`)) return;
+  changeVersions(putPostureBack(versionsInUse(), name), "Back to the built-in numbers.");
+}
+
+// Copies the numbers of every posture the person has made a version of, to send on. A browser that will not copy
+// leaves them selected in their box, to be copied by hand.
+async function copyNumbers() {
+  const have = versionedPostures();
+  if (have.length === 0) return;
+  let copied = true;
+  try {
+    await navigator.clipboard.writeText(numbersText(versionsInUse()));
+  } catch {
+    copied = false;
+  }
+  if (!copied) {
+    postureDetailsEl.open = true;
+    postureNumbersEl.focus();
+    postureNumbersEl.select();
+  }
+  const which = `${have.length === 1 ? "one posture" : `${have.length} postures`}: ${andList.format(have.map(postureName))}`;
+  Object.assign(state, copied ? { postureMessage: `Copied the numbers of ${which}.`, postureTone: "" } : { postureMessage: "This browser would not copy them, so they are selected below: copy them yourself.", postureTone: "warn" });
+  update();
+}
+
+// Opens the numbers of the posture on show to change, or closes them.
+function openPosture(open) {
+  Object.assign(state, { editPosture: open, postureMessage: "" });
+  // The button that was pressed is where the person is, so it keeps the focus when the panel it belongs to goes.
+  if (!open) postureEditButton.focus();
+  update();
+  if (open) postureControls[0].input.focus();
+  announce(open ? `Editing the numbers of ${postureName(currentPosture())}.` : "Done editing.");
+}
+
 // ---------- Clock ----------
 
 let frame = 0;
@@ -723,31 +844,68 @@ function createFencer(id) {
 
 const fencers = { A: createFencer("a"), B: createFencer("b") };
 
-const jointControls = JOINTS.map((joint) => {
-  const id = `joint-${joint.key}`;
-  const wrapper = document.createElement("div");
-  wrapper.className = "joint";
-  const row = document.createElement("div");
-  row.className = "joint__row";
-  const label = document.createElement("label");
+// The slider of one joint, with its value and, where there is something to go back to, a Reset of its own. The Creator
+// has one for each joint of the step being reshaped, and the postures have one for each joint of a posture being edited,
+// so `idPrefix` keeps their ids apart. `change` is told the value the slider is moved to; `putBack` is what Reset does.
+function jointControl(joint, parent, { idPrefix, goesBackTo, change, putBack }) {
+  const id = `${idPrefix}-${joint.key}`;
+  const wrapper = element("div", "joint");
+  const row = element("div", "joint__row");
+  const label = element("label", "", joint.label);
   label.htmlFor = id;
-  label.textContent = joint.label;
-  const value = document.createElement("span");
-  value.className = "joint__value";
-  const input = document.createElement("input");
+  const value = element("span", "joint__value");
+  const input = element("input");
   input.type = "range";
   input.id = id;
   input.min = String(joint.min);
   input.max = String(joint.max);
   input.step = String(joint.step ?? 1);
-  input.addEventListener("input", () => {
-    editCurrent((spec) => setJoint(spec, joint.key, Math.round(Number(input.value))));
-  });
+  input.addEventListener("input", () => change(Math.round(Number(input.value))));
+  // A joint that has been moved can be put back on its own, without touching the others. The position is where the
+  // fencer stands, not a joint of the pose, so it has nothing to go back to.
+  let reset = null;
+  if (joint.key !== "x") {
+    reset = element("button", "joint__reset", "Reset");
+    reset.type = "button";
+    setAttr(reset, "aria-label", `Reset ${joint.label.toLowerCase()} to ${goesBackTo}`);
+    reset.addEventListener("click", () => {
+      putBack();
+      // The button goes away with the change, so the slider it belonged to keeps the focus.
+      input.focus();
+    });
+  }
   row.append(label, value);
+  // The position has no Reset, but keeps its place, so that the values line up down the column.
+  if (reset) {
+    row.append(reset);
+  } else {
+    const spacer = element("span", "joint__spacer");
+    setAttr(spacer, "aria-hidden", "true");
+    row.append(spacer);
+  }
   wrapper.append(row, input);
-  jointsEl.append(wrapper);
-  return { joint, input, value };
-});
+  parent.append(wrapper);
+  return { joint, input, value, reset };
+}
+
+const jointControls = JOINTS.map((joint) =>
+  jointControl(joint, jointsEl, {
+    idPrefix: "joint",
+    goesBackTo: "the pose",
+    change: (v) => editCurrent((spec) => setJoint(spec, joint.key, v)),
+    putBack: () => editCurrent((spec) => clearJoint(spec, joint.key)),
+  }),
+);
+
+// The same sliders for the numbers of a posture, in the base postures: every joint but where the fencer stands.
+const postureControls = POSTURE_JOINTS.map((joint) =>
+  jointControl(joint, postureJointsEl, {
+    idPrefix: "posture-joint",
+    goesBackTo: "the built-in",
+    change: (v) => moveJointOfPosture(joint.key, v),
+    putBack: () => putJointOfPostureBack(joint.key),
+  }),
+);
 
 // The poses, in groups as the sections of the page keep their base postures: each section's postures are its own poses.
 const poseGroups = SECTIONS.map(({ id, name }) => ({ name, keys: sectionBases[id].map(({ pose }) => pose) }));
@@ -786,6 +944,7 @@ const editors = [
   stepAddButton,
   resetStepButton,
   ...jointControls.map(({ input }) => input),
+  ...jointControls.map(({ reset }) => reset).filter(Boolean),
   ...poseButtons.map(({ button }) => button),
 ];
 
@@ -793,6 +952,8 @@ const editors = [
 // buttons are numbered in the order the postures are learned, which is the order of
 // the steps; the list is rebuilt when the section changes.
 let baseButtons = [];
+// Each button says, while it is shown, that the person has made a version of its posture.
+let baseMarks = [];
 let baseListShown = "";
 
 function renderBaseList() {
@@ -800,6 +961,7 @@ function renderBaseList() {
   baseListShown = state.section;
   const { groups, intro, note } = BASE_SECTIONS[state.section];
   baseButtons = [];
+  baseMarks = [];
   baseListEl.replaceChildren(
     ...groups.map((group) => {
       const row = element("div", "base-buttons");
@@ -807,10 +969,12 @@ function renderBaseList() {
         if (base.group !== group) return;
         const button = element("button", "base-button");
         button.type = "button";
-        button.append(element("span", "step-button__number", twoDigits(i + 1)), POSE_NAMES[base.pose] || base.pose);
+        const mark = element("span", "base-button__mine hidden", "edited");
+        button.append(element("span", "step-button__number", twoDigits(i + 1)), POSE_NAMES[base.pose] || base.pose, mark);
         button.addEventListener("click", () => jumpTo(i));
         row.append(button);
         baseButtons[i] = button;
+        baseMarks[i] = mark;
       });
       const list = element("div", "list-group");
       list.append(element("h4", "list-group__title", group), row);
@@ -915,6 +1079,11 @@ phraseTextEl.addEventListener("input", readPhraseText);
 sceneEditButton.addEventListener("click", editSelectedScene);
 sceneDeleteButton.addEventListener("click", deleteSelectedScene);
 
+postureEditButton.addEventListener("click", () => openPosture(!state.editPosture));
+postureDoneButton.addEventListener("click", () => openPosture(false));
+postureResetButton.addEventListener("click", putPostureBackToBuiltIn);
+postureCopyButton.addEventListener("click", copyNumbers);
+
 for (const key of TEXT_KEYS) {
   metaInputs[key].addEventListener("input", () => editScene(setMeta(state.phrase, key, metaInputs[key].value)));
 }
@@ -941,9 +1110,17 @@ window.addEventListener("beforeunload", (event) => {
 
 // Scenes saved in another tab appear here, and one deleted there leaves. A scene
 // on stage that was changed there is loaded again, and the Creator's scene, if it
-// was deleted there, is a new scene from here on.
+// was deleted there, is a new scene from here on. The versions of the postures that
+// another tab made or took back are drawn here too.
 window.addEventListener("storage", (event) => {
-  if (event.key !== null && event.key !== STORAGE_KEY) return;
+  const postures = event.key === null || event.key === POSTURES_KEY;
+  const scenesToo = event.key === null || event.key === STORAGE_KEY;
+  if (!postures && !scenesToo) return;
+  if (postures) {
+    useVersions(readVersions(getStorage()));
+    usePhrase(state.phrase);
+    if (!scenesToo) return update();
+  }
   setSaved(readSaved(getStorage()));
   if (state.editing !== null && !saved.some((scene) => scene.id === state.editing)) {
     state.editing = null;
@@ -1189,13 +1366,87 @@ function renderFigures(figures) {
   baseFiguresEl.replaceChildren(...(cards.length ? [...cards, element("p", "book-figures__note", FIGURE_NOTE)] : [element("p", "panel__intro", "The book has no photograph of this posture.")]));
 }
 
+// What a joint's slider says of a value: the number, its unit and the name of the position it is on, if it has one.
+function jointText(joint, v) {
+  const name = joint.names?.[v];
+  return `${v}${joint.unit}${name ? ` (${name})` : ""}`;
+}
+
+// Puts a joint's slider at `number`. `moved` says whether it has been moved from what a Reset would put it back to, which
+// it then shows, with a Reset to press; `back` says in the Reset's hint what it goes back to.
+function showJoint({ joint, input, value, reset }, number, moved, back) {
+  let v = Number(number) || 0;
+  // A blade turned past half a circle shows as the same angle within it.
+  if (joint.key === "blade" && (v < -180 || v > 180)) v = ((((v + 180) % 360) + 360) % 360) - 180;
+  v = Math.round(v);
+  const text = jointText(joint, v);
+  setValue(input, v);
+  setText(value, text);
+  setAttr(input, "aria-valuetext", text);
+  value.classList.toggle("is-adjusted", moved);
+  if (reset) {
+    reset.classList.toggle("is-idle", !moved);
+    setAttr(reset, "title", back);
+  }
+}
+
+// The numbers of the posture on show, which can be changed while they are open to change.
+function renderPosture(name) {
+  const open = state.editPosture;
+  posturePanelEl.classList.toggle("hidden", !open);
+  workspaceEl.classList.toggle("is-editing-posture", open);
+  setAttr(postureEditButton, "aria-expanded", open ? "true" : "false");
+  setText(postureEditButton, open ? "Done editing" : "Edit this posture");
+  if (!open) return;
+  setText(postureTargetEl, postureName(name));
+  postureGuardEl.classList.toggle("hidden", name !== "guard");
+  const moved = versionOf(name);
+  const now = numbersOf(name);
+  const given = givenBy(name);
+  for (const control of postureControls) {
+    const { joint } = control;
+    showJoint(control, now[joint.key], Object.hasOwn(moved, joint.key), `Back to: ${jointText(joint, Math.round(Number(given[joint.key]) || 0))}`);
+  }
+  // A person who was on a button that has nothing to do now is put on the first slider.
+  const first = postureControls[0].input;
+  setDisabled(postureResetButton, !hasVersion(name), first);
+  const have = versionedPostures().length;
+  setDisabled(postureCopyButton, have === 0, first);
+  // All their versions' numbers are in the box, to copy or to send on.
+  const numbers = have === 0 ? "" : numbersText(versionsInUse());
+  if (postureNumbersEl.value !== numbers) postureNumbersEl.value = numbers;
+  setText(postureStatusEl, state.postureMessage);
+  postureStatusEl.classList.toggle("phrase-status--error", state.postureTone === "error");
+  postureStatusEl.classList.toggle("phrase-status--warn", state.postureTone === "warn");
+}
+
+// Said in the library and the Creator when some postures are drawn as the person made them: that is not how they are
+// built in, and not how anyone else sees them.
+function renderVersionsNote() {
+  const have = versionedPostures();
+  const show = state.mode !== "base" && have.length > 0;
+  versionsNoteEl.classList.toggle("hidden", !show);
+  if (!show) return;
+  const one = have.length === 1;
+  setText(
+    versionsNoteEl,
+    `Your own ${one ? "version" : "versions"} of ${andList.format(have.map(postureName))} ${one ? "is" : "are"} in use here, not the built-in ${one ? "one" : "ones"}. ${one ? "It is" : "They are"} on this device only. To go back to the built-in ${one ? "one" : "ones"}, use Edit this posture, in the base postures.`,
+  );
+}
+
 function renderBase(index) {
   renderBaseList();
-  baseButtons.forEach((button, i) => setPressed(button, i === index));
+  const bases = sectionBases[state.section];
+  const base = bases[index];
+  baseButtons.forEach((button, i) => {
+    setPressed(button, i === index);
+    baseMarks[i].classList.toggle("hidden", !hasVersion(bases[i].pose));
+  });
+  baseVersionEl.classList.toggle("hidden", !hasVersion(base.pose));
+  renderPosture(base.pose);
   const shown = `${state.section}:${index}`;
   if (baseShown === shown) return;
   baseShown = shown;
-  const base = sectionBases[state.section][index];
   setText(baseNameEl, POSE_NAMES[base.pose] || base.pose);
   setText(baseGroupEl, base.group);
   setText(baseTextEl, base.text);
@@ -1247,19 +1498,17 @@ function renderCreator(index, step) {
   setPressed(fencerButtons.B, fencer === "B");
   fencerButtons.B.disabled = timeline.solo;
   const target = step[fencer];
-  for (const { joint, input, value } of jointControls) {
-    let v = Number(target[joint.key]) || 0;
-    // A blade turned past half a circle shows as the same angle within it.
-    if (joint.key === "blade" && (v < -180 || v > 180)) v = ((((v + 180) % 360) + 360) % 360) - 180;
-    v = Math.round(v);
-    const name = joint.names?.[v];
-    const text = `${v}${joint.unit}${name ? ` (${name})` : ""}`;
-    setValue(input, v);
-    setText(value, text);
-    setAttr(input, "aria-valuetext", text);
-  }
   const spec = step[`spec${fencer}`];
   const pose = isPlainObject(spec) ? spec.pose : undefined;
+  // The joints this fencer has been moved on this step, and so can be put back to what the pose gives them.
+  const moved = isPlainObject(spec) && isPlainObject(spec.adj) ? spec.adj : {};
+  const given = resolvePose({ pose });
+  for (const control of jointControls) {
+    const { joint, reset } = control;
+    // A joint that has been moved says so, and offers to go back to what the pose gives it, which it says.
+    const adjusted = reset !== null && Object.hasOwn(moved, joint.key);
+    showJoint(control, target[joint.key], adjusted, `Back to the pose: ${jointText(joint, Math.round(Number(given[joint.key]) || 0))}`);
+  }
   for (const { key, button } of poseButtons) setPressed(button, pose === key);
 
   let status = `Applied: ${timeline.steps.length} ${timeline.steps.length === 1 ? "step" : "steps"}, ${seconds(timeline.duration)} s`;
@@ -1287,6 +1536,9 @@ function render() {
   const time = Math.min(state.time, timeline.duration);
 
   renderMode();
+  // Nothing is being edited outside the base postures.
+  if (state.mode !== "base") workspaceEl.classList.remove("is-editing-posture");
+  renderVersionsNote();
   drawStage(shown);
   setText(stepCountEl, `${twoDigits(index + 1)} / ${twoDigits(steps.length)}`);
   setText(stepLabelEl, step.label);
@@ -1322,6 +1574,7 @@ if (typeof ResizeObserver === "function") {
 
 start3d();
 
+useVersions(readVersions(getStorage()));
 setSaved(readSaved(getStorage()));
 parked = creatorView(newPhrase());
 state.baseline = parked.phraseText;
